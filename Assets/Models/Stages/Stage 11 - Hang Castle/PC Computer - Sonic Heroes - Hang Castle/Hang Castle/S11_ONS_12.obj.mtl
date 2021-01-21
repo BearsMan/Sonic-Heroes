@@ -1,0 +1,30 @@
+newmtl texture0
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+
+map_Kd m11_2001.png
+
+newmtl texture1
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+
+map_Kd m11_2016.png
+
+newmtl texture2
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+
+map_Kd m11_2004.png
+

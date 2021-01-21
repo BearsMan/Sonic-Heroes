@@ -1,0 +1,39 @@
+#Exported by HeroesModelTool
+newmtl ps3_kb24_m
+	map_Kd ps3_kb24.png
+newmtl ps3_ami2_m
+	map_Kd ps3_ami2.png
+newmtl s03_bl33_m
+	map_Kd s03_bl33.png
+newmtl ps3_mb21_m
+	map_Kd ps3_mb21.png
+newmtl s03_mb22_m
+	map_Kd s03_mb22.png
+newmtl ps3_bl51_m
+	map_Kd ps3_bl51.png
+newmtl s03_bl52_m
+	map_Kd s03_bl52.png
+newmtl s03_bl54_m
+	map_Kd s03_bl54.png
+newmtl s03_bl62_m
+	map_Kd s03_bl62.png
+newmtl s03_bl63_m
+	map_Kd s03_bl63.png
+newmtl ps3_bl65_m
+	map_Kd ps3_bl65.png
+newmtl ps3_mb11_m
+	map_Kd ps3_mb11.png
+newmtl ps3_mb12_m
+	map_Kd ps3_mb12.png
+newmtl ps3_mb41_m
+	map_Kd ps3_mb41.png
+newmtl ps3_mb43_m
+	map_Kd ps3_mb43.png
+newmtl ps3_ami3_m
+	map_Kd ps3_ami3.png
+newmtl ps3_ami1_m
+	map_Kd ps3_ami1.png
+newmtl s03_rog1_m
+	map_Kd s03_rog1.png
+newmtl ps3_yuk1_m
+	map_Kd ps3_yuk1.png

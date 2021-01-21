@@ -1,0 +1,139 @@
+#Exported by HeroesModelTool
+newmtl s03_pi14_m
+	map_Kd s03_pi14.png
+newmtl s03_pi15_m
+	map_Kd s03_pi15.png
+newmtl s03_pi12_m
+	map_Kd s03_pi12.png
+newmtl s03_pi17_m
+	map_Kd s03_pi17.png
+newmtl s03_bl16_m
+	map_Kd s03_bl16.png
+newmtl s03_bl17_m
+	map_Kd s03_bl17.png
+newmtl s03_bl18_m
+	map_Kd s03_bl18.png
+newmtl s03_bl19_m
+	map_Kd s03_bl19.png
+newmtl s03_bl66_m
+	map_Kd s03_bl66.png
+newmtl s03_fb91_m
+	map_Kd s03_fb91.png
+newmtl s03_sb13_m
+	map_Kd s03_sb13.png
+newmtl s03_so2_m
+	map_Kd s03_so2.png
+newmtl s03_yan2_m
+	map_Kd s03_yan2.png
+newmtl s03_sb16_m
+	map_Kd s03_sb16.png
+newmtl s03_bl71_m
+	map_Kd s03_bl71.png
+newmtl s03_yan5_m
+	map_Kd s03_yan5.png
+newmtl s03_pi16_m
+	map_Kd s03_pi16.png
+newmtl s03_bl33_m
+	map_Kd s03_bl33.png
+newmtl s03_sb11_m
+	map_Kd s03_sb11.png
+newmtl s03_sb52_m
+	map_Kd s03_sb52.png
+newmtl s03_sb68_m
+	map_Kd s03_sb68.png
+newmtl s03_sb69_m
+	map_Kd s03_sb69.png
+newmtl s03_yan1_m
+	map_Kd s03_yan1.png
+newmtl s03_fb21_m
+	map_Kd s03_fb21.png
+newmtl s03_mit1_m
+	map_Kd s03_mit1.png
+newmtl s03_bl73_m
+	map_Kd s03_bl73.png
+newmtl s03_bl72_m
+	map_Kd s03_bl72.png
+newmtl s03_6k22_m
+	map_Kd s03_6k22.png
+newmtl s03_dam3_m
+	map_Kd s03_dam3.png
+newmtl s03_fb41_m
+	map_Kd s03_fb41.png
+newmtl s03_3k11_m
+	map_Kd s03_3k11.png
+newmtl s03_mit2_m
+	map_Kd s03_mit2.png
+newmtl s03_mit3_m
+	map_Kd s03_mit3.png
+newmtl s03_dam1_m
+	map_Kd s03_dam1.png
+newmtl s03_dam2_m
+	map_Kd s03_dam2.png
+newmtl s03_6k21_m
+	map_Kd s03_6k21.png
+newmtl s3_ib02_m
+	map_Kd s3_ib02.png
+newmtl s3_ib03_m
+	map_Kd s3_ib03.png
+newmtl s03_tow3_m
+	map_Kd s03_tow3.png
+newmtl s03_tow1_m
+	map_Kd s03_tow1.png
+newmtl s03_bl74_m
+	map_Kd s03_bl74.png
+newmtl s03_sb31_m
+	map_Kd s03_sb31.png
+newmtl s03_sb32_m
+	map_Kd s03_sb32.png
+newmtl s03_sb61_m
+	map_Kd s03_sb61.png
+newmtl s03_sb62_m
+	map_Kd s03_sb62.png
+newmtl s03_sb63_m
+	map_Kd s03_sb63.png
+newmtl s03_sb64_m
+	map_Kd s03_sb64.png
+newmtl s03_yan3_m
+	map_Kd s03_yan3.png
+newmtl s03_pi11_m
+	map_Kd s03_pi11.png
+newmtl s03_pi13_m
+	map_Kd s03_pi13.png
+newmtl s03_bl44_m
+	map_Kd s03_bl44.png
+newmtl s03_bl62_m
+	map_Kd s03_bl62.png
+newmtl s03_bl63_m
+	map_Kd s03_bl63.png
+newmtl s03_bl52_m
+	map_Kd s03_bl52.png
+newmtl s03_bl54_m
+	map_Kd s03_bl54.png
+newmtl s03_bl34_m
+	map_Kd s03_bl34.png
+newmtl s03_pi18_m
+	map_Kd s03_pi18.png
+newmtl s03_pi18_m
+	map_Kd s03_pi18.png
+newmtl s03_rog1_m
+	map_Kd s03_rog1.png
+newmtl s03_yk1_m
+	map_Kd s03_yk1.png
+newmtl s03_yuk2_m
+	map_Kd s03_yuk2.png
+newmtl s03_yuk6_m
+	map_Kd s03_yuk6.png
+newmtl s03_yuk9_m
+	map_Kd s03_yuk9.png
+newmtl s03_yuk5_m
+	map_Kd s03_yuk5.png
+newmtl s03_tan2_m
+	map_Kd s03_tan2.png
+newmtl s3tk1.1_m
+	map_Kd s3tk1.1.png
+newmtl s03_tan1_m
+	map_Kd s03_tan1.png
+newmtl s03_tan3_m
+	map_Kd s03_tan3.png
+newmtl s03_tan4_m
+	map_Kd s03_tan4.png

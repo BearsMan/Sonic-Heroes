@@ -1,0 +1,1 @@
+Credit goes to me, XTheDarknessOfLightX for use of this model. I created this from scratch, so use it well. For use in model-resource.

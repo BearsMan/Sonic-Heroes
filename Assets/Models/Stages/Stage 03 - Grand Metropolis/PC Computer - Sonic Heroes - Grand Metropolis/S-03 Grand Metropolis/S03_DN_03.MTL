@@ -1,0 +1,79 @@
+#Exported by HeroesModelTool
+newmtl s03_so2_m
+	map_Kd s03_so2.png
+newmtl s03_so3_m
+	map_Kd s03_so3.png
+newmtl ps3_fb61_m
+	map_Kd ps3_fb61.png
+newmtl s03_sb41_m
+	map_Kd s03_sb41.png
+newmtl s03_sb42_m
+	map_Kd s03_sb42.png
+newmtl s03_sb43_m
+	map_Kd s03_sb43.png
+newmtl s03_fb51_m
+	map_Kd s03_fb51.png
+newmtl s03_sb52_m
+	map_Kd s03_sb52.png
+newmtl s03_sb68_m
+	map_Kd s03_sb68.png
+newmtl s03_sb69_m
+	map_Kd s03_sb69.png
+newmtl s03_yan1_m
+	map_Kd s03_yan1.png
+newmtl ps3_ib01_m
+	map_Kd ps3_ib01.png
+newmtl s03_fb71_m
+	map_Kd s03_fb71.png
+newmtl ps3_fb91_m
+	map_Kd ps3_fb91.png
+newmtl s03_sb67_m
+	map_Kd s03_sb67.png
+newmtl s03_sb15_m
+	map_Kd s03_sb15.png
+newmtl s03_fb91_m
+	map_Kd s03_fb91.png
+newmtl s03_sb13_m
+	map_Kd s03_sb13.png
+newmtl s03_yan2_m
+	map_Kd s03_yan2.png
+newmtl s03_sb70_m
+	map_Kd s03_sb70.png
+newmtl s03_sb71_m
+	map_Kd s03_sb71.png
+newmtl s03_sb72_m
+	map_Kd s03_sb72.png
+newmtl s03_sb73_m
+	map_Kd s03_sb73.png
+newmtl s03_bl33_m
+	map_Kd s03_bl33.png
+newmtl s03_yan3_m
+	map_Kd s03_yan3.png
+newmtl s03_sb11_m
+	map_Kd s03_sb11.png
+newmtl s03_sb51_m
+	map_Kd s03_sb51.png
+newmtl s03_sb66_m
+	map_Kd s03_sb66.png
+newmtl s03_sb65_m
+	map_Kd s03_sb65.png
+newmtl s03_sb22_m
+	map_Kd s03_sb22.png
+newmtl s03_sb21_m
+	map_Kd s03_sb21.png
+newmtl s03_sb23_m
+	map_Kd s03_sb23.png
+newmtl s03_kb13_m
+	map_Kd s03_kb13.png
+newmtl s03_kb11_m
+	map_Kd s03_kb11.png
+newmtl s03_kb12_m
+	map_Kd s03_kb12.png
+newmtl s03_3k12_m
+	map_Kd s03_3k12.png
+newmtl s03_yk2_m
+	map_Kd s03_yk2.png
+newmtl s03_yuk5_m
+	map_Kd s03_yuk5.png
+newmtl s03_yuk6_m
+	map_Kd s03_yuk6.png

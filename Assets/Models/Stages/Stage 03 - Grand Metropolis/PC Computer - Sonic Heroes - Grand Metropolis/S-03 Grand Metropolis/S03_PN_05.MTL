@@ -1,0 +1,5 @@
+#Exported by HeroesModelTool
+newmtl ps3_kb24_m
+	map_Kd ps3_kb24.png
+newmtl ps3_yuk1_m
+	map_Kd ps3_yuk1.png
