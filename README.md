@@ -1,38 +1,7 @@
 # Sonic-Heroes
 
 
-Main menu
 
-WikipediaThe Free Encyclopedia
-Search Wikipedia
-Search
-Create account
-Log in
-
-Personal tools
-Contents hide
-(Top)
-Gameplay
-Plot
-Development
-Reception
-Toggle Reception subsection
-Sales
-Legacy
-Notes
-References
-External links
-Sonic Heroes
-
-Article
-Talk
-Read
-Edit
-View history
-
-Tools
-This is a good article. Click here for more information.
-From Wikipedia, the free encyclopedia
 Sonic Heroes
 The North American PC cover art of Sonic Heroes. It depicts the cartoonish characters Sonic, a blue hedgehog, Tails, a yellow fox, and Knuckles, a red echidna, making victory poses. Above them, the text "SONIC HEROES" is shown; below them (from left to right) is the ESRB rating of E, the PC-DVD ROM logo, and the Sega logo.
 Developer(s)	Sonic Team USA
