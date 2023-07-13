@@ -6,8 +6,8 @@ using TMPro;
 
 public class RingRotation : MonoBehaviour
 {
-    public float startSpeed = 40;
-    public float endSpeed = 10;
+    public float startSpeed = 40f;
+    public float endSpeed = 10f;
     public int degrees = 0;
     public int rotationDegrees = 0;
     public bool justAdded;

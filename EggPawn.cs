@@ -8,7 +8,7 @@ public class EggPawn : MonoBehaviour
     private Health myHealth;
     public NavMeshAgent agent;
     private Vector3 origin;
-    private float attackTimer = 0;
+    private float attackTimer = 0f;
     public Animator anim;
     // Start is called before the first frame update
     void Start()
@@ -37,7 +37,7 @@ public class EggPawn : MonoBehaviour
         else
         {
             anim.ResetTrigger("Punch");
-            attackTimer = 0;
+            attackTimer = 0f;
             agent.SetDestination(origin);
         }
     }

@@ -7,9 +7,9 @@ public class PlayerMovement : MonoBehaviour
     [Header("Movement")]
 
     public int healthPoint = 100;
-    private float currentSpeed = 0;
-    private float maxRunSpeed = 12;
-    private float maxWalkSpeed = 7;
+    private float currentSpeed = 0f;
+    private float maxRunSpeed = 12f;
+    private float maxWalkSpeed = 7f;
     private bool running;
     private float CurrentMaxSpeed
     {
@@ -19,8 +19,8 @@ public class PlayerMovement : MonoBehaviour
             else return maxWalkSpeed;
         }
     }
-    private float acceleration = 5;
-    private float jumpHeight = 10;
+    private float acceleration = 5f;
+    private float jumpHeight = 10f;
     public bool isJumping = false;
     public bool grounded = false;
     public bool trickZone = false;

@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 public class HealthBar : MonoBehaviour
 {
-    private float timeSinceLastHit = 6;
+    private float timeSinceLastHit = 6f;
 
     public Sprite[] bars = new Sprite[3];
     public Sprite[] sleepSprite;

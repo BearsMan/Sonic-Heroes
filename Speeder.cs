@@ -5,7 +5,7 @@ using UnityEngine;
 public class Speeder : MonoBehaviour
 {
 
-    private float force = 20000;
+    private float force = 20000f;
     GameObject source;
     public AudioClip clip;
 

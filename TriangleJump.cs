@@ -35,7 +35,7 @@ public class TriangleJump : MonoBehaviour
     }
     public void OnTriggerEnter(Collider other)
     {
-        if (other.GetComponent<HomingAttack>().homingAttackUsed==true)
+        if (other.GetComponent<HomingAttack>().homingAttackUsed == true)
         {
             stick(other.gameObject);
         }

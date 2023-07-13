@@ -35,7 +35,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     }
 
     public bool isGrounded;
-    private float jumpSustainTime = 0;
+    private float jumpSustainTime = 0f;
     private bool isSurrendered = false;
 
     private float currentMaxSpeed
@@ -214,8 +214,7 @@ public class UltimatePlayerMovement : MonoBehaviour
             Vector3 velo = transform.TransformDirection(direction * 2.0f);
             transform.Rotate(transform.up, currentSpeed = 1.5f);
             Quaternion newrot = Quaternion.Euler(velo.x, velo.y, 0);
-        }
-        
+        } 
     }
     public void Turn()
     {

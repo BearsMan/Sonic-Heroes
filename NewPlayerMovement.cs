@@ -17,8 +17,8 @@ public class NewPlayerMovement : MonoBehaviour
 
     }
     public bool isSuper = false;
-    private const float maxSpeed = 8;
-    private const float maxSuperSpeed = 12;
+    private const float maxSpeed = 8f;
+    private const float maxSuperSpeed = 12f;
 
     public float CurrentMaxSpeed
     {
@@ -29,8 +29,8 @@ public class NewPlayerMovement : MonoBehaviour
         }
     }
 
-    private const float acceleration = 5;
-    private const float superAcceleration = 7;
+    private const float acceleration = 5f;
+    private const float superAcceleration = 7f;
     public float CurrentAcceleration
     {
         get
@@ -40,8 +40,8 @@ public class NewPlayerMovement : MonoBehaviour
         }
     }
 
-    private const float jumpHeight = 3;
-    public float currentJumpHeight = 3;
+    private const float jumpHeight = 3f;
+    public float currentJumpHeight = 3f;
 
     private Vector3 gravity;
 

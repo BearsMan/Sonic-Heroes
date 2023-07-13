@@ -23,7 +23,9 @@ public class HUD : MonoBehaviour
 
     public bool swap;
     public CHARACTERTYPES newType;
+
     // Start is called before the first frame update
+    [System.Obsolete]
     void Start()
     {
         GameInstance.UpdateData += UpdateRings;
@@ -42,6 +44,7 @@ public class HUD : MonoBehaviour
     }
 
     // Update is called once per frame
+    [System.Obsolete]
     void Update()
     {
         timer += Time.deltaTime;
@@ -50,6 +53,7 @@ public class HUD : MonoBehaviour
         UpdateHUD();
     }
 
+    [System.Obsolete]
     public void UpdateHUD()
     {
 
@@ -67,6 +71,7 @@ public class HUD : MonoBehaviour
         UpdateTeamBlastMeter();
     }
 
+    [System.Obsolete]
     public void UpdateTeamBlastMeter()
     {
         powerUpGauge.value = powerUpLevel;
