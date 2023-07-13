@@ -30,7 +30,6 @@ public class HUD : MonoBehaviour
     {
         GameInstance.UpdateData += UpdateRings;
         UpdateHUD();
-
     }
 
     public void Setup(TeamComposition currentTeam)
@@ -48,11 +47,8 @@ public class HUD : MonoBehaviour
     void Update()
     {
         timer += Time.deltaTime;
-
-
         UpdateHUD();
     }
-
     [System.Obsolete]
     public void UpdateHUD()
     {
@@ -70,7 +66,6 @@ public class HUD : MonoBehaviour
         UpdateRings();
         UpdateTeamBlastMeter();
     }
-
     [System.Obsolete]
     public void UpdateTeamBlastMeter()
     {
