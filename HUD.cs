@@ -30,6 +30,7 @@ public class HUD : MonoBehaviour
     {
         GameInstance.UpdateData += UpdateRings;
         UpdateHUD();
+
     }
 
     public void Setup(TeamComposition currentTeam)
@@ -47,8 +48,11 @@ public class HUD : MonoBehaviour
     void Update()
     {
         timer += Time.deltaTime;
+
+
         UpdateHUD();
     }
+
     [System.Obsolete]
     public void UpdateHUD()
     {
@@ -62,10 +66,11 @@ public class HUD : MonoBehaviour
         scoreText.text = GameInstance.scoreCount.ToString("00000000");
         livesText.text = GameInstance.livesCount.ToString("00");
 
-       
+
         UpdateRings();
         UpdateTeamBlastMeter();
     }
+
     [System.Obsolete]
     public void UpdateTeamBlastMeter()
     {
@@ -114,8 +119,8 @@ public class HUD : MonoBehaviour
             case (CHARACTERTYPES.Power):
                 SetCharacter(2);
                 break;
-        } 
-    
+        }
+
     }
     public void UpdateCharacterLevels()
     {
@@ -133,7 +138,8 @@ public class HUD : MonoBehaviour
         {
             lightsFly[counter].enabled = true;
             counter += 1;
-        } counter = 0;
+        }
+        counter = 0;
         while (counter < GameInstance.powerLevelUp)
         {
             lightsPower[counter].enabled = true;
@@ -143,13 +149,13 @@ public class HUD : MonoBehaviour
 
     public void SetCharacter(int direction)
     {
-        if (direction >  0)
+        if (direction > 0)
         {
             Character s = teamSprites[teamSprites.Count - 1];
             teamSprites.RemoveAt(teamSprites.Count - 1);
             teamSprites.Insert(0, s);
         }
-        else if(direction < 0)
+        else if (direction < 0)
         {
             Character s = teamSprites[0];
             teamSprites.RemoveAt(0);
