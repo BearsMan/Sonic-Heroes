@@ -93,7 +93,8 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         if (tutorialPlaying)
         {
-            right = Vector3.zero; forward = Vector3.zero;
+            right = Vector3.zero; 
+            forward = Vector3.zero;
         }
 
         Vector3 mov = Vector3.zero;
