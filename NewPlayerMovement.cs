@@ -62,10 +62,10 @@ public class NewPlayerMovement : MonoBehaviour
     public float currentSpeed;
     public float maxRunSpeed;
     public float maxWalkSpeed;
-    public GameObject Leftpos;
-    public GameObject Rightpos;
-    public GameObject LeftTeamMember;
-    public GameObject RightTeamMember;
+    public GameObject leftPos;
+    public GameObject rightPos;
+    public GameObject leftTeamMember;
+    public GameObject rightTeamMember;
     public Rigidbody body;
     public Camera MainCamera;
 
@@ -221,8 +221,8 @@ public class NewPlayerMovement : MonoBehaviour
             velocity = mov;
 
 
-            LeftTeamMember.GetComponent<FollowerNavigation>().Jump(velocity);
-            RightTeamMember.GetComponent<FollowerNavigation>().Jump(velocity);
+            leftTeamMember.GetComponent<FollowerNavigation>().Jump(velocity);
+            rightTeamMember.GetComponent<FollowerNavigation>().Jump(velocity);
 
 
         }
