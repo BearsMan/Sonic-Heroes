@@ -56,7 +56,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     private void Awake()
     {
-        cam = Object.FindFirstObjectByType<CameraController>().transform;
+        cam = FindFirstObjectByType<CameraController>().transform;
     }
     private void Update()
     {
@@ -207,16 +207,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     }
 
-    public void SpinRotation()
-    {
-        anim.SetBool("180 Spin", false);
-        if (Input.GetKeyDown(KeyCode.B) && isGrounded)
-        {
-            Vector3 velo = transform.TransformDirection(direction * 2.0f);
-            transform.Rotate(transform.up, currentSpeed = 1.5f);
-            Quaternion newrot = Quaternion.Euler(velo.x, velo.y, 0);
-        } 
-    }
+    
     public void Turn()
     {
         transform.Rotate(transform.up, Input.GetAxis("Mouse X"));
