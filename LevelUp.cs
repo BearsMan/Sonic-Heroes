@@ -8,7 +8,7 @@ public class LevelUp : MonoBehaviour
     public GameObject levelUpParent;
     public GameObject levelUpPrefab;
     public List<AudioClip> characterSFX = new List<AudioClip>();
-    public bool levelingup;
+    public bool levelingUp;
     public float speedCoreLevelUp;
     public float powerCoreLevelUp;
     public float flyCoreLevelUp;
@@ -31,9 +31,9 @@ public class LevelUp : MonoBehaviour
     }
     public void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player") && levelingup == false)
+        if (other.CompareTag("Player") && levelingUp == false)
         {
-            levelingup = true;
+            levelingUp = true;
             GetComponent<SpriteRenderer>().enabled = false;
             GameInstance.speedLevelUp += 1;
             GameInstance.flyLevelUp += 1;
