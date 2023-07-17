@@ -45,7 +45,7 @@ public static class GameInstance
             Score = scoreCount,
             TeamUsed = currentTeam,
             ChaosEmerald = emerald,
-            Lives = livesCount,
+            lives = livesCount,
             CurrentLevel = SceneManager.GetActiveScene().name
         };
 
