@@ -4,220 +4,271 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    [Header("Movement")]
+    #region constant variables
+    public const float acceleration = 5f;
+    public const float deceleration = 3f;
+    public const float runSpeed = 20f;
+    public const float airSpeed = 15f;
+    #endregion
+    public float currentSpeed = runSpeed;
+    #region public variables
+    public GameObject leftFollower;
+    public GameObject rightFollower;
+    public GameObject sonic;
+    public GameObject superSonic;
+    public Rigidbody body;
+    public Transform cam;
+    public LayerMask groundMask;
+    public Vector3 moveForce;
+    public bool tutorialPlaying = false;
+    #endregion
 
-    public int healthPoint = 100;
-    private float currentSpeed = 0f;
-    private float maxRunSpeed = 12f;
-    private float maxWalkSpeed = 7f;
-    private bool running;
-    private float CurrentMaxSpeed
+    #region private variables
+    public GameObject currentCharacter;
+    public bool useGravity;
+    private Quaternion cameraWorldFoward
     {
         get
         {
-            if (running) return maxRunSpeed;
-            else return maxWalkSpeed;
+            return Quaternion.LookRotation(cam.forward, transform.up);
         }
     }
-    private float acceleration = 5f;
-    private float jumpHeight = 10f;
-    public bool isJumping = false;
-    public bool grounded = false;
-    public bool trickZone = false;
-    public Vector3 spawnpoint;
-    private Vector3 velocity = new Vector3();
-    public Vector2 movement = new Vector2();
-    public GameObject HUDobject;
-    public GameObject Leftpos;
-    public GameObject Rightpos;
 
-    [Header("Utility")]
-    public Rigidbody body;
-    public LayerMask groundMask;
-    public Transform eyes;
-    public Transform characterbody;
+    public bool isGrounded;
+    private float jumpSustainTime = 0f;
+    private bool isSurrendered = false;
 
-    // Start is called before the first frame update
-    void Start()
+    private float currentMaxSpeed
     {
-        Debug.Log("GameObject");
-        body = GetComponent<Rigidbody>();
+        get
+        {
+            return isGrounded ? currentSpeed : airSpeed;
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    public static bool Controllable { get; internal set; }
+    public bool TrickZone { get; internal set; }
+    public object LeftTeamMember { get; internal set; }
+    public object RightTeamMember { get; internal set; }
+    public object TeamSetup { get; private set; }
+    #endregion
+
+
+    private void Awake()
     {
-        if (Input.GetKeyDown("v"))
+        cam = FindFirstObjectByType<CameraController>().transform;
+    }
+    private void Update()
+    {
+        isGrounded = Physics.CheckSphere(transform.position + transform.up * 0.1f, 0.49f, groundMask);
+        if (tutorialPlaying) return;
+
+        if (anim != null)
         {
-            DebugkillSwitch();
+            anim.SetBool("InAir", !isGrounded);
         }
-
-        if (!surrendered) //If surrended control disable inputs
+        if (isGrounded == true)
         {
-            movement.x = Input.GetAxis("Horizontal");
-            movement.y = Input.GetAxis("Vertical");
-
-
-
+            leftFollower.GetComponent<FollowerNavigation>().agent.enabled = true;
+            rightFollower.GetComponent<FollowerNavigation>().agent.enabled = true;
         }
+        //RotateToGround();
+    }
 
-
-        running = Input.GetKey(KeyCode.LeftShift);
-
-
-
-
-        if (Input.GetKeyDown(KeyCode.Space) && grounded)
-
-        {
-            isJumping = true;
-
-        }
-        if (currentSpeed > CurrentMaxSpeed)
-        {
-            currentSpeed = CurrentMaxSpeed;
-        }
-
-        if (surrendered) //If surrended count down timer and restore control when set to 0
-        {
-            surrenderDuration -= Time.deltaTime;
-            if (surrenderDuration <= 0) surrendered = false;
-        }
-
-        if (trickZone)
-        {
-            RaycastHit groundHit;
-            if (Physics.Raycast(transform.position, -transform.up, out groundHit, 5))
-            {
-
-                Vector3 hitAngle = groundHit.normal;
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(Vector3.Cross(hitAngle, -transform.right)), 360 * Time.deltaTime);
-
-            }
-            else
-            {
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, new Quaternion(0, transform.rotation.y, 0, transform.rotation.w), 360 * Time.deltaTime);
-            }
-        }
-        else
-        {
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, new Quaternion(0, transform.rotation.y, 0, transform.rotation.w), 360 * Time.deltaTime);
-        }
-
+    private void FixedUpdate()
+    {
+        Move();
+    }
+    private Animator anim;
+    public void SetupAnimation()
+    {
+        anim = GetComponentInChildren<Animator>();
     }
 
 
-    void FixedUpdate()
+    public void OldMove()
     {
+        Vector3 right = Vector3.Cross(transform.up, cam.forward);
+        Vector3 forward = Vector3.Cross(right, transform.up);
 
-        MovePlayer(movement.x, movement.y);
-
-    }
-    void MovePlayer(float moveRight, float moveForward)
-    {
-        grounded = Physics.CheckSphere(transform.position + (-transform.up * 0.55f), 0.48f, groundMask);
-        Vector3 moveDir = transform.forward * moveForward + transform.right * moveRight;
-        if (moveDir.sqrMagnitude > 0)
+        if (tutorialPlaying)
         {
-            currentSpeed += acceleration * Time.fixedDeltaTime;
-        }
-        else
-        {
-            currentSpeed -= acceleration * Time.fixedDeltaTime * 1.2f;
+            right = Vector3.zero;
+            forward = Vector3.zero;
         }
 
-        currentSpeed = Mathf.Clamp(currentSpeed, 0, CurrentMaxSpeed);
+        Vector3 mov = Vector3.zero;
 
-        moveDir *= currentSpeed;
 
-        if (isJumping)
+
+        if (!isSurrendered)
         {
-
-            velocity = Mathf.Sqrt(jumpHeight * -2 * Physics.gravity.y) * transform.up;
+            mov = Input.GetAxis("Vertical") * forward + Input.GetAxis("Horizontal") * right;
+            Jump();
+            Turn();
         }
 
-        if (!grounded)
-        {
-            Leftpos.GetComponent<FollowerNavigation>().Jump(velocity);
-            Rightpos.GetComponent<FollowerNavigation>().Jump(velocity);
 
-        }
-
-        velocity += Physics.gravity.y * Time.fixedDeltaTime * transform.up;
-
-        if (!grounded || velocity.y > 0)
-        {
-            body.velocity = velocity + moveDir * Time.fixedDeltaTime;
-        }
-        else
-        {
-            body.velocity = moveDir;
-        }
-
-        velocity = body.velocity;
-
-        Vector3 velocityXZ = velocity;
+        Vector3 velocityXZ = body.velocity;
         velocityXZ.y = 0;
-        if (velocityXZ.sqrMagnitude > 0.3f)
-            characterbody.rotation = Quaternion.LookRotation(velocityXZ);
+        direction = mov * currentSpeed;
+        if (isGrounded)
+        {
+            body.useGravity = false;
+            //body.velocity = mov * runSpeed;
+            body.MovePosition(transform.position + (mov * currentSpeed * Time.fixedDeltaTime));
+        }
+        else
+        {
+            body.useGravity = true;
+            //body.AddForce(Vector3.down * 90);
+            body.AddForce(mov * 50);
 
-        if (isJumping)
+            if (velocityXZ.magnitude > currentSpeed)
+            {
+                velocityXZ = velocityXZ.normalized * currentSpeed;
+                velocityXZ.y = body.velocity.y;
+                body.velocity = velocityXZ;
+            }
+        }
+        if (anim != null)
+        {
+            anim.SetFloat("Speed", velocityXZ.magnitude);
+        }
+
+    }
+
+    public void Move()
+    {
+        Vector3 right = Vector3.Cross(transform.up, cam.forward);
+        Vector3 forward = Vector3.Cross(right, transform.up);
+
+
+        if (tutorialPlaying)
+        {
+            right = Vector3.zero;
+            forward = Vector3.zero;
+        }
+
+        Vector3 mov = Vector3.zero;
+        if (!isSurrendered)
+        {
+            mov = Input.GetAxis("Vertical") * forward + Input.GetAxis("Horizontal") * right;
+            Jump();
+            Turn();
+        }
+        if (isGrounded)
+        {
+            GroundMovement(mov);
+        }
+        else
+        {
+            AirMovement(mov);
+        }
+
+    }
+
+    private void GroundMovement(Vector3 mov)
+    {
+        maxAirSpeed = currentSpeed;
+        direction = mov * currentSpeed;
+        if (direction.magnitude > currentSpeed)
+        {
+            direction = direction.normalized * currentSpeed;
+        }
+
+        body.MovePosition(transform.position + transform.TransformDirection(direction) * Time.fixedDeltaTime);
+    }
+    private float maxAirSpeed;
+    private float airControl = 20f;
+    private void AirMovement(Vector3 mov)
+    {
+        body.AddForce(transform.TransformDirection(mov * airControl));
+        Vector3 veloXZ = body.velocity;
+        veloXZ.y = 0;
+        if (veloXZ.magnitude > maxAirSpeed)
+        {
+            veloXZ = veloXZ.normalized * maxAirSpeed;
+            veloXZ.y = body.velocity.y;
+            body.velocity = veloXZ;
+        }
+    }
+    private float jumpHeight = 6f;
+    private Vector3 direction;
+
+    public void Jump()
+    {
+        if (Input.GetKey(KeyCode.Space) && isGrounded)
+        {
+            Vector3 velo = transform.TransformDirection(direction * 0.8f);
+            velo.y = Mathf.Sqrt(jumpHeight * -2 * Physics.gravity.y);
+            body.velocity = velo;
+        }
+
+
+    }
+
+
+    public void Turn()
+    {
+        transform.Rotate(transform.up, Input.GetAxis("Mouse X"));
+    }
+    public void RotateToGround()
+    {
+        if (!isGrounded)
+        {
+            Vector3 cross = Vector3.Cross(transform.right, Vector3.up);
+            Quaternion newrot = Quaternion.LookRotation(cross);
+            transform.rotation = Quaternion.LerpUnclamped(transform.rotation, newrot, Time.deltaTime * 100);
+            return;
+        }
+
+        RaycastHit hit;
+        Vector3 origin = transform.position + transform.up * 0.5f;
+        if (Physics.Raycast(origin, -transform.up, out hit, groundMask))//initial raycast to see if the ground is close enough to snap to
         {
 
-            isJumping = false;
+            Vector3 newup = hit.normal;//angle of the initial hit
+            float angle = Vector3.Angle(transform.up, newup);
+
+            if (angle > 30)
+            {
+                return;
+            }
+
+
+
+            Vector3 cross = Vector3.Cross(transform.right, newup);//new foward direction
+
+
+            Quaternion newrot = Quaternion.LookRotation(cross);
+
+            transform.rotation = Quaternion.LerpUnclamped(transform.rotation, newrot, Time.deltaTime * 100f);
+
+            //transform.rotation = Quaternion.FromToRotation(transform.up, angle);
+
+            //transform.position = hit.point + transform.up * 0.01f;
+
 
         }
     }
 
+    public void SurrenderControl(Vector2 up, float newSurrenderTime)
+    {
+        StopCoroutine(Surrender(0));
+        StartCoroutine(Surrender(newSurrenderTime));
+    }
 
+    private IEnumerator Surrender(float time)
+    {
+        isSurrendered = true;
+        yield return new WaitForSeconds(time);
+        isSurrendered = false;
+    }
 
     public void Launch(Vector3 direction, float height)
     {
-        isJumping = false;
-        velocity = Mathf.Sqrt(height * -2 * Physics.gravity.y) * direction;
-        body.velocity = velocity;
+        GetComponent<Rigidbody>().velocity = Mathf.Sqrt(height * -2 * Physics.gravity.y) * direction;
 
     }
-
-
-    public void Boost(float newSpeed, Vector3 newDirection)
-    {
-        currentSpeed = newSpeed; //Force current speed to launch speed
-        maxRunSpeed = newSpeed; //Allow max speed to become launch speed
-        transform.rotation = Quaternion.LookRotation(newDirection); //Force foward rotation to launch direction
-    }
-    private float surrenderDuration;
-    private bool surrendered = false;
-
-    /// <summary>
-    /// Remove player control for specified time
-    /// Force player direction for duration
-    /// Use vector2.up for forward movement
-    /// </summary>
-    /// <param name="direction"></param>
-    /// <param name="duration"></param>
-    public void SurrenderControl(Vector2 direction, float duration)
-    {
-        movement = direction; //Direction of movement
-
-        surrenderDuration = duration;
-
-        surrendered = true;
-    }
-
-    public void RestoreControl()
-    {
-        surrendered = false;
-    }
-
-    void DebugkillSwitch()
-    {
-        RespawnPlayer();
-    }
-
-    public void RespawnPlayer()
-    {
-        transform.position = spawnpoint;
-    }
-
 }
