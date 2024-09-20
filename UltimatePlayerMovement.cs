@@ -61,7 +61,10 @@ public class UltimatePlayerMovement : MonoBehaviour
     private void Update()
     {
         isGrounded = Physics.CheckSphere(transform.position + transform.up * 0.1f, 0.49f, groundMask);
-        if (tutorialPlaying) return;
+        if (tutorialPlaying)
+        {
+            return;
+        }
 
         if (anim != null)
         {
@@ -109,7 +112,7 @@ public class UltimatePlayerMovement : MonoBehaviour
         }
 
 
-        Vector3 velocityXZ = body.velocity;
+        Vector3 velocityXZ = body.linearVelocity;
         velocityXZ.y = 0;
         direction = mov * currentSpeed;
         if (isGrounded)
@@ -127,8 +130,8 @@ public class UltimatePlayerMovement : MonoBehaviour
             if (velocityXZ.magnitude > currentSpeed)
             {
                 velocityXZ = velocityXZ.normalized * currentSpeed;
-                velocityXZ.y = body.velocity.y;
-                body.velocity = velocityXZ;
+                velocityXZ.y = body.linearVelocity.y;
+                body.linearVelocity = velocityXZ;
             }
         }
         if (anim != null)
@@ -184,13 +187,13 @@ public class UltimatePlayerMovement : MonoBehaviour
     private void AirMovement(Vector3 mov)
     {
         body.AddForce(transform.TransformDirection(mov * airControl));
-        Vector3 veloXZ = body.velocity;
+        Vector3 veloXZ = body.linearVelocity;
         veloXZ.y = 0;
         if (veloXZ.magnitude > maxAirSpeed)
         {
             veloXZ = veloXZ.normalized * maxAirSpeed;
-            veloXZ.y = body.velocity.y;
-            body.velocity = veloXZ;
+            veloXZ.y = body.linearVelocity.y;
+            body.linearVelocity = veloXZ;
         }
     }
     private float jumpHeight = 6f;
@@ -202,7 +205,7 @@ public class UltimatePlayerMovement : MonoBehaviour
         {
             Vector3 velo = transform.TransformDirection(direction * 0.8f);
             velo.y = Mathf.Sqrt(jumpHeight * -2 * Physics.gravity.y);
-            body.velocity = velo;
+            body.linearVelocity = velo;
         }
 
 
@@ -268,7 +271,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     public void Launch(Vector3 direction, float height)
     {
-        GetComponent<Rigidbody>().velocity = Mathf.Sqrt(height * -2 * Physics.gravity.y) * direction;
+        GetComponent<Rigidbody>().linearVelocity = Mathf.Sqrt(height * -2 * Physics.gravity.y) * direction;
 
     }
 }
