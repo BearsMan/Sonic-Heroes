@@ -75,7 +75,7 @@ public class UltimatePlayerMovement : MonoBehaviour
             leftFollower.GetComponent<FollowerNavigation>().agent.enabled = true;
             rightFollower.GetComponent<FollowerNavigation>().agent.enabled = true;
         }
-        //RotateToGround();
+        // RotateToGround();
     }
 
     private void FixedUpdate()
@@ -118,13 +118,13 @@ public class UltimatePlayerMovement : MonoBehaviour
         if (isGrounded)
         {
             body.useGravity = false;
-            //body.velocity = mov * runSpeed;
+            // body.velocity = mov * runSpeed;
             body.MovePosition(transform.position + (mov * currentSpeed * Time.fixedDeltaTime));
         }
         else
         {
             body.useGravity = true;
-            //body.AddForce(Vector3.down * 90);
+            // body.AddForce(Vector3.down * 90);
             body.AddForce(mov * 50);
 
             if (velocityXZ.magnitude > currentSpeed)
@@ -228,10 +228,10 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         RaycastHit hit;
         Vector3 origin = transform.position + transform.up * 0.5f;
-        if (Physics.Raycast(origin, -transform.up, out hit, groundMask))//initial raycast to see if the ground is close enough to snap to
+        if (Physics.Raycast(origin, -transform.up, out hit, groundMask)) // initial raycast to see if the ground is close enough to snap to
         {
 
-            Vector3 newup = hit.normal;//angle of the initial hit
+            Vector3 newup = hit.normal;// angle of the initial hit
             float angle = Vector3.Angle(transform.up, newup);
 
             if (angle > 30)
@@ -248,9 +248,9 @@ public class UltimatePlayerMovement : MonoBehaviour
 
             transform.rotation = Quaternion.LerpUnclamped(transform.rotation, newrot, Time.deltaTime * 100f);
 
-            //transform.rotation = Quaternion.FromToRotation(transform.up, angle);
+            // transform.rotation = Quaternion.FromToRotation(transform.up, angle);
 
-            //transform.position = hit.point + transform.up * 0.01f;
+            // transform.position = hit.point + transform.up * 0.01f;
 
 
         }
