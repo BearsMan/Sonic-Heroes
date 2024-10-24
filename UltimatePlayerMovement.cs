@@ -241,7 +241,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
             
 
-            Vector3 cross = Vector3.Cross(transform.right, newup);//new foward direction
+            Vector3 cross = Vector3.Cross(transform.right, newup);// new foward direction
 
 
             Quaternion newrot = Quaternion.LookRotation(cross);
