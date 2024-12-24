@@ -26,7 +26,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     #region private variables
     public GameObject currentCharacter;
     public bool useGravity = false;
-    private Quaternion cameraWorldFoward
+    private Quaternion CameraWorldFoward
     {
         get
         {
