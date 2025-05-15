@@ -223,7 +223,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         RaycastHit hit;
         Vector3 origin = transform.position + transform.up * 0.5f;
-        if (Physics.Raycast(origin, -transform.up, out hit, groundMask)) //initial raycast to see if the ground is close enough to snap to
+        if (Physics.Raycast(origin, -transform.up, out hit, groundMask)) // initial raycast to see if the ground is close enough to snap to
         {
 
             Vector3 newup = hit.normal;//angle of the initial hit
@@ -236,7 +236,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
             
 
-            Vector3 cross = Vector3.Cross(transform.right, newup);// new foward direction
+            Vector3 cross = Vector3.Cross(transform.right, newup); // new foward direction
 
 
             Quaternion newrot = Quaternion.LookRotation(cross);
