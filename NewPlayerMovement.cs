@@ -62,10 +62,10 @@ public class NewPlayerMovement : MonoBehaviour
     public float currentSpeed;
     public float maxRunSpeed;
     public float maxWalkSpeed;
-    public GameObject leftPos;
-    public GameObject rightPos;
-    public GameObject leftTeamMember;
-    public GameObject rightTeamMember;
+    public GameObject Leftpos;
+    public GameObject Rightpos;
+    public GameObject LeftTeamMember;
+    public GameObject RightTeamMember;
     public Rigidbody body;
     public Camera MainCamera;
 
@@ -100,7 +100,7 @@ public class NewPlayerMovement : MonoBehaviour
         {
 
 
-            if (surrendered) //If surrended count down timer and restore control when set to 0
+            if (surrendered) // If surrended count down timer and restore control when set to 0
             {
                 surrenderDuration -= Time.deltaTime;
                 if (surrenderDuration <= 0) surrendered = false;
@@ -221,8 +221,8 @@ public class NewPlayerMovement : MonoBehaviour
             velocity = mov;
 
 
-            leftTeamMember.GetComponent<FollowerNavigation>().Jump(velocity);
-            rightTeamMember.GetComponent<FollowerNavigation>().Jump(velocity);
+            LeftTeamMember.GetComponent<FollowerNavigation>().Jump(velocity);
+            RightTeamMember.GetComponent<FollowerNavigation>().Jump(velocity);
 
 
         }
@@ -259,10 +259,10 @@ public class NewPlayerMovement : MonoBehaviour
     }
     public void Boost(float newSpeed, Vector3 newDirection)
     {
-        currentSpeed = newSpeed; //Force current speed to launch speed
-        maxRunSpeed = newSpeed; //Allow max speed to become launch speed
+        currentSpeed = newSpeed; // Force current speed to launch speed
+        maxRunSpeed = newSpeed; // Allow max speed to become launch speed
         controller.Move(newDirection * newSpeed);
-        transform.rotation = Quaternion.LookRotation(newDirection); //Force foward rotation to launch direction
+        transform.rotation = Quaternion.LookRotation(newDirection); // Force foward rotation to launch direction
     }
 
     public void Launch(Vector3 direction, float height)

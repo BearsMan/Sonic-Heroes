@@ -39,29 +39,28 @@ public class GameWorldManager : MonoBehaviour
     }
 }
 
-//List Of Levels
+// List Of Levels
 
-//Sea Gate
-//Seaside Hill
-//Ocean Palace
-//Egg Hawk Boss
-//Grand Metropolis
-//Power Plant
-//Casino Park
-//BINGO Highway
-//Robot Carnival
-//Rail Canyon
-//Bullet Station
-//Egg Albatross
-//Frog Forest
-//Lost Jungle
-//Hang Castle
-//Mystic Mansion
-//Egg Fleet
-//Final Fortress
-//Egg Emperor Boss
-//Metal Madness Boss
-//Metal Overlord Boss
-
+// Sea Gate
+// Seaside Hill
+// Ocean Palace
+// Egg Hawk Boss
+// Grand Metropolis
+// Power Plant
+// Casino Park
+// BINGO Highway
+// Robot Carnival
+// Rail Canyon
+// Bullet Station
+// Egg Albatross
+// Frog Forest
+// Lost Jungle
+// Hang Castle
+// Mystic Mansion
+// Egg Fleet
+// Final Fortress
+// Egg Emperor Boss
+// Metal Madness Boss
+// Metal Overlord Boss
 
 //After all levels are complete movies, music, BGM's etc will be unlocked
