@@ -34,7 +34,7 @@ public class UltimatePlayerMovement : MonoBehaviour
         }
     }
 
-    public bool isGrounded;
+    public bool isGrounded = false;
     private float jumpSustainTime = 0f;
     private bool isSurrendered = false;
 
@@ -179,7 +179,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         body.MovePosition(transform.position + transform.TransformDirection(direction) * Time.fixedDeltaTime);
     }
-    private float maxAirSpeed;
+    private float maxAirSpeed = 20f;
     private float airControl = 20f;
     private void AirMovement(Vector3 mov)
     {
