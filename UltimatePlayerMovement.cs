@@ -38,7 +38,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     private float jumpSustainTime = 0f;
     private bool isSurrendered = false;
 
-    private float currentMaxSpeed
+    private float CurrentMaxSpeed
     {
         get
         {
