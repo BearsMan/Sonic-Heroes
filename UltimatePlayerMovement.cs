@@ -10,8 +10,8 @@ public class UltimatePlayerMovement : MonoBehaviour
     public const float runSpeed = 20f;
     public const float airSpeed = 15f;
     #endregion
-    public float currentSpeed = runSpeed;
     #region public variables
+    public float currentSpeed = runSpeed;
     public GameObject leftFollower;
     public GameObject rightFollower;
     public GameObject sonic;
