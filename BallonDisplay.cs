@@ -21,9 +21,10 @@ public class BallonDisplay : MonoBehaviour
         
     }
 
+    [System.Obsolete]
     private void OnTriggerEnter(Collider other)
     {
-        FindFirstObjectByType<PickUpObject>();
+        FindObjectOfType<PickUpObject>();
         {
             myBallonItems.Clear();
             if (myBallonDisplayPopUp != null)

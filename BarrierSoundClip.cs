@@ -7,9 +7,10 @@ public class BarrierSoundClip : PickUpObject
     public AudioSource asource;
     public AudioClip BarrierSound;
 
+    [System.Obsolete]
     private IEnumerator PickUp()
     {
-        HUD hud = FindFirstObjectByType<HUD>();
+        HUD hud = FindObjectOfType<HUD>();
         hud.AddPower(powerValue);
         GameInstance.currentRings += ringValue;
         vis.SetActive(false);
