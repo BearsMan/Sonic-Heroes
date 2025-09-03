@@ -226,7 +226,7 @@ public class UltimatePlayerMovement : MonoBehaviour
         if (Physics.Raycast(origin, -transform.up, out hit, groundMask)) // initial raycast to see if the ground is close enough to snap to
         {
 
-            Vector3 newup = hit.normal;//angle of the initial hit
+            Vector3 newup = hit.normal; // angle of the initial hit
             float angle = Vector3.Angle(transform.up, newup);
 
             if (angle > 30)
