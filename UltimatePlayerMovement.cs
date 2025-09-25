@@ -4,12 +4,15 @@ using UnityEngine;
 
 public class UltimatePlayerMovement : MonoBehaviour
 {
+    // This script handles player movement, jumping, and rotation based on camera orientation.
     #region constant variables
     public const float acceleration = 5f;
     public const float deceleration = 3f;
     public const float runSpeed = 20f;
     public const float airSpeed = 15f;
     #endregion
+
+    // Movement settings
     #region public variables
     public float currentSpeed = runSpeed;
     public GameObject leftFollower;
@@ -23,6 +26,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     public bool tutorialPlaying = false;
     #endregion
 
+    // State variables
     public GameObject currentCharacter;
     public bool useGravity = false;
     #region private variables
