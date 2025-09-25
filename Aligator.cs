@@ -18,13 +18,13 @@ public class Aligator : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Rigidbody body = GetComponent<Rigidbody>();
+        
     }
 
     // Update is called once per frame
     void Update()
     {
-        GetComponent<Rigidbody>().velocity = Vector3.zero;
+        GetComponent<Rigidbody>().linearVelocity = Vector3.zero;
         GetComponent<UltimatePlayerMovement>().isGrounded = false;
         GetComponent<Animator>().enabled = isBiting;
 
