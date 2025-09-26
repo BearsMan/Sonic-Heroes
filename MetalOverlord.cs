@@ -19,13 +19,11 @@ public class MetalOverlord : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Rigidbody body = GetComponent<Rigidbody>();
         origin = transform.position;
         player = GameObject.FindWithTag("Player").transform;
         myHealth = GetComponent<Health>();
         anim.Play("Flying");
         anim.SetBool("Flying", true);
-
     }
 
     // Update is called once per frame
