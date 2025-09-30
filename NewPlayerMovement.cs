@@ -4,8 +4,11 @@ using UnityEngine;
 
 public class NewPlayerMovement : MonoBehaviour
 {
+    // This script handles player movement, jumping, and rotation based on camera orientation.
     public CharacterController controller;
     public GameObject teamSetup;
+
+    // State machine for player actions
     public enum STATE
     {
         NORMAL,

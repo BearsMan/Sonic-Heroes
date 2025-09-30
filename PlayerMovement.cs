@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    // This script handles player movement, jumping, and rotation based on camera orientation.
     [Header("Movement")]
 
     public int healthPoint = 100;
@@ -78,7 +79,7 @@ public class PlayerMovement : MonoBehaviour
             currentSpeed = CurrentMaxSpeed;
         }
 
-        if (surrendered) //If surrended count down timer and restore control when set to 0
+        if (surrendered) // If surrended count down timer and restore control when set to 0
         {
             surrenderDuration -= Time.deltaTime;
             if (surrenderDuration <= 0) surrendered = false;
@@ -147,14 +148,14 @@ public class PlayerMovement : MonoBehaviour
 
         if (!grounded || velocity.y > 0)
         {
-            body.velocity = velocity + moveDir * Time.fixedDeltaTime;
+            body.linearVelocity = velocity + moveDir * Time.fixedDeltaTime;
         }
         else
         {
-            body.velocity = moveDir;
+            body.linearVelocity = moveDir;
         }
 
-        velocity = body.velocity;
+        velocity = body.linearVelocity;
 
         Vector3 velocityXZ = velocity;
         velocityXZ.y = 0;
@@ -175,15 +176,15 @@ public class PlayerMovement : MonoBehaviour
     {
         isJumping = false;
         velocity = Mathf.Sqrt(height * -2 * Physics.gravity.y) * direction;
-        body.velocity = velocity;
+        body.linearVelocity = velocity;
 
     }
 
 
     public void Boost(float newSpeed, Vector3 newDirection)
     {
-        currentSpeed = newSpeed; //Force current speed to launch speed
-        maxRunSpeed = newSpeed; //Allow max speed to become launch speed
+        currentSpeed = newSpeed; // Force current speed to launch speed
+        maxRunSpeed = newSpeed; // Allow max speed to become launch speed
         transform.rotation = Quaternion.LookRotation(newDirection); //Force foward rotation to launch direction
     }
     private float surrenderDuration;
