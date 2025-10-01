@@ -72,7 +72,7 @@ public class NewPlayerMovement : MonoBehaviour
     public Rigidbody body;
     public Camera MainCamera;
 
-
+    // Helper function to gradually reduce a number to zero
     public float ToZero(float initialNumber, float deltavalue)
     {
         if (initialNumber > 0)
@@ -129,7 +129,7 @@ public class NewPlayerMovement : MonoBehaviour
 
         teamSetup.GetComponent<TeamSetup>().SwapForSuper();
     }
-
+    // LateUpdate is called after all Update functions have been called
     private void LateUpdate()
     {
         transform.rotation = Quaternion.LookRotation(Camera.main.transform.forward, Vector3.up);
@@ -158,7 +158,7 @@ public class NewPlayerMovement : MonoBehaviour
 
         }
     }
-
+    // Handle player inputs for movement and jumping
     public void Inputs()
     {
         Vector2 mov = Vector2.zero;
@@ -197,7 +197,7 @@ public class NewPlayerMovement : MonoBehaviour
 
         }
 
-
+        // Clamp movement to max speed
         movement.x = Mathf.Clamp(movement.x, -CurrentMaxSpeed, CurrentMaxSpeed);
         movement.y = Mathf.Clamp(movement.y, -CurrentMaxSpeed, CurrentMaxSpeed);
 
@@ -206,7 +206,7 @@ public class NewPlayerMovement : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded) isJumping = true;
     }
-    
+    // Handle player movement and jumping logic
     public void Movement()
     {
         isGrounded = Physics.CheckSphere(transform.position + transform.up * 0.45f, 0.6f, groundMask);
@@ -250,7 +250,7 @@ public class NewPlayerMovement : MonoBehaviour
 
     }
 
-
+    // Rotate the player to face the direction of movement
     public void RotateLeader(Vector3 dir)
     {
         if (dir != Vector3.zero)
@@ -260,6 +260,7 @@ public class NewPlayerMovement : MonoBehaviour
 
         }
     }
+    // Boost the player's speed and direction temporarily
     public void Boost(float newSpeed, Vector3 newDirection)
     {
         currentSpeed = newSpeed; // Force current speed to launch speed
@@ -267,7 +268,7 @@ public class NewPlayerMovement : MonoBehaviour
         controller.Move(newDirection * newSpeed);
         transform.rotation = Quaternion.LookRotation(newDirection); // Force foward rotation to launch direction
     }
-
+    // Launch the player in a specified direction and height
     public void Launch(Vector3 direction, float height)
     {
         velocity = Mathf.Sqrt(height * -2 * Physics.gravity.y) * direction;

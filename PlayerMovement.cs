@@ -57,9 +57,6 @@ public class PlayerMovement : MonoBehaviour
         {
             movement.x = Input.GetAxis("Horizontal");
             movement.y = Input.GetAxis("Vertical");
-
-
-
         }
 
 
@@ -90,10 +87,8 @@ public class PlayerMovement : MonoBehaviour
             RaycastHit groundHit;
             if (Physics.Raycast(transform.position, -transform.up, out groundHit, 5))
             {
-
                 Vector3 hitAngle = groundHit.normal;
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(Vector3.Cross(hitAngle, -transform.right)), 360 * Time.deltaTime);
-
             }
             else
             {
@@ -164,9 +159,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (isJumping)
         {
-
             isJumping = false;
-
         }
     }
 
@@ -199,7 +192,7 @@ public class PlayerMovement : MonoBehaviour
     /// <param name="duration"></param>
     public void SurrenderControl(Vector2 direction, float duration)
     {
-        movement = direction; //Direction of movement
+        movement = direction; // Direction of movement
 
         surrenderDuration = duration;
 

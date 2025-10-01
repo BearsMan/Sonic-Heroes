@@ -55,10 +55,14 @@ public class UltimatePlayerMovement : MonoBehaviour
     public object LeftTeamMember { get; internal set; }
     public object RightTeamMember { get; internal set; }
     public object TeamSetup { get; private set; }
+
+    // Start is called before the first frame update
     private void Awake()
     {
         cam = Object.FindFirstObjectByType<CameraController>().transform;
     }
+
+    // Update is called once per frame
     private void Update()
     {
         isGrounded = Physics.CheckSphere(transform.position + transform.up * 0.1f, 0.49f, groundMask);
@@ -78,18 +82,20 @@ public class UltimatePlayerMovement : MonoBehaviour
         }
         // RotateToGround();
     }
-
+    // FixedUpdate is called at a fixed interval and is independent of frame rate
     private void FixedUpdate()
     {
         Move();
     }
     private Animator anim;
+
+    // Setup the animator component
     public void SetupAnimation()
     {
         anim = GetComponentInChildren<Animator>();
     }
 
-
+    // Old movement system, kept for reference
     public void OldMove()
     {
         Vector3 right = Vector3.Cross(transform.up, cam.forward);
@@ -142,12 +148,13 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     }
 
+    // Old movement system, kept for reference
     public void Move()
     {
         Vector3 right = Vector3.Cross(transform.up, cam.forward);
         Vector3 forward = Vector3.Cross(right, transform.up);
 
-
+        // Disable movement during tutorials
         if (tutorialPlaying)
         {
             right = Vector3.zero; 
@@ -172,6 +179,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     }
 
+    // Ground movement logic
     private void GroundMovement(Vector3 mov)
     {
         maxAirSpeed = currentSpeed;
@@ -185,6 +193,8 @@ public class UltimatePlayerMovement : MonoBehaviour
     }
     private float maxAirSpeed = 20f;
     private float airControl = 20f;
+
+    // Air movement logic
     private void AirMovement(Vector3 mov)
     {
         body.AddForce(transform.TransformDirection(mov * airControl));
@@ -200,6 +210,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     private float jumpHeight = 6f;
     private Vector3 direction;
 
+    // Jump logic
     public void Jump()
     {
         if (Input.GetKey(KeyCode.Space) && isGrounded)
@@ -211,10 +222,14 @@ public class UltimatePlayerMovement : MonoBehaviour
 
 
     }
+
+    // Turning logic
     public void Turn()
     {
         transform.Rotate(transform.up, Input.GetAxis("Mouse X"));
     }
+
+    // Rotate the player to align with the ground normal
     public void RotateToGround()
     {
         if (!isGrounded)
@@ -224,7 +239,7 @@ public class UltimatePlayerMovement : MonoBehaviour
             transform.rotation = Quaternion.LerpUnclamped(transform.rotation, newrot, Time.deltaTime * 100);
             return;
         }
-
+        // if not grounded, rotate to upright position
         RaycastHit hit;
         Vector3 origin = transform.position + transform.up * 0.5f;
         if (Physics.Raycast(origin, -transform.up, out hit, groundMask)) // initial raycast to see if the ground is close enough to snap to
@@ -233,6 +248,7 @@ public class UltimatePlayerMovement : MonoBehaviour
             Vector3 newup = hit.normal; // angle of the initial hit
             float angle = Vector3.Angle(transform.up, newup);
 
+            // limit the angle to prevent extreme rotations
             if (angle > 30)
             {
                 return;
@@ -254,13 +270,14 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         }
     }
-
+    // Temporarily disable player control
     public void SurrenderControl(Vector2 up, float newSurrenderTime)
     {
         StopCoroutine(Surrender(0));
         StartCoroutine(Surrender(newSurrenderTime));
     }
 
+    // Coroutine to handle surrendering control
     private IEnumerator Surrender(float time)
     {
         isSurrendered = true;
@@ -268,6 +285,7 @@ public class UltimatePlayerMovement : MonoBehaviour
         isSurrendered = false;
     }
 
+    // Launch the player in a specific direction with a given height
     public void Launch(Vector3 direction, float height)
     {
         GetComponent<Rigidbody>().linearVelocity = Mathf.Sqrt(height * -2 * Physics.gravity.y) * direction;
