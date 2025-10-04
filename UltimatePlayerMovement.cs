@@ -30,6 +30,8 @@ public class UltimatePlayerMovement : MonoBehaviour
     public GameObject currentCharacter;
     public bool useGravity = false;
     #region private variables
+    
+    // Cached camera forward direction
     private Quaternion CameraWorldFoward
     {
         get
@@ -37,11 +39,12 @@ public class UltimatePlayerMovement : MonoBehaviour
             return Quaternion.LookRotation(cam.forward, transform.up);
         }
     }
-
+    // Grounded state
     public bool isGrounded = false;
     private float jumpSustainTime = 0f;
     private bool isSurrendered = false;
 
+    // Current maximum speed based on grounded state
     private float CurrentMaxSpeed
     {
         get
@@ -50,6 +53,7 @@ public class UltimatePlayerMovement : MonoBehaviour
         }
     }
 
+    // Static and instance properties for control and team setup
     public static bool Controllable { get; internal set; }
     public bool TrickZone { get; internal set; }
     public object LeftTeamMember { get; internal set; }
@@ -65,11 +69,14 @@ public class UltimatePlayerMovement : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
+        // Check if the player is grounded
         isGrounded = Physics.CheckSphere(transform.position + transform.up * 0.1f, 0.49f, groundMask);
         if (tutorialPlaying)
         {
             return;
         }
+
+        // Update animator
 
         if (anim != null)
         {
@@ -87,6 +94,8 @@ public class UltimatePlayerMovement : MonoBehaviour
     {
         Move();
     }
+
+    // Animator component for handling animations
     private Animator anim;
 
     // Setup the animator component
@@ -101,24 +110,27 @@ public class UltimatePlayerMovement : MonoBehaviour
         Vector3 right = Vector3.Cross(transform.up, cam.forward);
         Vector3 forward = Vector3.Cross(right, transform.up);
 
+        // Disable movement during tutorials
         if (tutorialPlaying)
         {
             right = Vector3.zero; 
             forward = Vector3.zero;
         }
 
+        // Calculate movement vector based on input
         Vector3 mov = Vector3.zero;
 
 
-
+        // Disable movement during tutorials
         if (!isSurrendered)
         {
+            // Calculate movement vector based on input
             mov = Input.GetAxis("Vertical") * forward + Input.GetAxis("Horizontal") * right;
             Jump();
             Turn();
         }
 
-
+        // Apply movement based on grounded state
         Vector3 velocityXZ = body.linearVelocity;
         velocityXZ.y = 0;
         direction = mov * currentSpeed;
@@ -160,7 +172,7 @@ public class UltimatePlayerMovement : MonoBehaviour
             right = Vector3.zero; 
             forward = Vector3.zero;
         }
-
+        // Calculate movement vector based on input
         Vector3 mov = Vector3.zero;
         if (!isSurrendered)
         {
@@ -219,8 +231,6 @@ public class UltimatePlayerMovement : MonoBehaviour
             velo.y = Mathf.Sqrt(jumpHeight * -2 * Physics.gravity.y);
             body.linearVelocity = velo;
         }
-
-
     }
 
     // Turning logic
@@ -239,12 +249,13 @@ public class UltimatePlayerMovement : MonoBehaviour
             transform.rotation = Quaternion.LerpUnclamped(transform.rotation, newrot, Time.deltaTime * 100);
             return;
         }
+
         // if not grounded, rotate to upright position
         RaycastHit hit;
         Vector3 origin = transform.position + transform.up * 0.5f;
         if (Physics.Raycast(origin, -transform.up, out hit, groundMask)) // initial raycast to see if the ground is close enough to snap to
         {
-
+            // Get the normal of the ground surface
             Vector3 newup = hit.normal; // angle of the initial hit
             float angle = Vector3.Angle(transform.up, newup);
 
@@ -254,13 +265,14 @@ public class UltimatePlayerMovement : MonoBehaviour
                 return;
             }
 
-            
 
+            // Calculate the new forward direction based on the ground normal
             Vector3 cross = Vector3.Cross(transform.right, newup); // new foward direction
 
-
+            // Smoothly rotate towards the new orientation
             Quaternion newrot = Quaternion.LookRotation(cross);
 
+            // Apply the rotation
             transform.rotation = Quaternion.LerpUnclamped(transform.rotation, newrot, Time.deltaTime * 100f);
 
             // transform.rotation = Quaternion.FromToRotation(transform.up, angle);
