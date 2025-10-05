@@ -63,6 +63,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     // Start is called before the first frame update
     private void Awake()
     {
+        // Initialize references
         cam = Object.FindFirstObjectByType<CameraController>().transform;
     }
 
@@ -71,6 +72,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     {
         // Check if the player is grounded
         isGrounded = Physics.CheckSphere(transform.position + transform.up * 0.1f, 0.49f, groundMask);
+        // Disable movement during tutorials
         if (tutorialPlaying)
         {
             return;
@@ -107,6 +109,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     // Old movement system, kept for reference
     public void OldMove()
     {
+        // Get camera-relative directions
         Vector3 right = Vector3.Cross(transform.up, cam.forward);
         Vector3 forward = Vector3.Cross(right, transform.up);
 
@@ -134,6 +137,8 @@ public class UltimatePlayerMovement : MonoBehaviour
         Vector3 velocityXZ = body.linearVelocity;
         velocityXZ.y = 0;
         direction = mov * currentSpeed;
+
+        // Limit the movement direction to the current speed
         if (isGrounded)
         {
             body.useGravity = false;
@@ -146,6 +151,7 @@ public class UltimatePlayerMovement : MonoBehaviour
             // body.AddForce(Vector3.down * 90);
             body.AddForce(mov * 50);
 
+            // Limit air speed
             if (velocityXZ.magnitude > currentSpeed)
             {
                 velocityXZ = velocityXZ.normalized * currentSpeed;
@@ -153,6 +159,7 @@ public class UltimatePlayerMovement : MonoBehaviour
                 body.linearVelocity = velocityXZ;
             }
         }
+        // Update animator with movement speed
         if (anim != null)
         {
             anim.SetFloat("Speed", velocityXZ.magnitude);
@@ -176,10 +183,13 @@ public class UltimatePlayerMovement : MonoBehaviour
         Vector3 mov = Vector3.zero;
         if (!isSurrendered)
         {
+            // Calculate movement vector based on input
             mov = Input.GetAxis("Vertical") * forward + Input.GetAxis("Horizontal") * right;
             Jump();
             Turn();
         }
+
+        // Apply movement based on grounded state
         if (isGrounded)
         {
             GroundMovement(mov);
@@ -219,6 +229,8 @@ public class UltimatePlayerMovement : MonoBehaviour
             body.linearVelocity = veloXZ;
         }
     }
+
+    // Jump settings
     private float jumpHeight = 6f;
     private Vector3 direction;
 
