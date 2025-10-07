@@ -213,6 +213,8 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         body.MovePosition(transform.position + transform.TransformDirection(direction) * Time.fixedDeltaTime);
     }
+
+    // Air movement settings
     private float maxAirSpeed = 20f;
     private float airControl = 20f;
 
