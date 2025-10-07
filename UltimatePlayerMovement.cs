@@ -4,7 +4,12 @@ using UnityEngine;
 
 public class UltimatePlayerMovement : MonoBehaviour
 {
-    // This script handles player movement, jumping, and rotation based on camera orientation.
+    /*This script handles player movement, jumping, and rotation based on camera orientation.
+     It includes settings for acceleration, speed, and air control.
+     It also manages grounded state and integrates with an animator for character animations.
+     The script allows for temporary disabling of player control and launching the player in a specific direction.
+     Movement constants
+    */
     #region constant variables
     public const float acceleration = 5f;
     public const float deceleration = 3f;
