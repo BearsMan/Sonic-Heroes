@@ -39,7 +39,8 @@ public class GameWorldManager : MonoBehaviour
     }
 }
 
-// List Of Levels
+/*
+List Of Levels
 
 // Sea Gate
 // Seaside Hill
@@ -63,4 +64,5 @@ public class GameWorldManager : MonoBehaviour
 // Metal Madness Boss
 // Metal Overlord Boss
 
-//After all levels are complete movies, music, BGM's etc will be unlocked
+// After all levels are complete movies, music, BGM's etc will be unlocked
+*/
