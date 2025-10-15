@@ -6,10 +6,10 @@ public class UltimatePlayerMovement : MonoBehaviour
 {
     /*
     This script handles player movement, jumping, and rotation based on camera orientation.
-     It includes settings for acceleration, speed, and air control.
-     It also manages grounded state and integrates with an animator for character animations.
-     The script allows for temporary disabling of player control and launching the player in a specific direction.
-     Movement constants
+    It includes settings for acceleration, speed, and air control.
+    It also manages grounded state and integrates with an animator for character animations.
+    The script allows for temporary disabling of player control and launching the player in a specific direction.
+    Movement constants
     */
     #region constant variables
     public const float acceleration = 5f;
@@ -273,7 +273,7 @@ public class UltimatePlayerMovement : MonoBehaviour
         // if not grounded, rotate to upright position
         RaycastHit hit;
         Vector3 origin = transform.position + transform.up * 0.5f;
-        if (Physics.Raycast(origin, -transform.up, out hit, groundMask)) // initial raycast to see if the ground is close enough to snap to
+        if (Physics.Raycast(origin, - transform.up, out hit, groundMask)) // initial raycast to see if the ground is close enough to snap to
         {
             // Get the normal of the ground surface
             Vector3 newup = hit.normal; // angle of the initial hit
