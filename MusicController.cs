@@ -19,16 +19,16 @@ public class MusicController : MonoBehaviour
     {
         
     }
-    public void Playmyaudio()
+    public void PlayMyAudio()
     {
         StopAllCoroutines();
-        StartCoroutine(PlaymyAudioCoroutine());
+        StartCoroutine(PlayMyAudioCoroutine());
     }
     public void StopAudio()
     {
         
     }
-    public IEnumerator PlaymyAudioCoroutine()
+    public IEnumerator PlayMyAudioCoroutine()
     {
         foreach (AudioClip a in myclips)
         {
