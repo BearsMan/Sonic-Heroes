@@ -1,196 +1,116 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Audio;
 
 public class AudioManager : MonoBehaviour
 {
-    public static AudioManager Instance { get; private set; }
-
-    [Header("Mixer & Groups")]
-    public AudioMixer masterMixer;
-    public AudioMixerGroup bgmGroup;
-    public AudioMixerGroup sfxGroup;
-    public AudioMixerGroup voiceGroup;
+    public static AudioManager Instance;
 
     [Header("Audio Sources")]
-    public AudioSource bgmSourceA;
-    public AudioSource bgmSourceB;
+    public AudioSource musicSource;
     public AudioSource sfxSource;
     public AudioSource voiceSource;
 
-    [Header("Settings")]
-    public float bgmFadeTime = 1.5f;
-    public bool persistAcrossScenes = true;
+    [Header("Music Clips")]
+    public AudioClip levelTheme;
+    public AudioClip speedMusic;
+    public AudioClip powerMusic;
+    public AudioClip flyMusic;
 
-    private bool usingSourceA = true;
-    private Dictionary<string, AudioClip> clipCache = new();
+    [Header("SFX Clips")]
+    public List<AudioClip> soundEffects = new List<AudioClip>();
+
+    private Dictionary<string, AudioClip> sfxDictionary;
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (Instance == null)
         {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-        if (persistAcrossScenes)
-        {
+            Instance = this;
             DontDestroyOnLoad(gameObject);
-        }
-    }
-
-    // -----------------------------------
-    // 🎵 MUSIC CONTROL
-    // -----------------------------------
-    public void PlayBGM(AudioClip clip, bool loop = true, float volume = 1f)
-    {
-        if (clip == null)
-        {
-            return;
-        }
-
-        AudioSource active = usingSourceA ? bgmSourceA : bgmSourceB;
-        AudioSource next = usingSourceA ? bgmSourceB : bgmSourceA;
-
-        next.clip = clip;
-        next.loop = loop;
-        next.volume = 0f;
-        next.outputAudioMixerGroup = bgmGroup;
-        next.Play();
-
-        StartCoroutine(CrossfadeBGM(active, next, volume));
-        usingSourceA = !usingSourceA;
-    }
-
-    private IEnumerator CrossfadeBGM(AudioSource from, AudioSource to, float targetVolume)
-    {
-        float t = 0f;
-        while (t < bgmFadeTime)
-        {
-            t += Time.deltaTime;
-            float p = Mathf.Clamp01(t / bgmFadeTime);
-            if (from) from.volume = Mathf.Lerp(1f, 0f, p);
-            if (to) to.volume = Mathf.Lerp(0f, targetVolume, p);
-            yield return null;
-        }
-        if (from)
-        {
-            from.Stop();
-        }
-        if (to)
-        {
-            to.volume = targetVolume;
-        } 
-    }
-
-    public void StopBGM(float fadeOutTime = 1f)
-    {
-        AudioSource current = usingSourceA ? bgmSourceB : bgmSourceA;
-        if (current.isPlaying)
-        {
-            StartCoroutine(FadeOut(current, fadeOutTime));
-        }
-    }
-
-    private IEnumerator FadeOut(AudioSource source, float time)
-    {
-        float start = source.volume;
-        float t = 0f;
-        while (t < time)
-        {
-            t += Time.deltaTime;
-            source.volume = Mathf.Lerp(start, 0, t / time);
-            yield return null;
-        }
-        source.Stop();
-    }
-
-    // -----------------------------------
-    // 🔊 SOUND EFFECTS
-    // -----------------------------------
-    public void PlaySFX(AudioClip clip, float volume = 1f)
-    {
-        if (clip == null)
-        {
-            return;
-        }
-        sfxSource.outputAudioMixerGroup = sfxGroup;
-        sfxSource.PlayOneShot(clip, volume);
-    }
-
-    public void PlaySFX(string clipName, float volume = 1f)
-    {
-        var clip = LoadClip(clipName);
-        PlaySFX(clip, volume);
-    }
-
-    // -----------------------------------
-    // 🗣️ VOICE LINES
-    // -----------------------------------
-    public void PlayVoice(AudioClip clip, float volume = 1f)
-    {
-        if (clip == null)
-        {
-            return;
-        } 
-        // Optionally stop current voice to prevent overlap
-        voiceSource.outputAudioMixerGroup = voiceGroup;
-        voiceSource.Stop();
-        voiceSource.clip = clip;
-        voiceSource.volume = volume;
-        voiceSource.Play();
-    }
-
-    public void PlayVoice(string clipName, float volume = 1f)
-    {
-        var clip = LoadClip(clipName);
-        PlayVoice(clip, volume);
-    }
-
-    // -----------------------------------
-    // ⚙️ MIXER VOLUME CONTROLS
-    // -----------------------------------
-    public void SetMasterVolume(float db)
-    {
-        masterMixer.SetFloat("MasterVol", db);
-    }
-
-    public void SetBGMVolume(float db)
-    {
-        masterMixer.SetFloat("BGMVol", db);
-    }
-
-    public void SetSFXVolume(float db)
-    {
-        masterMixer.SetFloat("SFXVol", db);
-    }
-
-    public void SetVoiceVolume(float db)
-    {
-        masterMixer.SetFloat("VoiceVol", db);
-    }
-
-    // -----------------------------------
-    // 🗂️ CLIP LOADING
-    // -----------------------------------
-    private AudioClip LoadClip(string name)
-    {
-        if (clipCache.TryGetValue(name, out var cached))
-        {
-            return cached;
-        }
-
-        AudioClip clip = Resources.Load<AudioClip>("Audio/" + name);
-        if (clip != null)
-        {
-           clipCache[name] = clip;
+            InitializeSFX();
         }
         else
         {
-           Debug.LogWarning($"Audio clip not found: {name}");
+            Destroy (gameObject);
+        }
+    }
+
+    private void InitializeSFX()
+    {
+        sfxDictionary = new Dictionary<string, AudioClip>();
+        foreach (AudioClip clip in soundEffects)
+        {
+            sfxDictionary[clip.name] = clip;
+        }
+    }
+
+    // MUSIC CONTROL
+    public void PlayMusic(AudioClip clip, bool loop = true)
+    {
+        if (clip == null)
+        {
+            return;
+        } 
+
+        musicSource.clip = clip;
+        musicSource.loop = loop;
+        musicSource.Play();
+    }
+
+    public void SwitchMusic(string mode)
+    {
+        switch (mode.ToLower())
+        {
+            case "speed":
+                PlayMusic(speedMusic);
+                break;
+            case "power":
+                PlayMusic(powerMusic);
+                break;
+            case "fly":
+                PlayMusic(flyMusic);
+                break;
+            default:
+                PlayMusic(levelTheme);
+                break;
+        }
+    }
+
+    // SFX CONTROL
+    public void PlaySFX(string name, float volume = 1f)
+    {
+        if (sfxDictionary.TryGetValue(name, out AudioClip clip))
+        {
+            sfxSource.PlayOneShot(clip, volume);
         }
 
-        return clip;
+        else
+        {
+            Debug.LogWarning($"SFX '{name}' not found!");
+        }
+    }
+
+    // VOICE CONTROL
+    public void PlayVoice(AudioClip clip)
+    {
+        if (clip != null)
+        {
+            voiceSource.clip = clip;
+            voiceSource.Play();
+        }
+    }
+
+    // FADE OUT MUSIC
+    public IEnumerator FadeOutMusic(float fadeTime)
+    {
+        float startVolume = musicSource.volume;
+        while (musicSource.volume > 0)
+        {
+            musicSource.volume -= startVolume * Time.deltaTime / fadeTime;
+            yield return null;
+        }
+        musicSource.Stop();
+        musicSource.volume = startVolume;
     }
 }
