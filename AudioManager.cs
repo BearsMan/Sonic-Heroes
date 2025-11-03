@@ -45,7 +45,10 @@ public class AudioManager : MonoBehaviour
     // -----------------------------------
     public void PlayBGM(AudioClip clip, bool loop = true, float volume = 1f)
     {
-        if (clip == null) return;
+        if (clip == null)
+        {
+            return;
+        }
 
         AudioSource active = usingSourceA ? bgmSourceA : bgmSourceB;
         AudioSource next = usingSourceA ? bgmSourceB : bgmSourceA;
