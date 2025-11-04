@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class HomingAttack : MonoBehaviour
 {
-    public bool homingAttackAvailable;
+    public bool homingAttackAvailable = false;
     public bool homingAttackUsed = false;
     private Animator anim;
     public UltimatePlayerMovement movement;
