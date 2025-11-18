@@ -95,7 +95,7 @@ public class TeamSetup : MonoBehaviour
     }
     public IEnumerator SuperCountDown()
     {
-        while(GameInstance.currentRings > 0)
+        while (GameInstance.currentRings > 0)
         {
             HUD.GetComponent<HUD>().UpdateRings();
             GameInstance.currentRings -= 1;
