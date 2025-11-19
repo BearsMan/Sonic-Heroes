@@ -20,9 +20,10 @@ public class CheckPoint : MonoBehaviour
     }
     public void CharacterLevelUp()
     {
-        FindFirstObjectByType<LevelUpCore>().CompareTag("Player");
-
-        GetComponent<LevelUpCore>().gameObject.SetActive(false);
+        if (FindFirstObjectByType<LevelUpCore>().CompareTag("Player"))
+        {
+            GetComponent<LevelUpCore>().gameObject.SetActive(false);
+        }
 
         GameInstance.speedCoreLevelUp += 1;
         GameInstance.flyCorelevelUp += 1;
