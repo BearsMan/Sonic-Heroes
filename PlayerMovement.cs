@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
 {
     // This script handles player movement, jumping, and rotation based on camera orientation.
@@ -16,8 +17,14 @@ public class PlayerMovement : MonoBehaviour
     {
         get
         {
-            if (running) return maxRunSpeed;
-            else return maxWalkSpeed;
+            if (running)
+            {
+                return maxRunSpeed;
+            }
+            else
+            {
+                return maxWalkSpeed;
+            }
         }
     }
     private float acceleration = 5f;
@@ -48,7 +55,7 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown("v"))
+        if (Input.GetKeyDown(KeyCode.V))
         {
             DebugkillSwitch();
         }
