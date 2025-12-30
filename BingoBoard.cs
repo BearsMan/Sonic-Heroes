@@ -24,14 +24,14 @@ public class BingoBoard : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        updateboard();
+        Updateboard();
     }
 
     private void OnTriggerEnter(Collider other)
     {
         
     }
-    void updateboard()
+    void Updateboard()
     {
         int i = 0;
         while (i < boardNumbers.Count)
