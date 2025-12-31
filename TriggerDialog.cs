@@ -30,9 +30,13 @@ public class TriggerDialog : MonoBehaviour
     }
     public IEnumerator ReadDialog()
     {
-        FindFirstObjectByType<UltimatePlayerMovement>().tutorialPlaying = true;
+        var playerMovement = Object.FindFirstObjectByType<UltimatePlayerMovement>();
+        if (playerMovement != null)
+        {
+            playerMovement.tutorialPlaying = true;
+        }
         int counter = 0;
-            
+
         while (counter < dialogs.Count)
         {
             omochaoTriggerDisable.clip = dialogs[counter];
@@ -43,6 +47,9 @@ public class TriggerDialog : MonoBehaviour
             }
             counter += 1;
         }
-        FindFirstObjectByType<UltimatePlayerMovement>().tutorialPlaying = false;
+        if (playerMovement != null)
+        {
+            playerMovement.tutorialPlaying = false;
+        }
     }
 }
