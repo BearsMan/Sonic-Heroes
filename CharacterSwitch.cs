@@ -38,8 +38,6 @@ public class CharacterSwitch : MonoBehaviour
 
     public void LeftCharacter()
     {
-
-
         switch (currentCharacterType)
         {
             case CHARACTERTYPES.Speed:
@@ -61,7 +59,7 @@ public class CharacterSwitch : MonoBehaviour
                 powerCharacter.parent = rightSlot;
                 break;
         }
-        FindFirstObjectByType<HUD>().SetCharacter(-1);
+        Object.FindFirstObjectByType<HUD>().SetCharacter(-1);
         ResetCharacters();
     }
 
@@ -88,7 +86,7 @@ public class CharacterSwitch : MonoBehaviour
                 powerCharacter.parent = rightSlot;
                 break;
         }
-        FindFirstObjectByType<HUD>().SetCharacter(1);
+        Object.FindFirstObjectByType<HUD>().SetCharacter(1);
         ResetCharacters();
     }
 
@@ -116,7 +114,7 @@ public class CharacterSwitch : MonoBehaviour
                 powerCharacter.parent = rightSlot;
                 break;
         }
-        FindFirstObjectByType<HUD>().SetCharacter(currentCharacterType);
+        Object.FindFirstObjectByType<HUD>().SetCharacter(currentCharacterType);
         ResetCharacters();
     }
 
