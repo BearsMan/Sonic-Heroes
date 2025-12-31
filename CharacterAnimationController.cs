@@ -20,16 +20,13 @@ public class CharacterAnimationController : MonoBehaviour
     void Update()
     {
         bool grounded = Physics.CheckSphere(body.transform.position + (-body.transform.up * 0.55f), 0.48f, groundMask);
-        anim.SetFloat("Speed", body.velocity.magnitude);
+        anim.SetFloat("Speed", body.linearVelocity.magnitude);
 
         if (wasGrounded && !grounded)
         {
             wasGrounded = false;
             anim.SetTrigger("Launch");
             anim.SetBool("InAir", true);
-            
-            
-
         }
 
         if (!wasGrounded && grounded)
@@ -37,8 +34,6 @@ public class CharacterAnimationController : MonoBehaviour
             wasGrounded = true;
 
             anim.SetBool("InAir", false);
-            
-            
         }
 
         if (Input.GetKeyDown(KeyCode.Q))
