@@ -17,11 +17,11 @@ public class TriangleJump : MonoBehaviour
     {
         
     }
-    public void stick(GameObject speedCharacter)
+    public void Stick(GameObject speedCharacter)
     {
         UltimatePlayerMovement.Controllable = false;
         speedCharacter.GetComponent<Rigidbody>().useGravity = false;
-        speedCharacter.GetComponentInParent <UltimatePlayerMovement>().body.velocity = Vector3.zero;
+        speedCharacter.GetComponentInParent <UltimatePlayerMovement>().body.linearVelocity = Vector3.zero;
         speedCharacter.GetComponent<Animator>().Play("Triangle Jump");
     }
 
@@ -35,9 +35,9 @@ public class TriangleJump : MonoBehaviour
     }
     public void OnTriggerEnter(Collider other)
     {
-        if (other.GetComponent<HomingAttack>().homingAttackUsed == true)
+        if (other.GetComponent<HomingAttack>().homingAttackUsed==true)
         {
-            stick(other.gameObject);
+            Stick(other.gameObject);
         }
     }
 }

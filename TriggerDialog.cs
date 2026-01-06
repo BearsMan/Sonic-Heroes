@@ -5,7 +5,7 @@ using UnityEngine;
 public class TriggerDialog : MonoBehaviour
 {
     public List<AudioClip> dialogs = new List<AudioClip>();
-    private bool dialogRead;
+    private bool dialogRead = false;
     public AudioSource omochaoTriggerDisable;
     public bool pause = false;
     // Start is called before the first frame update
