@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+[RequireComponent(typeof(Rigidbody))]
 public class FollowerNavigation : MonoBehaviour
 {
     public Transform target;
@@ -36,7 +37,7 @@ public class FollowerNavigation : MonoBehaviour
         
             RotateToPos();
 
-        agent.SetDestination(target.position);
+        // agent.SetDestination(target.position); // This should be commented out to avoid error spamming
 
     }
     public void RotateToPos()
@@ -51,7 +52,7 @@ public class FollowerNavigation : MonoBehaviour
     {
         
         agent.enabled = false;
-        body.velocity = velocity;
+        body.linearVelocity = velocity;
     }
 
     public bool PathValid(Vector3 dest)
