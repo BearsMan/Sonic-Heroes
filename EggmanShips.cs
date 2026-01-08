@@ -3,9 +3,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class EggmanShips : MonoBehaviour
 {
-    public EggmanShips smallship;
-    public EggmanShips mediumShips;
-    public EggmanShips largeships;
+    public EggmanShips smallShip, smallShipLow, mantaRayShip; // Eggman's ships from Stage 13: Egg Fleet
     public float speed = 5f;
     public bool isMoving = false;
     private bool isGrounded = false;

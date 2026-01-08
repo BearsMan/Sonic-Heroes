@@ -11,7 +11,6 @@ public class BobSleigh : MonoBehaviour
     public bool isGrounded;
     public bool useGravity;
     public bool jump = false;
-    public bool driveForward = false;
     public bool turnLeft = false;
     public bool turnRight = false;
     public float groundCheckDistance = 0.0f;
@@ -30,7 +29,7 @@ public class BobSleigh : MonoBehaviour
     void Start()
     {
         Rigidbody body = GetComponent<Rigidbody>();
-        moveDirection = body.velocity;
+        moveDirection = body.linearVelocity;
     }
 
     // Update is called once per frame
@@ -91,12 +90,12 @@ public class BobSleigh : MonoBehaviour
 
     public void Drive()
     {
-        if (driveForward == true)
+        if (isDriving == true)
         {
             transform.position = transform.up = Vector3.zero;
             if (bobsleigh == acceleration > 0.0f)
             {
-                body.MovePosition(body.velocity * speed * Time.deltaTime);
+                body.MovePosition(body.linearVelocity * speed * Time.deltaTime);
             }
 
         }
@@ -128,7 +127,7 @@ public class BobSleigh : MonoBehaviour
             {
                 return;
             }
-            Vector3 cross = Vector3.Cross(transform.right, newup);//new foward direction
+            Vector3 cross = Vector3.Cross(transform.right, newup); //new foward direction
 
 
             Quaternion newrot = Quaternion.LookRotation(cross);
