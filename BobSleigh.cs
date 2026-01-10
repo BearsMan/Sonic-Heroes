@@ -2,9 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class BobSleigh : MonoBehaviour
 {
-    public GameObject bobsleigh;
+   
     public GameObject player;
     public GameObject sonic;
     public bool isDriving = false;
@@ -35,23 +36,23 @@ public class BobSleigh : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (player.transform.parent == bobsleigh.transform)
+        if (player.transform.parent == player.transform)
         {
             Debug.Log("object is attached to wall");
         }
 
-        //if (Input.GetKeyDown(KeyCode.S))
-        //{
-        //    if (FindObjectOfType<UltimatePlayerMovement>(player.gameObject))
-        //    {
-        //        Vector3 spawnSpot = Camera.main.ScreenToWorldPoint(player.transform.position);
-        //        GameObject objectinstance = Instantiate(bobsleigh, spawnSpot, Quaternion.Euler(new Vector3(0, 0, 0)));
-        //        if (bobsleigh .transform.parent != objectinstance)
-        //        {
-        //            //Vector3.MoveTowards(new Vector3(2252.521f, 200.001f, -6767.733f);
-        //        }
-        //    }
-        //}
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            if (FindFirstObjectByType<UltimatePlayerMovement>())
+            {
+                Vector3 spawnSpot = Camera.main.ScreenToWorldPoint(player.transform.position);
+                GameObject objectinstance = Instantiate(player, spawnSpot, Quaternion.Euler(new Vector3(0, 0, 0)));
+                if (player.transform.parent != objectinstance)
+                {
+                    Vector3.MoveTowards(spawnSpot, moveDirection, speed);
+                }
+            }   
+        }
 
         RotateToGround();
         Move();
@@ -93,7 +94,7 @@ public class BobSleigh : MonoBehaviour
         if (isDriving == true)
         {
             transform.position = transform.up = Vector3.zero;
-            if (bobsleigh == acceleration > 0.0f)
+            if (player == acceleration > 0.0f)
             {
                 body.MovePosition(body.linearVelocity * speed * Time.deltaTime);
             }
