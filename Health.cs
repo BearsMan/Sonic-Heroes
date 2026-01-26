@@ -5,7 +5,7 @@ using UnityEngine;
 public class Health : MonoBehaviour
 {
     private int health = 3;
-    private float timeSinceLastHit = 5;
+    private float timeSinceLastHit = 5f;
     public bool dead;
     public HealthBar bar;
     // Start is called before the first frame update
