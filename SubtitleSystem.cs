@@ -106,7 +106,10 @@ public class SubtitleSystem : MonoBehaviour
 
     private void ResizeBackground()
     {
-        if (backgroundRect == null) return;
+        if (backgroundRect == null)
+        {
+            backgroundRect = gameObject.AddComponent<RectTransform>();
+        }
         Vector2 textSize = subtitleText.GetPreferredValues(subtitleText.text, screenWidth, screenHeight);
         backgroundRect.sizeDelta = textSize + padding * 2;
     }
