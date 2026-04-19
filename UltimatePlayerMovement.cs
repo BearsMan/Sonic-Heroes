@@ -70,7 +70,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     private void Awake()
     {
         // Initialize references
-        cam = Object.FindFirstObjectByType<CameraController>().transform;
+        cam = Object.FindAnyObjectByType<CameraController>().transform;
     }
 
     // Update is called once per frame
