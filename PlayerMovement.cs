@@ -12,7 +12,7 @@ public class PlayerMovement : MonoBehaviour
     private float currentSpeed = 0f;
     private float maxRunSpeed = 12f;
     private float maxWalkSpeed = 7f;
-    private bool running;
+    private bool running = false;
     private float CurrentMaxSpeed
     {
         get
@@ -187,7 +187,7 @@ public class PlayerMovement : MonoBehaviour
         maxRunSpeed = newSpeed; // Allow max speed to become launch speed
         transform.rotation = Quaternion.LookRotation(newDirection); //Force foward rotation to launch direction
     }
-    private float surrenderDuration;
+    private float surrenderDuration = 0f;
     private bool surrendered = false;
 
     /// <summary>
