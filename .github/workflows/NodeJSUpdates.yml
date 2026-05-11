@@ -1,0 +1,2 @@
+- name: Update NodeJS Dependencies
+  uses: stephankaag/gh-action-node-update-deps@v0.1
