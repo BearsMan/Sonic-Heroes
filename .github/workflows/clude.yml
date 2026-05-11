@@ -112,4 +112,4 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           # Branch off and target dev for any PRs Claude opens, since
           # master is reserved for releases and dev is the integration branch.
-          base_branch: dev
+          base_branch: Master
