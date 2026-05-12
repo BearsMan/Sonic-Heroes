@@ -1,0 +1,15 @@
+name: CI Trigger Bot
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  run-tests:
+    if: contains(github.event.comment.body, '/test')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          echo "Running tests..."
+          # your test command here
