@@ -1,4 +1,4 @@
-name: AI‑Enhanced CI
+name: AI‑Enhanced .NET CI
 
 on:
   pull_request:
@@ -7,32 +7,201 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: Run Tests
+  build_test:
+    name: Build & Test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node (example project)
-        uses: actions/setup-node@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          node-version: 20
+          dotnet-version: 8.0.x
 
-      - name: Install dependencies
-        run: npm install
+      - name: Restore
+        run: dotnet restore
 
-      - name: Run tests
-        run: npm test
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Run Tests
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+  format_lint:
+    name: Auto‑format & Lint
+    runs-on: ubuntu-latest
+    needs: build_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Run dotnet format
+        run: dotnet format --verify-no-changes || echo "Formatting issues detected"
+
+      - name: Run Roslyn Analyzers
+        run: dotnet build --configuration Release -warnaserror || echo "Lint warnings detected"
 
   ai_review:
     name: AI Code Review
     runs-on: ubuntu-latest
-    needs: test
+    needs: build_test
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Pull model
+        run: ollama pull mistral
+
+      - name: Generate AI Review
+        id: review
+        run: |
+          DIFF=$(git diff origin/main...HEAD)
+          echo "$DIFF" > diff.txt
+
+          REVIEW=$(ollama run mistral "
+          You are a senior .NET architect.
+          Review this C# diff and provide:
+          - Summary of changes
+          - Potential bugs
+          - Security issues
+          - Performance concerns
+          - Suggested improvements
+          - Better patterns (SOLID, async, DI, etc.)
+
+          Diff:
+          $(cat diff.txt)
+          ")
+
+          echo "review<<EOF" >> $GITHUB_OUTPUT
+          echo "$REVIEW" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: ai-review
+          message: |
+            ## 🤖 AI Code Review
+            ${{ steps.review.outputs.review }}
+
+  ai_docs:
+    name: AI Documentation Generator
+    runs-on: ubuntu-latest
+    needs: build_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Pull model
+        run: ollama pull mistral
+
+      - name: Generate Documentation
+        id: docs
+        run: |
+          CODE=$(git diff origin/main...HEAD)
+          DOCS=$(ollama run mistral "
+          Generate XML documentation comments for the following C# code.
+          Only output the documentation blocks.
+
+          Code:
+          $CODE
+          ")
+
+          echo "docs<<EOF" >> $GITHUB_OUTPUT
+          echo "$DOCS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload Docs Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-docs
+          path: docs.xml
+
+  ai_tests:
+    name: AI Test Case Generator
+    runs-on: ubuntu-latest
+    needs: build_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Pull model
+        run: ollama pull mistral
+
+      - name: Generate Tests
+        id: tests
+        run: |
+          CODE=$(git diff origin/main...HEAD)
+          TESTS=$(ollama run mistral "
+          Generate NUnit test cases for the following C# code.
+          Include edge cases and failure scenarios.
+
+          Code:
+          $CODE
+          ")
+
+          echo "tests<<EOF" >> $GITHUB_OUTPUT
+          echo "$TESTS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload Test Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-tests
+          path: tests.cs
+
+  ai_release_notes:
+    name: AI Release Notes
+    runs-on: ubuntu-latest
+    needs: build_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Ollama
+        run: curl -fsSL https://ollama.com/install.sh | sh
+
+      - name: Pull model
+        run: ollama pull mistral
+
+      - name: Generate Release Notes
+        id: notes
+        run: |
+          LOG=$(git log -1 --pretty=format:"%s%n%n%b")
+          NOTES=$(ollama run mistral "
+          Create clean, user‑friendly release notes for this commit:
+
+          $LOG
+          ")
+
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Upload Release Notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-release-notes
+          path: release-notes.md
