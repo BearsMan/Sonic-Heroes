@@ -7,8 +7,8 @@ using UnityEngine;
 /// </summary>
 public class LightSpeed : MonoBehaviour
 {
-    public bool lightspeedattack;
-    public bool ringtrail;
+    public bool lightSpeedAttack;
+    public bool ringTrail;
     public List<GameObject> rings = new List<GameObject>();
     // Start is called before the first frame update
     void Start()
