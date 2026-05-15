@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+[RequireComponent(typeof(Rigidbody))]
 
 /// <summary>
 /// ThunderShoot - Replicates Tails' Thunder Shoot ability from Sonic Heroes.
@@ -27,6 +28,7 @@ using UnityEngine;
 ///   - homingStrength      : How tightly missiles track targets (default 5)
 ///   - enemyLayerMask      : LayerMask for enemy detection
 /// </summary>
+[RequireComponent(typeof(AudioSource))]
 public class ThunderShoot : MonoBehaviour
 {
     // ── Inspector-exposed fields ─────────────────────────────────────────────
@@ -400,7 +402,9 @@ public class ThunderMissile : MonoBehaviour
         // Adapt the interface name below to match your game's health system
         IDamageable damageable = other.GetComponent<IDamageable>();
         if (damageable != null)
+        {
             damageable.TakeDamage(damage);
+        }
 
         // Play impact sound at world position
         if (impactSound != null)
@@ -415,13 +419,3 @@ public interface IDamageable
 {
     void TakeDamage(float amount);
 }
-
-// ── Stub so the file compiles without UltimatePlayerMovement in the project ─
-// Remove this block once UltimatePlayerMovement is present in your project.
-#if !ULTIMATE_PLAYER_MOVEMENT_DEFINED
-public class UltimatePlayerMovement : MonoBehaviour
-{
-    public GameObject leftFollower;
-    public GameObject rightFollower;
-}
-#endif
