@@ -2,17 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// This script is called LightSpeed (or LightSpeedAttack) and is used to control the light speed attack move for sonic, shadow, and super sonic. It is used in the UltimatePlayerMovement script and is called when the player presses the B key while in contact with a light speed attack ring.
+/// </summary>
 public class LightSpeed : MonoBehaviour
 {
-    public bool lightSpeedAttack;
-    public bool ringTrail;
+    public bool lightspeedattack;
+    public bool ringtrail;
     public List<GameObject> rings = new List<GameObject>();
     // Start is called before the first frame update
     void Start()
     {
 
     }
-
     // Update is called once per frame
     void Update()
     {
@@ -26,7 +28,7 @@ public class LightSpeed : MonoBehaviour
             return;
         }
         speedCharacter.GetComponent<Rigidbody>().useGravity = false;
-        speedCharacter.GetComponentInParent<UltimatePlayerMovement>().body.velocity = Vector3.zero;
+        speedCharacter.GetComponentInParent<UltimatePlayerMovement>().body.linearVelocity = Vector3.zero;
         speedCharacter.GetComponent<Animator>().Play("Light Speed Attack");
         StartCoroutine(Dash(speedCharacter));
     }
@@ -46,7 +48,7 @@ public class LightSpeed : MonoBehaviour
     public void DashExit(GameObject SpeedCharacter)
     {
         SpeedCharacter.GetComponent<Rigidbody>().useGravity = true;
-        SpeedCharacter.GetComponentInParent<UltimatePlayerMovement>().body.velocity = Vector3.zero;
+        SpeedCharacter.GetComponentInParent<UltimatePlayerMovement>().body.linearVelocity = Vector3.zero;
         SpeedCharacter.GetComponent<Animator>().Play("Jump Down");
 
     }
