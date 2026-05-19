@@ -1,206 +1,231 @@
-using System.Collections;
-using System.Collections.Generic;
-using Assets.Scripts; // replace with the real namespace where Breakable lives
 using UnityEngine;
 
-// Orca chase sequence - Seaside Hill, Sonic Heroes (2003)
-// The orca bursts from the water, chases the player forward, and jumps at set trigger points.
-// It is NOT player-controlled. It follows a forward path and destroys breakable obstacles.
-public class Orca : MonoBehaviour
+namespace SonicHeroes
 {
-    [Header("Chase Settings")]
-    public float chaseSpeed = 18.0f;          // Forward chase speed (fast, threatening)
-    public float acceleration = 2.5f;         // How quickly it reaches chase speed
-    public Transform[] waypointPath;          // Path the orca follows through the level
-    public bool isChasing = false;            // Set true by trigger to begin the sequence
-
-    [Header("Jump Settings")]
-    public float jumpHeight = 6.0f;           // Height of breach jumps at set points
-    public float jumpSpeed = 12.0f;           // Speed of jump arc
-    public float jumpForwardDistance = 10.0f; // How far forward it travels during a jump
-
-    [Header("Destruction")]
-    public LayerMask breakableLayer;          // Layer for boardwalk/wall obstacles it smashes
-    public float destroyRadius = 3.0f;        // Radius to break nearby breakables on impact
-
-    [Header("Audio / Feedback")]
-    public AudioClip breachSound;
-    public AudioClip impactSound;
-    public AudioSource audioSource;
-
-    // Internal state
-    private int currentWaypoint = 0;
-    private bool isJumping = false;
-    private bool reachTop = false;
-    private float currentSpeed = 0.0f;
-    private Vector3 topPosition, bottomPosition, jumpTarget;
-    private Rigidbody rb;
-
-    void Start()
+    [RequireComponent(typeof(Rigidbody))]
+    public class Orca : MonoBehaviour
     {
-        rb = GetComponent<Rigidbody>();
+        [Header("Swim Settings")]
+        public float swimSpeed = 14.0f;
+        public float chaseSpeed = 20.0f;
+        public float turnSpeed = 6.0f;
+        public float acceleration = 3.0f;
 
-        // Orca moves kinematically along its path — physics are not used for locomotion.
-        // Buoyancy/floating is removed: it emerges dramatically and chases, not bobs.
-        if (rb != null)
+        [Header("Path")]
+        public Transform[] waypointPath;
+        private int currentWaypoint = 0;
+
+        [Header("Jump Settings")]
+        public float jumpHeight = 7.0f;
+        public float jumpForwardDistance = 12.0f;
+        public float jumpSpeed = 14.0f;
+
+        [Header("Destruction")]
+        public LayerMask breakableLayer;
+        public float destroyRadius = 3.5f;
+
+        [Header("Animation")]
+        public Animator anim;
+        private readonly int SwimHash = Animator.StringToHash("Swim");
+        private readonly int BreachHash = Animator.StringToHash("Breach");
+        private readonly int LandHash = Animator.StringToHash("Land");
+        private readonly int SpeedHash = Animator.StringToHash("Speed");
+
+        [Header("Audio")]
+        public AudioSource audioSource;
+        public AudioClip swimLoop;
+        public AudioClip breachSound;
+        public AudioClip impactSound;
+
+        [Header("FX")]
+        public GameObject splashFX;
+        public GameObject landingSplashFX;
+
+        // Internal state
+        private Rigidbody rb;
+        private bool isChasing = false;
+        private bool isJumping = false;
+        private bool reachedPeak = false;
+        private float currentSpeed = 0f;
+
+        private Vector3 bottomPos;
+        private Vector3 peakPos;
+        private Vector3 landingPos;
+
+        void Start()
         {
+            rb = GetComponent<Rigidbody>();
             rb.isKinematic = true;
-        }
-    }
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
 
-    void Update()
-    {
-        if (!isChasing) return;
+            if (anim != null)
+                anim.Play(SwimHash);
 
-        if (isJumping)
-        {
-            HandleJump();
-        }
-        else
-        {
-            ChaseAlongPath();
-        }
-    }
-
-    // Called by a trigger volume when the player enters the chase zone
-    public void BeginChase()
-    {
-        isChasing = true;
-        currentWaypoint = 0;
-        currentSpeed = 0.0f;
-    }
-
-    // Moves the orca forward along waypoints at increasing speed
-    private void ChaseAlongPath()
-    {
-        if (waypointPath == null || waypointPath.Length == 0) return;
-
-        // Accelerate up to chase speed
-        currentSpeed = Mathf.MoveTowards(currentSpeed, chaseSpeed, acceleration * Time.deltaTime);
-
-        Transform target = waypointPath[currentWaypoint];
-        Vector3 direction = (target.position - transform.position).normalized;
-
-        // Face the direction of travel
-        if (direction != Vector3.zero)
-        {
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                Quaternion.LookRotation(direction),
-                Time.deltaTime * 8.0f
-            );
-        }
-
-        transform.position = Vector3.MoveTowards(
-            transform.position,
-            target.position,
-            currentSpeed * Time.deltaTime
-        );
-
-        // Advance to next waypoint
-        if (Vector3.Distance(transform.position, target.position) < 0.2f)
-        {
-            currentWaypoint++;
-            if (currentWaypoint >= waypointPath.Length)
+            if (audioSource != null && swimLoop != null)
             {
-                isChasing = false; // Sequence complete
+                audioSource.loop = true;
+                audioSource.clip = swimLoop;
+                audioSource.Play();
             }
         }
-    }
 
-    // Triggers a breach jump (called by waypoint or external trigger)
-    public void TriggerJump()
-    {
-        if (isJumping) return;
-
-        bottomPosition = transform.position;
-        topPosition = new Vector3(
-            transform.position.x,
-            transform.position.y + jumpHeight,
-            transform.position.z + jumpForwardDistance
-        );
-        jumpTarget = topPosition;
-        reachTop = false;
-        isJumping = true;
-
-        if (audioSource != null && breachSound != null)
-            audioSource.PlayOneShot(breachSound);
-    }
-
-    // Arcs the orca up and forward, then back down — one-way (no return to origin)
-    private void HandleJump()
-    {
-        transform.position = Vector3.MoveTowards(
-            transform.position,
-            jumpTarget,
-            jumpSpeed * Time.deltaTime
-        );
-
-        if (!reachTop && Vector3.Distance(transform.position, topPosition) < 0.1f)
+        void Update()
         {
-            // Reached peak — now plunge down to the landing point
-            jumpTarget = new Vector3(
-                topPosition.x + jumpForwardDistance,
-                bottomPosition.y,
-                topPosition.z
-            );
-            reachTop = true;
+            if (!isChasing) return;
+
+            if (isJumping)
+                HandleJump();
+            else
+                SwimAlongPath();
         }
 
-        if (reachTop && Vector3.Distance(transform.position, jumpTarget) < 0.1f)
+        public void BeginChase()
         {
+            isChasing = true;
+            currentWaypoint = 0;
+            currentSpeed = 0f;
             isJumping = false;
-            OnLand();
+            reachedPeak = false;
         }
-    }
 
-    // Smashes breakables on landing, matching the boardwalk destruction in Seaside Hill
-    private void OnLand()
-    {
-        if (audioSource != null && impactSound != null)
-            audioSource.PlayOneShot(impactSound);
-
-        Collider[] hits = Physics.OverlapSphere(transform.position, destroyRadius, breakableLayer);
-        foreach (Collider hit in hits)
+        private void SwimAlongPath()
         {
-            if (hit.TryGetComponent<Breakable>(out Breakable breakable))
+            if (waypointPath == null || waypointPath.Length == 0)
+                return;
+
+            if (currentWaypoint >= waypointPath.Length)
+                return;
+
+            currentSpeed = Mathf.MoveTowards(currentSpeed, chaseSpeed, acceleration * Time.deltaTime);
+
+            if (anim != null)
+                anim.SetFloat(SpeedHash, currentSpeed / chaseSpeed);
+
+            Transform target = waypointPath[currentWaypoint];
+            Vector3 toTarget = target.position - transform.position;
+            Vector3 direction = toTarget.normalized;
+
+            if (direction != Vector3.zero)
             {
-                breakable.Break();
+                Quaternion targetRot = Quaternion.LookRotation(direction);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, turnSpeed * Time.deltaTime);
+            }
+
+            transform.position += transform.forward * currentSpeed * Time.deltaTime;
+
+            if (toTarget.sqrMagnitude < 1.0f)
+                currentWaypoint++;
+        }
+
+        public void TriggerJump()
+        {
+            if (isJumping) return;
+
+            isJumping = true;
+            reachedPeak = false;
+
+            bottomPos = transform.position;
+            peakPos = bottomPos + transform.up * jumpHeight + transform.forward * jumpForwardDistance;
+            landingPos = bottomPos + transform.forward * (jumpForwardDistance * 2f);
+
+            if (anim != null)
+                anim.SetTrigger(BreachHash);
+
+            if (audioSource != null && breachSound != null)
+                audioSource.PlayOneShot(breachSound);
+
+            if (splashFX != null)
+                Instantiate(splashFX, bottomPos, Quaternion.identity);
+        }
+
+        private void HandleJump()
+        {
+            float step = jumpSpeed * Time.deltaTime;
+
+            if (!reachedPeak)
+            {
+                transform.position = Vector3.MoveTowards(transform.position, peakPos, step);
+
+                if (Vector3.Distance(transform.position, peakPos) < 0.1f)
+                    reachedPeak = true;
             }
             else
             {
-                Destroy(hit.gameObject); // fallback
+                transform.position = Vector3.MoveTowards(transform.position, landingPos, step);
+
+                if (Vector3.Distance(transform.position, landingPos) < 0.1f)
+                {
+                    isJumping = false;
+                    OnLand();
+                }
             }
         }
-    }
 
-    // Visualise destroy radius and path in the editor
-    void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, destroyRadius);
-
-        if (waypointPath != null)
+        private void OnLand()
         {
-            Gizmos.color = Color.yellow;
-            for (int i = 0; i < waypointPath.Length - 1; i++)
+            if (anim != null)
+                anim.SetTrigger(LandHash);
+
+            if (audioSource != null && impactSound != null)
+                audioSource.PlayOneShot(impactSound);
+
+            if (landingSplashFX != null)
+                Instantiate(landingSplashFX, transform.position, Quaternion.identity);
+
+            Collider[] hits = Physics.OverlapSphere(transform.position, destroyRadius, breakableLayer);
+            foreach (Collider hit in hits)
             {
-                if (waypointPath[i] != null && waypointPath[i + 1] != null)
-                    Gizmos.DrawLine(waypointPath[i].position, waypointPath[i + 1].position);
+                if (hit.TryGetComponent(out Breakable b))
+                    b.Break();
+                else
+                    Destroy(hit.gameObject);
             }
         }
-    }
-}
 
-namespace Assets.Scripts
-{
-    public class Breakable : MonoBehaviour
-    {
-        // Called by Orca when it smashes this object
-        public void Break()
+        // Animation Event Hooks
+        public void SplashFX_Start()
         {
-            // Add destruction/FX logic here. Minimal safe fallback:
-            Destroy (gameObject);
+            if (splashFX != null)
+                Instantiate(splashFX, transform.position, Quaternion.identity);
+        }
+
+        public void Play_Breach_Sound()
+        {
+            if (audioSource != null && breachSound != null)
+                audioSource.PlayOneShot(breachSound);
+        }
+
+        public void SplashFX_Land()
+        {
+            if (landingSplashFX != null)
+                Instantiate(landingSplashFX, transform.position, Quaternion.identity);
+        }
+
+        public void Play_Impact_Sound()
+        {
+            if (audioSource != null && impactSound != null)
+                audioSource.PlayOneShot(impactSound);
+        }
+
+        public void Destroy_Boardwalk()
+        {
+            OnLand();
+        }
+
+        void OnDrawGizmosSelected()
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(transform.position, destroyRadius);
+
+            if (waypointPath != null)
+            {
+                Gizmos.color = Color.yellow;
+                for (int i = 0; i < waypointPath.Length - 1; i++)
+                {
+                    if (waypointPath[i] != null && waypointPath[i + 1] != null)
+                        Gizmos.DrawLine(waypointPath[i].position, waypointPath[i + 1].position);
+                }
+            }
         }
     }
 }
