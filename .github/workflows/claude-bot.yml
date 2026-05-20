@@ -1,0 +1,132 @@
+
+name: Claude Bot
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, edited, synchronize]
+  pull_request_review_comment:
+    types: [created]
+  push:
+    branches: [main]
+
+jobs:
+  claude-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install -y gh jq
+
+      - name: Run Claude Bot
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EVENT="${{ github.event_name }}"
+          COMMENT="${{ github.event.comment.body }}"
+          ISSUE_BODY="${{ github.event.issue.body }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+
+          # Detect slash commands
+          if [[ "$COMMENT" == /summarize* ]]; then
+            COMMAND="summarize"
+          elif [[ "$COMMENT" == /review* ]]; then
+            COMMAND="review"
+          elif [[ "$COMMENT" == /label* ]]; then
+            COMMAND="label"
+          elif [[ "$COMMENT" == /changelog* ]]; then
+            COMMAND="changelog"
+          elif [[ "$COMMENT" == /releasenotes* ]]; then
+            COMMAND="releasenotes"
+          else
+            COMMAND="auto"
+          fi
+
+          # Get PR diff if needed
+          if [[ "$COMMAND" == "review" || "$EVENT" == "pull_request" ]]; then
+            DIFF=$(gh pr diff $PR_NUMBER)
+          fi
+
+          # Get security scan (simple grep for secrets + dependency review)
+          SECURITY_REPORT=$(grep -R "SECRET\|PASSWORD\|TOKEN" -n . || true)
+
+          # Build payload for Claude
+          PAYLOAD=$(jq -n \
+            --arg event "$EVENT" \
+            --arg command "$COMMAND" \
+            --arg issue "$ISSUE_BODY" \
+            --arg pr "$PR_BODY" \
+            --arg diff "$DIFF" \
+            --arg comment "$COMMENT" \
+            --arg security "$SECURITY_REPORT" \
+            '{event:$event, command:$command, issue:$issue, pr:$pr, diff:$diff, comment:$comment, security:$security}')
+
+          # Call Claude
+          RESPONSE=$(curl -s https://api.anthropic.com/v1/messages \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d "{
+              \"model\": \"claude-3-sonnet-20240229\",
+              \"max_tokens\": 800,
+              \"messages\": [
+                {
+                  \"role\": \"user\",
+                  \"content\": \"You are a GitHub automation bot. Analyze this event and respond appropriately: $PAYLOAD. 
+                  If command=label, return JSON {labels:[...]}. 
+                  If command=review, review the diff. 
+                  If command=summarize, summarize. 
+                  If command=changelog, generate a changelog. 
+                  If command=releasenotes, generate release notes. 
+                  If command=auto and event is PR, perform triage + review + label suggestions.
+                  Also evaluate security_report for risks.
+                  For auto-merge: 
+                    - merge only if CI passes, 
+                    - PR is small/medium, 
+                    - no security issues, 
+                    - no breaking changes, 
+                    - and your review approves it.\"
+                }
+              ]
+            }" | jq -r '.content[0].text')
+
+          echo "Claude response: $RESPONSE"
+
+          # Handle label command
+          if [[ "$COMMAND" == "label" ]]; then
+            LABELS=$(echo "$RESPONSE" | jq -r '.labels[]')
+            for L in $LABELS; do
+              gh issue edit ${{ github.event.issue.number }} --add-label "$L"
+            done
+            exit 0
+          fi
+
+          # Auto-merge logic (Balanced Mode)
+          if [[ "$EVENT" == "pull_request" ]]; then
+            CI_STATUS=$(gh pr checks $PR_NUMBER --json conclusion | jq -r '.[].conclusion')
+
+            if echo "$RESPONSE" | grep -qi "approved" && \
+               echo "$RESPONSE" | grep -qi "safe to merge" && \
+               [[ "$CI_STATUS" == "success" ]]; then
+
+              echo "Claude approved and CI passed — merging PR"
+              gh pr merge $PR_NUMBER --merge --admin
+              exit 0
+            fi
+          fi
+
+          # Post comment
+          TARGET_URL="${{ github.event.issue.url || github.event.pull_request.comments_url || github.event.comment.issue_url }}"
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\": \"$RESPONSE\"}" \
+            "$TARGET_URL"
