@@ -111,7 +111,9 @@ namespace SonicHeroes
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, turnSpeed * Time.deltaTime);
             }
 
-            transform.position += transform.forward * currentSpeed * Time.deltaTime;
+            // MoveTowards prevents overshooting the waypoint when swimming fast.
+            transform.position = Vector3.MoveTowards(
+                transform.position, target.position, currentSpeed * Time.deltaTime);
 
             if (toTarget.sqrMagnitude < 1.0f)
                 currentWaypoint++;
@@ -209,7 +211,17 @@ namespace SonicHeroes
 
         public void Destroy_Boardwalk()
         {
-            OnLand();
+            // Only destroy breakables — do NOT call OnLand(), which would
+            // double-trigger audio and splash FX already fired by their own
+            // animation event hooks (Play_Impact_Sound / SplashFX_Land).
+            Collider[] hits = Physics.OverlapSphere(transform.position, destroyRadius, breakableLayer);
+            foreach (Collider hit in hits)
+            {
+                if (hit.TryGetComponent(out Breakable b))
+                    b.Break();
+                else
+                    Destroy(hit.gameObject);
+            }
         }
 
         void OnDrawGizmosSelected()
@@ -226,6 +238,19 @@ namespace SonicHeroes
                         Gizmos.DrawLine(waypointPath[i].position, waypointPath[i + 1].position);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Stub — replace with your actual Breakable implementation.
+    /// Any GameObject on the breakableLayer that has this component
+    /// will have Break() called instead of being hard-destroyed.
+    /// </summary>
+    public class Breakable : MonoBehaviour
+    {
+        public virtual void Break()
+        {
+            Destroy(gameObject);
         }
     }
 }
