@@ -1,0 +1,38 @@
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read # Allows Claude to read CI results
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Automated PR Review by Claude
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Automation mode: Claude runs headlessly on every PR without needing @claude
+          prompt: |
+            Please review this pull request for the Sonic Heroes project. Provide a thorough review covering:
+
+            1. **Summary** – Brief description of what this PR does.
+            2. **Code Quality** – Style, readability, and consistency with the existing codebase.
+            3. **Bugs & Issues** – Any logic errors, edge cases, or potential crashes.
+            4. **Performance** – Any performance concerns relevant to a game project.
+            5. **Suggestions** – Concrete, actionable improvement ideas.
+            6. **Verdict** – Approve, Request Changes, or Needs Discussion.
+
+            Be constructive and specific. Reference line numbers where relevant.
