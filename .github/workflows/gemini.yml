@@ -1,0 +1,66 @@
+name: Google Gemini Workflow
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  gemini:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Google Generative AI SDK
+        run: npm install @google/generative-ai
+
+      - name: Run Gemini Task
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          EVENT_PATH: ${{ github.event_path }}
+        run: |
+          node << 'EOF'
+          import fs from "fs";
+          import { GoogleGenerativeAI } from "@google/generative-ai";
+
+          const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+          const model = genAI.getGenerativeModel({ model: "gemini-2.0-pro" });
+
+          const event = JSON.parse(fs.readFileSync(process.env.EVENT_PATH, "utf8"));
+
+          let prompt = "";
+
+          if (event.pull_request) {
+            prompt = `
+              Analyze this pull request:
+              Title: ${event.pull_request.title}
+              Body: ${event.pull_request.body}
+              Provide:
+              - Summary
+              - Risks
+              - Suggested improvements
+              - Code quality notes
+            `;
+          } else if (event.comment) {
+            prompt = `
+              User comment:
+              "${event.comment.body}"
+              Provide a helpful response.
+            `;
+          } else {
+            prompt = "Hello Gemini. Provide a test response.";
+          }
+
+          const result = await model.generateContent(prompt);
+          console.log("Gemini Output:");
+          console.log(result.response.text());
+          EOF
