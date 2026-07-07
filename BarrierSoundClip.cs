@@ -2,48 +2,26 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Collider))]
-public class Health : MonoBehaviour
+public class BarrierSoundClip : PickUpObject
 {
-    private static readonly int DieHash = Animator.StringToHash("Die");
-    private int health = 3;
-    private float timeSinceLastHit = 5;
-    public bool dead;
-    public HealthBar bar;
+    public AudioSource asource;
+    public AudioClip BarrierSound;
 
-    public int HealthValue { get; internal set; }
-
-    // Start is called before the first frame update
-    void Start()
+    private IEnumerator PickUp()
     {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-    public void TakeDamage(int damage)
-    {
-        if (dead) return;
-        GetComponentInChildren<Animator>().SetBool("Sleep", false);
-        health = Mathf.Max(0, health - damage);
-        bar.Hit(health);
-        if (health == 0)
+        HUD hud = Object.FindAnyObjectByType<HUD>();
+        hud.AddPower(powerValue);
+        GameInstance.currentRings += ringValue;
+        vis.SetActive(false);
+        GetComponent<Collider>().enabled = false;
+        hud.ShowPickUp(itemSprite);
+        AudioSource source = GetComponent<AudioSource>();
+        source.Play();
+        while (source.isPlaying)
         {
-            dead = true;
-            GetComponentInChildren<Animator>().SetTrigger(DieHash);
-            GetComponent<Collider>().enabled = false;
-            Object.FindAnyObjectByType<HUD>().AddPower(10);
-            Destroy(gameObject, 4);
-
+            yield return new WaitForEndOfFrame();
         }
-
-    }
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        if (collision.transform.CompareTag("Player")) TakeDamage(1);
+        Destroy(gameObject);
     }
 }
+
