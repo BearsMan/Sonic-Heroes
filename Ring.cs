@@ -34,7 +34,7 @@ public class Ring : MonoBehaviour
             ao.GetComponent<AudioObject>().Setup(clip, transform);
 
             GameInstance.AddRings(other.GetComponentInChildren<CharacterType>().type);
-            FindFirstObjectByType<HUD>().AddPower(1);
+            Object.FindAnyObjectByType<HUD>().AddPower(1);
             Destroy(gameObject);
         }
 
