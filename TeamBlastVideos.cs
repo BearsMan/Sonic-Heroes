@@ -22,9 +22,8 @@ public class TeamBlastVideos : MonoBehaviour
         
     }
 
-    [System.Obsolete]
-    public void SpecialAttack()
-    {
+public void PlayTeamBlast()
+{
         teamBlastVideoPlayer.SetActive(true);
 
         var teamSetup = FindAnyObjectByType<TeamSetup>();
@@ -41,7 +40,6 @@ public class TeamBlastVideos : MonoBehaviour
         StartCoroutine(PlayVideo());
     }
 
-    [System.Obsolete]
     public IEnumerator PlayVideo()
     {
         vplayer.Play();
@@ -55,7 +53,8 @@ public class TeamBlastVideos : MonoBehaviour
         teamBlastVideoPlayer.SetActive(false);
         yield return new WaitForSeconds(1);
 
-        Health[] allEnemies = FindObjectsOfType<Health>();
+        Health[] allEnemies = FindObjectsByType<Health>(FindObjectsInactive.Exclude);
+
         var ultimate = FindAnyObjectByType<UltimatePlayerMovement>();
         if (ultimate == null)
         {
