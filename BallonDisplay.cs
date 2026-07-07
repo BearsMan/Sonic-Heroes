@@ -23,15 +23,14 @@ public class BallonDisplay : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        object.FindObjectOfType<BallonDisplay>().myBallonVisible = true;
+        var display = FindAnyObjectByType<BallonDisplay>();
+        if (display != null) display.myBallonVisible = true;
+
+        myBallonItems.Clear();
+        if (myBallonDisplayPopUp != null)
         {
-            myBallonItems.Clear();
-            if (myBallonDisplayPopUp != null)
-            {
-                myBallonNumber = 0;
-            }
+            myBallonNumber = 0;
         }
-        
     }
    
 }
