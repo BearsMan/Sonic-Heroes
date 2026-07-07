@@ -33,7 +33,7 @@ public class ChangeGate : MonoBehaviour
     {
         if (other.gameObject.CompareTag("Player"))
         {
-            FindFirstObjectByType<CharacterSwitch>().SetCharacter(gateType);
+            Object.FindAnyObjectByType<CharacterSwitch>().SetCharacter(gateType);
         }
     }   
 }
