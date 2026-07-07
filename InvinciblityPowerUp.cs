@@ -9,20 +9,20 @@ public class InvinciblityPowerUp : PickUpObject
 
     protected override void AddEffect()
     {
-        HUD hud = FindFirstObjectByType<HUD>();
+        HUD hud = Object.FindAnyObjectByType<HUD>();
         hud.AddPower(powerValue);
         GameInstance.currentRings += ringValue;
         vis.SetActive(false);
         GetComponent<Collider>().enabled = false;
         hud.ShowPickUp(itemSprite);
-        FindFirstObjectByType<MusicAudio>().PlayMusic(invinciblityMusic);
+        Object.FindAnyObjectByType<MusicAudio>().PlayMusic(invinciblityMusic);
 
         StartCoroutine(SpeedBoost());
     }
 
     private IEnumerator SpeedBoost()
     {
-        UltimatePlayerMovement player = FindFirstObjectByType<UltimatePlayerMovement>();
+        UltimatePlayerMovement player = Object.FindAnyObjectByType<UltimatePlayerMovement>();
         //Add Invinciblity
         yield return new WaitForSeconds(55);
         //Remove Invinciblity
