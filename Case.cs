@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(AudioSource))]
 public class Case : MonoBehaviour
 {
     public GameObject[] spawnable = new GameObject[0];
@@ -19,7 +20,7 @@ public class Case : MonoBehaviour
     }
     public void TryToFindNeededSwitch()
     {
-        FindFirstObjectByType<Switch>();
+        Object.FindAnyObjectByType<Switch>();
     }
     private void OnTriggerEnter(Collider other)
     {
