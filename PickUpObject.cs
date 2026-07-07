@@ -24,7 +24,7 @@ public class PickUpObject : MonoBehaviour
 
     protected virtual void AddEffect()
     {
-        HUD hud = FindFirstObjectByType<HUD>();
+        HUD hud = Object.FindAnyObjectByType<HUD>();
         hud.AddPower(powerValue);
         GameInstance.currentRings += ringValue;
         vis.SetActive(false);
