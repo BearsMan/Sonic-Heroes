@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(CharacterSwitch))]
 public class TeamSetup : MonoBehaviour
 {
     public TeamComposition CurrentTeam;
@@ -53,7 +52,7 @@ public class TeamSetup : MonoBehaviour
         leftTeamMember.parent = null;
         rightTeamMember.parent = null;
 
-        HUD = FindFirstObjectByType<HUD>().gameObject;
+        HUD = Object.FindAnyObjectByType<HUD>().gameObject;
         HUD.GetComponent<HUD>().Setup(CurrentTeam);
         if (CurrentTeam.name == "Team Sonic")
         {
@@ -96,7 +95,7 @@ public class TeamSetup : MonoBehaviour
     }
     public IEnumerator SuperCountDown()
     {
-        while (GameInstance.currentRings > 0)
+        while(GameInstance.currentRings > 0)
         {
             HUD.GetComponent<HUD>().UpdateRings();
             GameInstance.currentRings -= 1;
