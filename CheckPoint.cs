@@ -24,8 +24,14 @@ public class CheckPoint : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (activated) return;
-        if (!other.CompareTag("Player")) return;
+        if (activated)
+        {
+            return;
+        }
+        if (!other.CompareTag("Player"))
+        {
+            return;
+        }
 
         activated = true;
 
@@ -39,7 +45,9 @@ public class CheckPoint : MonoBehaviour
         // Restore HP (Sonic Heroes restores character vitality)
         Health hp = other.GetComponent<Health>();
         if (hp != null)
+        {
             hp.HealthValue = 100;
+        }
 
         // Level up Speed, Fly, Power simultaneously
         CharacterLevelManager.Instance.LevelUpAll();
@@ -55,10 +63,14 @@ public class CheckPoint : MonoBehaviour
         yield return null;
 
         if (move.leftFollower != null)
+        {
             move.leftFollower.SetActive(true);
+        }
 
         if (move.rightFollower != null)
+        {
             move.rightFollower.SetActive(true);
+        }
     }
 
     private void ShowTeamLevelUpUI(GameObject player)
@@ -92,7 +104,10 @@ public class CharacterLevelManager
         get
         {
             if (instance == null)
+            {
                 instance = new CharacterLevelManager();
+            }
+
             return instance;
         }
     }
