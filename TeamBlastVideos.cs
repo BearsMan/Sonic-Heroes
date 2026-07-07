@@ -26,9 +26,18 @@ public class TeamBlastVideos : MonoBehaviour
     public void SpecialAttack()
     {
         teamBlastVideoPlayer.SetActive(true);
-        vplayer.clip = FindFirstObjectByType<TeamSetup>().CurrentTeam.teamBlast;
-        
-        
+
+        var teamSetup = FindAnyObjectByType<TeamSetup>();
+        if (teamSetup != null && teamSetup.CurrentTeam != null && teamSetup.CurrentTeam.teamBlast != null)
+        {
+            vplayer.clip = teamSetup.CurrentTeam.teamBlast;
+        }
+        else
+        {
+            Debug.LogWarning("TeamSetup or CurrentTeam.teamBlast not found.");
+            vplayer.clip = null;
+        }
+
         StartCoroutine(PlayVideo());
     }
 
@@ -47,16 +56,23 @@ public class TeamBlastVideos : MonoBehaviour
         yield return new WaitForSeconds(1);
 
         Health[] allEnemies = FindObjectsOfType<Health>();
-        Transform player = FindFirstObjectByType<UltimatePlayerMovement>().transform;
+        var ultimate = FindAnyObjectByType<UltimatePlayerMovement>();
+        if (ultimate == null)
+        {
+            Debug.LogWarning("UltimatePlayerMovement not found; aborting damage application.");
+            stageMusic.volume = 1;
+            omochaoDialog.volume = 1;
+            yield break;
+        }
+        Transform player = ultimate.transform;
 
         foreach (Health enemy in allEnemies)
         {
-            float distance = Vector3.Distance(player.position,enemy.transform.position);
-            if (distance<30)
+            float distance = Vector3.Distance(player.position, enemy.transform.position);
+            if (distance < 30)
             {
                 enemy.TakeDamage(10);
             }
-            
         }
 
         stageMusic.volume = 1;
