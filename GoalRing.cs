@@ -37,7 +37,7 @@ public class GoalRing : MonoBehaviour
     public IEnumerator EndOfLevel()
     {
         
-        ScoreSystem sys = FindFirstObjectByType<ScoreSystem>();
+        ScoreSystem sys = Object.FindAnyObjectByType<ScoreSystem>();
         sys.StartEndLevelSequence();
         //Displays Final Level Stats Here
         yield return new WaitForSeconds(3);
