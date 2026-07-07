@@ -5,7 +5,7 @@ using UnityEngine;
 public class TriggerDialog : MonoBehaviour
 {
     public List<AudioClip> dialogs = new List<AudioClip>();
-    private bool dialogRead = false;
+    private bool dialogread;
     public AudioSource omochaoTriggerDisable;
     public bool pause = false;
     // Start is called before the first frame update
@@ -21,22 +21,18 @@ public class TriggerDialog : MonoBehaviour
     }
     private void OnTriggerEnter(Collider other)
     {
-        if (dialogRead == false && other.CompareTag("Player"))
+        if (dialogread == false && other.CompareTag("Player"))
         {
-            dialogRead = true;
+            dialogread = true;
 
             StartCoroutine(ReadDialog());
         }
     }
     public IEnumerator ReadDialog()
     {
-        var playerMovement = Object.FindFirstObjectByType<UltimatePlayerMovement>();
-        if (playerMovement != null)
-        {
-            playerMovement.tutorialPlaying = true;
-        }
+        Object.FindAnyObjectByType<UltimatePlayerMovement>().tutorialPlaying = true;
         int counter = 0;
-
+            
         while (counter < dialogs.Count)
         {
             omochaoTriggerDisable.clip = dialogs[counter];
@@ -47,9 +43,6 @@ public class TriggerDialog : MonoBehaviour
             }
             counter += 1;
         }
-        if (playerMovement != null)
-        {
-            playerMovement.tutorialPlaying = false;
-        }
+        Object.FindAnyObjectByType<UltimatePlayerMovement>().tutorialPlaying = false;
     }
 }
