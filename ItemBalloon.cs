@@ -25,7 +25,7 @@ public class ItemBalloon : MonoBehaviour
             int pick = Random.Range(0, pickables.Length);
             Instantiate(pickables[pick], other.transform.position,Quaternion.identity);
             GetComponent<AudioSource>().Play();
-            FindFirstObjectByType<HUD>().AddPower(1);
+            Object.FindAnyObjectByType<HUD>().AddPower(1);
             popped = true;
             Destroy(gameObject);
         }
