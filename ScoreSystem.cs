@@ -41,7 +41,7 @@ public class ScoreSystem : MonoBehaviour
     {
         NormalHUD.gameObject.SetActive(false);
         scoreSystem.SetActive(true);
-        FindFirstObjectByType<UltimatePlayerMovement>().enabled = false;
+        Object.FindAnyObjectByType<UltimatePlayerMovement>().enabled = false;
         StartCoroutine(EndLevelSequence());
     }
     public IEnumerator EndLevelSequence()
