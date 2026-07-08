@@ -8,7 +8,7 @@ The project is currently playable and under active development.
 
 ### Features
 
-- Team Sonic gameplay
+- Team Sonic, Team Dark, Team Rose, Team Chaotix, and Last story gameplay
 - Team switching
 - Multiple playable stages
 - Pause menu
@@ -17,6 +17,7 @@ The project is currently playable and under active development.
 - Audio system
 - Updated lighting
 - Unity 6.5 compatibility
+- 2D and/or 3D Action Stages
 
 ## Known Issues
 
