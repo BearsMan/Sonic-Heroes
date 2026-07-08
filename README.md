@@ -29,7 +29,7 @@ The project is currently playable and under active development.
 
 ## Requirements
 
-- Unity 6.5 (6000.5.x) or later
+- Unity 6 (6000.x.x) or later
 
 ## Getting Started
 
