@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class HUD : MonoBehaviour
 {
@@ -62,7 +62,7 @@ public class HUD : MonoBehaviour
         scoreText.text = GameInstance.scoreCount.ToString("00000000");
         livesText.text = GameInstance.livesCount.ToString("00");
 
-       
+
         UpdateRings();
         UpdateTeamBlastMeter();
     }
@@ -115,11 +115,20 @@ public class HUD : MonoBehaviour
             case (CHARACTERTYPES.Power):
                 SetCharacter(2);
                 break;
-        } 
-    
+        }
+
     }
     public void UpdateCharacterLevels()
     {
+        foreach (Image img in lightsSpeed)
+            img.enabled = false;
+
+        foreach (Image img in lightsFly)
+            img.enabled = false;
+
+        foreach (Image img in lightsPower)
+            img.enabled = false;
+
         GameInstance.speedLevelUp = Mathf.Clamp(GameInstance.speedLevelUp, 0, 3);
         GameInstance.flyLevelUp = Mathf.Clamp(GameInstance.flyLevelUp, 0, 3);
         GameInstance.powerLevelUp = Mathf.Clamp(GameInstance.powerLevelUp, 0, 3);
@@ -134,7 +143,8 @@ public class HUD : MonoBehaviour
         {
             lightsFly[counter].enabled = true;
             counter += 1;
-        } counter = 0;
+        }
+        counter = 0;
         while (counter < GameInstance.powerLevelUp)
         {
             lightsPower[counter].enabled = true;
@@ -144,13 +154,13 @@ public class HUD : MonoBehaviour
 
     public void SetCharacter(int direction)
     {
-        if (direction >  0)
+        if (direction > 0)
         {
             Character s = teamSprites[teamSprites.Count - 1];
             teamSprites.RemoveAt(teamSprites.Count - 1);
             teamSprites.Insert(0, s);
         }
-        else if(direction < 0)
+        else if (direction < 0)
         {
             Character s = teamSprites[0];
             teamSprites.RemoveAt(0);
