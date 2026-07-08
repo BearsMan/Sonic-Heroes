@@ -1,7 +1,7 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Collider))]
 public class BarrierSoundClip : PickUpObject
 {
     public AudioSource asource;
@@ -9,12 +9,14 @@ public class BarrierSoundClip : PickUpObject
 
     private IEnumerator PickUp()
     {
-        HUD hud = Object.FindAnyObjectByType<HUD>();
-        hud.AddPower(powerValue);
+        HUD hud = UnityEngine.Object.FindAnyObjectByType<HUD>();
+        if (hud != null)
+            hud.AddPower(powerValue);
         GameInstance.currentRings += ringValue;
         vis.SetActive(false);
         GetComponent<Collider>().enabled = false;
-        hud.ShowPickUp(itemSprite);
+        if (hud != null)
+            hud.ShowPickUp(itemSprite);
         AudioSource source = GetComponent<AudioSource>();
         source.Play();
         while (source.isPlaying)
