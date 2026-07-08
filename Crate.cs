@@ -13,7 +13,7 @@ public class Crate : MonoBehaviour
 
         GameObject source = Resources.Load<GameObject>("Audio Object");
         source = Instantiate(source, transform.position, transform.rotation);
-        source.GetComponent<AudioObject>().Setup(breakSound, transform);
+        if (source != null && source.TryGetComponent<AudioObject>(out var srcAo)) srcAo.Setup(breakSound, transform);
         Destroy(gameObject);//Replace with broken crate model
     }
 

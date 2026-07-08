@@ -28,7 +28,7 @@ public class Emblem : MonoBehaviour
     {
         Debug.Log("End Level");
         GameObject ao = Instantiate(source, transform.position, Quaternion.identity);
-        ao.GetComponent<AudioObject>().Setup(clip, transform);
+            if (ao != null && ao.TryGetComponent<AudioObject>(out var aObj)) aObj.Setup(clip, transform);
     }
 
     public IEnumerator LevelTimer()

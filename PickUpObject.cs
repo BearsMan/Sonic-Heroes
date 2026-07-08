@@ -24,12 +24,18 @@ public class PickUpObject : MonoBehaviour
 
     protected virtual void AddEffect()
     {
+        // Look up HUD explicitly and only interact with it if present to avoid null references.
         HUD hud = Object.FindAnyObjectByType<HUD>();
-        hud.AddPower(powerValue);
+        if (hud != null)
+        {
+            hud.AddPower(powerValue);
+            hud.ShowPickUp(itemSprite);
+        }
+
+        // Always apply game state changes and visuals/audio regardless of HUD presence.
         GameInstance.currentRings += ringValue;
         vis.SetActive(false);
         GetComponent<Collider>().enabled = false;
-        hud.ShowPickUp(itemSprite);
         AudioSource source = GetComponent<AudioSource>();
         source.Play();
     }

@@ -30,11 +30,15 @@ public class Ring : MonoBehaviour
         FollowerNavigation ai = other.GetComponent<FollowerNavigation>();
         if (player || ai)
         {
-            GameObject ao = Instantiate(source, transform.position, Quaternion.identity);
-            ao.GetComponent<AudioObject>().Setup(clip, transform);
+                GameObject ao = Instantiate(source, transform.position, Quaternion.identity);
+                if (ao != null && ao.TryGetComponent<AudioObject>(out var audioObj))
+                {
+                    audioObj.Setup(clip, transform);
+                }
 
             GameInstance.AddRings(other.GetComponentInChildren<CharacterType>().type);
-            Object.FindAnyObjectByType<HUD>().AddPower(1);
+            var hud = Object.FindAnyObjectByType<HUD>();
+            if (hud != null) hud.AddPower(1);
             Destroy(gameObject);
         }
 

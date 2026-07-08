@@ -53,7 +53,9 @@ public class UltimatePlayerMovement : MonoBehaviour
     public object TeamSetup { get; private set; }
     private void Awake()
     {
-        cam = Object.FindAnyObjectByType<CameraController>().transform;
+        var camCtrl = Object.FindAnyObjectByType<CameraController>();
+        if (camCtrl != null)
+            cam = camCtrl.transform;
     }
     private void Update()
     {
@@ -69,8 +71,10 @@ public class UltimatePlayerMovement : MonoBehaviour
         }
         if (isGrounded == true)
         {
-            leftFollower.GetComponent<FollowerNavigation>().agent.enabled = true;
-            rightFollower.GetComponent<FollowerNavigation>().agent.enabled = true;
+            if (leftFollower != null && leftFollower.TryGetComponent<FollowerNavigation>(out var lfNav) && lfNav.agent != null)
+                lfNav.agent.enabled = true;
+            if (rightFollower != null && rightFollower.TryGetComponent<FollowerNavigation>(out var rfNav) && rfNav.agent != null)
+                rfNav.agent.enabled = true;
         }
         // RotateToGround();
     }

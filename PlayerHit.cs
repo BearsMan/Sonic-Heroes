@@ -51,7 +51,7 @@ public class PlayerHit : MonoBehaviour
         GameObject newRing = Instantiate(ringPrefab, transform.position+transform.up, Quaternion.identity);
         newRing.GetComponent<Ring>().StartPhase();
         Rigidbody ringbody = newRing.GetComponent<Rigidbody>();
-        ringbody.velocity = new Vector3(x, 1, z) * force;
+        ringbody.linearVelocity = new Vector3(x, 1, z) * force;
         ringbody.useGravity = true;
     }
 }

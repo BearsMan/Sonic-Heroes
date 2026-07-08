@@ -30,7 +30,8 @@ public class TriggerDialog : MonoBehaviour
     }
     public IEnumerator ReadDialog()
     {
-        Object.FindAnyObjectByType<UltimatePlayerMovement>().tutorialPlaying = true;
+        var up = Object.FindAnyObjectByType<UltimatePlayerMovement>();
+        if (up != null) up.tutorialPlaying = true;
         int counter = 0;
             
         while (counter < dialogs.Count)
@@ -43,6 +44,7 @@ public class TriggerDialog : MonoBehaviour
             }
             counter += 1;
         }
-        Object.FindAnyObjectByType<UltimatePlayerMovement>().tutorialPlaying = false;
+        var up2 = Object.FindAnyObjectByType<UltimatePlayerMovement>();
+        if (up2 != null) up2.tutorialPlaying = false;
     }
 }

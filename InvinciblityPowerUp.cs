@@ -15,7 +15,8 @@ public class InvinciblityPowerUp : PickUpObject
         vis.SetActive(false);
         GetComponent<Collider>().enabled = false;
         hud.ShowPickUp(itemSprite);
-        Object.FindAnyObjectByType<MusicAudio>().PlayMusic(invinciblityMusic);
+        var music = Object.FindAnyObjectByType<MusicAudio>();
+        if (music != null) music.PlayMusic(invinciblityMusic);
 
         StartCoroutine(SpeedBoost());
     }

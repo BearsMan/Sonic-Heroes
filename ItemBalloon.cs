@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class LevelUp : MonoBehaviour
+public class ItemBalloon : MonoBehaviour
 {
     public GameObject levelUpHUD;
     public GameObject levelUpParent;
@@ -27,36 +27,54 @@ public class LevelUp : MonoBehaviour
     }
     public void LevelUpSound()
     {
-        GetComponent<AudioSource>().Play();
+        AudioSource audio = GetComponent<AudioSource>();
+        if (audio != null) audio.Play();
     }
     public void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player") && levelingup == false)
         {
             levelingup = true;
-            GetComponent<SpriteRenderer>().enabled = false;
+            SpriteRenderer sr = GetComponent<SpriteRenderer>();
+            if (sr != null) sr.enabled = false;
             GameInstance.speedLevelUp += 1;
             GameInstance.flyLevelUp += 1;
             GameInstance.powerLevelUp += 1;
-            Instantiate(levelUpPrefab, levelUpParent.transform);
+            if (levelUpPrefab != null && levelUpParent != null)
+                Instantiate(levelUpPrefab, levelUpParent.transform);
             StartCoroutine(PlayLevelUpSFX());
-            Object.FindAnyObjectByType<HUD>().AddPower(5);
+            var hud = Object.FindAnyObjectByType<HUD>();
+            if (hud != null) hud.AddPower(5);
         }
     }
     
     public IEnumerator PlayLevelUpSFX()
     {
-        GetComponent<AudioSource>().Play();
-        while (GetComponent<AudioSource>().isPlaying == true)
+        AudioSource audio = GetComponent<AudioSource>();
+        if (audio == null)
         {
-            yield return new WaitForSeconds(Time.deltaTime);
+            Destroy(gameObject);
+            yield break;
         }
-        GetComponent<AudioSource>().clip = characterSFX[GameInstance.currentTeam];
-        GetComponent<AudioSource>().Play();
 
-        while (GetComponent<AudioSource>().isPlaying == true)
+        audio.Play();
+        while (audio.isPlaying)
         {
-            yield return new WaitForSeconds(Time.deltaTime);
+            yield return null;
+        }
+
+        if (characterSFX != null &&
+            GameInstance.currentTeam >= 0 &&
+            GameInstance.currentTeam < characterSFX.Count &&
+            characterSFX[GameInstance.currentTeam] != null)
+        {
+            audio.clip = characterSFX[GameInstance.currentTeam];
+            audio.Play();
+
+            while (audio.isPlaying)
+            {
+                yield return null;
+            }
         }
         Destroy(gameObject);
     }

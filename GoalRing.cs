@@ -38,7 +38,10 @@ public class GoalRing : MonoBehaviour
     {
         
         ScoreSystem sys = Object.FindAnyObjectByType<ScoreSystem>();
-        sys.StartEndLevelSequence();
+        if (sys != null)
+        {
+            sys.StartEndLevelSequence();
+        }
         //Displays Final Level Stats Here
         yield return new WaitForSeconds(3);
         SceneManager.LoadScene(NextLevelName);

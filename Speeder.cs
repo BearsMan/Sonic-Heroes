@@ -17,12 +17,12 @@ public class Speeder : MonoBehaviour
 
         if (other.TryGetComponent(out Rigidbody body))
         {
-            body.velocity = Vector3.zero;
+            body.linearVelocity = Vector3.zero;
             body.AddForce(transform.forward * force);
             body.transform.rotation = transform.rotation;
 
             GameObject ao = Instantiate(source, transform.position, Quaternion.identity);
-            ao.GetComponent<AudioObject>().Setup(clip, transform);
+            if (ao != null && ao.TryGetComponent<AudioObject>(out var aoComp)) aoComp.Setup(clip, transform);
 
 
             if (other.TryGetComponent(out UltimatePlayerMovement player))

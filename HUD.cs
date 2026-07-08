@@ -76,7 +76,8 @@ public class HUD : MonoBehaviour
             teamBlastPrompt.SetActive(true);
             if (Input.GetKeyDown(KeyCode.Z))
             {
-                Object.FindAnyObjectByType<TeamBlastVideos>().PlayTeamBlast();
+                var tb = Object.FindAnyObjectByType<TeamBlastVideos>();
+                if (tb != null) tb.PlayTeamBlast();
                 powerUpLevel = 0;
             }
         }

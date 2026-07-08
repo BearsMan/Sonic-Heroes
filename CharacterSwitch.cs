@@ -59,7 +59,8 @@ public class CharacterSwitch : MonoBehaviour
                 powerCharacter.parent = rightSlot;
                 break;
         }
-        Object.FindFirstObjectByType<HUD>().SetCharacter(-1);
+        var _hud0 = Object.FindAnyObjectByType<HUD>(FindObjectsInactive.Exclude);
+        if (_hud0 != null) _hud0.SetCharacter(-1);
         ResetCharacters();
     }
 
@@ -86,7 +87,8 @@ public class CharacterSwitch : MonoBehaviour
                 powerCharacter.parent = rightSlot;
                 break;
         }
-        Object.FindFirstObjectByType<HUD>().SetCharacter(1);
+        var _hud1 = Object.FindAnyObjectByType<HUD>(FindObjectsInactive.Exclude);
+        if (_hud1 != null) _hud1.SetCharacter(1);
         ResetCharacters();
     }
 
@@ -114,7 +116,8 @@ public class CharacterSwitch : MonoBehaviour
                 powerCharacter.parent = rightSlot;
                 break;
         }
-        Object.FindFirstObjectByType<HUD>().SetCharacter(currentCharacterType);
+        var _hud2 = Object.FindAnyObjectByType<HUD>(FindObjectsInactive.Exclude);
+        if (_hud2 != null) _hud2.SetCharacter(currentCharacterType);
         ResetCharacters();
     }
 
