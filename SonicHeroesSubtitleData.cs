@@ -22,7 +22,13 @@ public enum SonicHeroesCharacter
 [Serializable]
 public class CharacterSubtitleEntry
 {
+    public SonicHeroesTeam team;
+
     public SonicHeroesCharacter character;
+
+    public StageID stageID;
+
+    public SubtitleEventID eventID;
 
     [TextArea(2, 5)]
     public string line;

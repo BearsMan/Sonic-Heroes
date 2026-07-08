@@ -208,7 +208,55 @@ public class SubtitleSystem : MonoBehaviour
     {
         subtitleQueue.Clear();
     }
+    public void PlayEvent(SonicHeroesTeam team, SubtitleEventID eventID)
+    {
+        if (database == null)
+        {
+            Debug.LogWarning("SubtitleSystem: No SubtitleDatabase assigned.");
+            return;
+        }
 
+        var pool = database.GetByEvent(team, eventID);
+
+        if (pool == null || pool.Count == 0)
+        {
+            Debug.LogWarning($"SubtitleSystem: No subtitle found for {team} / {eventID}.");
+            return;
+        }
+
+        var entry = pool[Random.Range(0, pool.Count)];
+
+        string message = prefixCharacterName
+            ? $"[{entry.character}]\n{entry.line}"
+            : entry.line;
+
+        ShowSubtitle(message, entry.voiceClip);
+    }
+
+    public void PlayStageEvent(SonicHeroesTeam team, StageID stageID, SubtitleEventID eventID)
+    {
+        if (database == null)
+        {
+            Debug.LogWarning("SubtitleSystem: No SubtitleDatabase assigned.");
+            return;
+        }
+
+        var pool = database.GetByStageEvent(team, stageID, eventID);
+
+        if (pool == null || pool.Count == 0)
+        {
+            Debug.LogWarning($"SubtitleSystem: No subtitle found for {team} / {stageID} / {eventID}.");
+            return;
+        }
+
+        var entry = pool[Random.Range(0, pool.Count)];
+
+        string message = prefixCharacterName
+            ? $"[{entry.character}]\n{entry.line}"
+            : entry.line;
+
+        ShowSubtitle(message, entry.voiceClip);
+    }
     public void HideImmediately()
     {
         if (currentCoroutine != null)
