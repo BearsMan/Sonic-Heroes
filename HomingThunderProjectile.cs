@@ -61,6 +61,6 @@ public class HomingThunderProjectile : MonoBehaviour
             enemy.HitByThunderShoot(damage, stunDuration);
         }
 
-        Destroy(gameObject);
+        Destroy (gameObject);
     }
 }
