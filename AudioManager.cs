@@ -54,7 +54,7 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    public void Start()
+    void Start()
     {
         LoadVolumes();
         PlayMusic();
