@@ -1,12 +1,13 @@
 using UnityEngine;
 using UnityEngine.AI;
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(CapsuleCollider))]
 public class FollowerNavigation : MonoBehaviour
 {
-    private static readonly int GroundedHash = Animator.StringToHash("Grounded");
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
+    private static readonly int GroundedHash = Animator.StringToHash("Grounded");
     public Transform target;
     public NavMeshAgent agent;
     public Animator anim;
