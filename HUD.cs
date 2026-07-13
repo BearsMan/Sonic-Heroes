@@ -59,7 +59,7 @@ public class HUD : MonoBehaviour
         string m = Mathf.Floor(timer / 60).ToString("00");
         timeText.text = ($"{m}:{s}:{ms:00}");
 
-        scoreText.text = GameInstance.scoreCount.ToString("00000000");
+        scoreText.text = GameInstance.LevelScore.ToString("00000000");
         livesText.text = GameInstance.livesCount.ToString("00");
 
 

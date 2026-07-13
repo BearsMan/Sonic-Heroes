@@ -1,13 +1,13 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Collider))]
 public class InvinciblityPowerUp : PickUpObject
 {
-    
+
     public AudioClip invinciblityMusic;
 
-    protected override void AddEffect()
+    protected override void AddEffect(CHARACTERTYPES characterTypes)
     {
         HUD hud = Object.FindAnyObjectByType<HUD>();
         hud.AddPower(powerValue);

@@ -1,12 +1,11 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
 public class PowerSneaker : PickUpObject
 {
     public AudioClip powerSneakerAudio;
-    protected override void AddEffect()
+    protected override void AddEffect(CHARACTERTYPES characterTypes)
     {
         HUD hud = Object.FindAnyObjectByType<HUD>();
         hud.AddPower(powerValue);
@@ -14,7 +13,8 @@ public class PowerSneaker : PickUpObject
         vis.SetActive(false);
         GetComponent<Collider>().enabled = false;
         hud.ShowPickUp(itemSprite);
-        Object.FindAnyObjectByType<MusicAudio>().PlayMusic(powerSneakerAudio);
+        var music = Object.FindAnyObjectByType<MusicAudio>();
+        if (music != null) music.PlayMusic(powerSneakerAudio);
 
         StartCoroutine(SpeedBoost());
     }

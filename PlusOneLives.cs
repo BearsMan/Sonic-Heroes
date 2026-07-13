@@ -1,17 +1,16 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlusOneLives : PickUpObject
 {
     public AudioClip oneLivesUp;
-    protected override void AddEffect()
+    protected override void AddEffect(CHARACTERTYPES charactherTypes)
     {
-        base.AddEffect();
-        
+        base.AddEffect(charactherTypes);
+
         GameInstance.livesCount++;
         StartCoroutine(DestroyAfterPlay());
-        
+
     }
 
     private IEnumerator DestroyAfterPlay()
