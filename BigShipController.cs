@@ -5,7 +5,6 @@ public class BigShipController : MonoBehaviour
 {
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 15f;
-    
 
     [Header("Path Settings")]
     [SerializeField] private Transform[] waypoints;
@@ -24,6 +23,12 @@ public class BigShipController : MonoBehaviour
     [SerializeField] private float fireCoolDown = 2f;
     [SerializeField] private float prejectileSpeed = 80f;
 
+    [Header("Banking")]
+    [SerializeField] private Transform visualModel;
+    [SerializeField] private float maxBankAngle = 12f;
+    [SerializeField] private float bankSpeed = 4f;
+
+    private float currentBank = 0;
     private int currentWayPointIndex = 0;
     private Rigidbody body;
 
@@ -100,6 +105,7 @@ public class BigShipController : MonoBehaviour
         }
     }
 
+
     private void Patrol()
     {
         if (waypoints == null || waypoints.Length == 0)
@@ -123,10 +129,13 @@ public class BigShipController : MonoBehaviour
             currentWayPointIndex = (currentWayPointIndex + 1) % waypoints.Length;
         }
     }
+        
 
     private void MoveTowards(Vector3 target)
     {
         Vector3 targetDirection = (target - body.position).normalized;
+        float turnDirection = Vector3.Dot(transform.right, targetDirection);
+        UpdateBank(turnDirection);
 
         Quaternion targetRotation = Quaternion.LookRotation(targetDirection, Vector3.up);
         Quaternion nextRotation = Quaternion.RotateTowards(body.rotation, targetRotation, steeringSpeed * Time.fixedDeltaTime);
@@ -136,5 +145,20 @@ public class BigShipController : MonoBehaviour
         body.MovePosition(nextPosition);
         body.MoveRotation(nextRotation);
 
+    }
+
+    private void UpdateBank(float turnDirection)
+    {
+        if (visualModel != null)
+        {
+            return;
+        }
+
+        float targetBank = -turnDirection * maxBankAngle;
+        currentBank = Mathf.Lerp(currentBank, targetBank, bankSpeed * Time.fixedDeltaTime);
+
+        Vector3 angles = visualModel.localEulerAngles;
+        angles.z = currentBank;
+        visualModel .localEulerAngles = angles;
     }
 }
