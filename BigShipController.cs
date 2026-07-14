@@ -31,6 +31,7 @@ public class BigShipController : MonoBehaviour
     private float currentBank = 0;
     private int currentWayPointIndex = 0;
     private Rigidbody body;
+    private Quaternion visualStartRotation;
 
     private ShipState currentState = ShipState.Patrol;
 
@@ -45,6 +46,10 @@ public class BigShipController : MonoBehaviour
     void Awake()
     {
         body = GetComponent<Rigidbody>();
+        if (visualModel != null )
+        {
+            visualStartRotation = visualModel.localRotation;
+        }
     }
 
     void FixedUpdate()
@@ -133,7 +138,12 @@ public class BigShipController : MonoBehaviour
 
     private void MoveTowards(Vector3 target)
     {
-        Vector3 targetDirection = (target - body.position).normalized;
+        Vector3 offset = target - body.position;
+        if (offset.sqrMagnitude < 0.001f)
+        {
+            return;
+        }
+        Vector3 targetDirection = offset.normalized;
         float turnDirection = Vector3.Dot(transform.right, targetDirection);
         UpdateBank(turnDirection);
 
@@ -149,16 +159,14 @@ public class BigShipController : MonoBehaviour
 
     private void UpdateBank(float turnDirection)
     {
-        if (visualModel != null)
+        if (visualModel == null)
         {
             return;
         }
 
-        float targetBank = -turnDirection * maxBankAngle;
+        float targetBank = turnDirection * maxBankAngle;
         currentBank = Mathf.Lerp(currentBank, targetBank, bankSpeed * Time.fixedDeltaTime);
 
-        Vector3 angles = visualModel.localEulerAngles;
-        angles.z = currentBank;
-        visualModel .localEulerAngles = angles;
+        visualModel.localRotation = visualStartRotation * Quaternion.Euler(0f, 0f, currentBank);
     }
 }
