@@ -21,11 +21,7 @@ The project is currently playable and under active development.
 
 ## Known Issues
 
-- Unity may display the following warning:
-  ```
-  Failed to create the agent because there is no valid NavMesh
-  ```
-  This warning is known and does not affect gameplay. The project functions correctly without a baked Unity NavMesh.
+- None
 
 ## Requirements
 
