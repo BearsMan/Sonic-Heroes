@@ -7,6 +7,12 @@ public class PauseMenu : MonoBehaviour
     [Header("References")]
     [SerializeField] private GameObject pauseMenu;
 
+    [Header("Scene Navigation")]
+    [SerializeField] private string normalStageReturnScene = "Menu Select";
+    [SerializeField] private string teamBattleReturnScene = "2 Players";
+
+
+
     [Header("Settings")]
     [SerializeField] private KeyCode pauseKey = KeyCode.Escape;
     [SerializeField] private bool pauseAudio = true;
@@ -187,17 +193,20 @@ public class PauseMenu : MonoBehaviour
             return;
         }
 
-        Scene scene = SceneManager.GetActiveScene();
+        Scene gameplayScene = GetGameplayScene();
 
-        if (!scene.IsValid() || scene.buildIndex < 0)
+        if (!gameplayScene.IsValid() || gameplayScene.buildIndex < 0)
         {
-            Debug.LogError("The active scene is invalid or is not included in the build scene list.", this);
+            Debug.LogError("The gameplay scene could not be restarted.", this);
             return;
         }
 
         isChangingScene = true;
         PrepareForSceneChange();
-        SceneManager.LoadScene(scene.buildIndex);
+
+        // This is only correct if loading this scene normally reconstructs
+        // HUD, Event, and all required additive scenes.
+        SceneManager.LoadScene(gameplayScene.buildIndex, LoadSceneMode.Single);
     }
 
     // Keeps an existing button wired to the old capitalization working.
@@ -213,14 +222,80 @@ public class PauseMenu : MonoBehaviour
             return;
         }
 
+        Scene gameplayScene = GetGameplayScene();
+
+        if (!gameplayScene.IsValid())
+        {
+            Debug.LogError("Could not identify the current gameplay scene.", this);
+            return;
+        }
+
+        bool isTeamBattle = IsTeamBattleScene(gameplayScene.name);
+
+        string destination = isTeamBattle ? teamBattleReturnScene : normalStageReturnScene;
+
+        if (string.IsNullOrWhiteSpace(destination))
+        {
+            Debug.LogError("No return scene has been assigned.", this);
+            return;
+        }
+
+        if (!Application.CanStreamedLevelBeLoaded(destination))
+        {
+            Debug.LogError($"Return scene '{destination}' cannot be loaded. " + "Check its exact name and include it in the Build Profile.", this);
+            return;
+        }
+
         isChangingScene = true;
         PrepareForSceneChange();
 
-#if UNITY_EDITOR
-        Debug.Log("Quit requested. Application.Quit does not stop Editor Play Mode.", this);
-#endif
+        SceneManager.LoadScene(destination, LoadSceneMode.Single);
+    }
 
-        Application.Quit();
+    private Scene GetGameplayScene()
+    {
+        Scene activeScene = SceneManager.GetActiveScene();
+
+        if (IsGameplayScene(activeScene))
+        {
+            return activeScene;
+        }
+
+        // Search backward because the gameplay scene is often loaded after
+        // shared/bootstrap scenes.
+        for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
+        {
+            Scene scene = SceneManager.GetSceneAt(i);
+
+            if (IsGameplayScene(scene))
+            {
+                return scene;
+            }
+        }
+
+        return default;
+    }
+
+    private static bool IsTeamBattleScene(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+        {
+            return false;
+        }
+
+        return sceneName.StartsWith("Team ", System.StringComparison.OrdinalIgnoreCase) || sceneName.StartsWith("2P ", System.StringComparison.OrdinalIgnoreCase);
+    }
+    private static bool IsGameplayScene(Scene scene)
+    {
+        if (!scene.IsValid() || !scene.isLoaded)
+        {
+            return false;
+        }
+
+        string sceneName = scene.name;
+
+            return  
+            sceneName.StartsWith("Stage ", System.StringComparison.OrdinalIgnoreCase) || sceneName.StartsWith("Team ", System.StringComparison.OrdinalIgnoreCase) || sceneName.StartsWith("2P ", System.StringComparison.OrdinalIgnoreCase);
     }
 
     private void PrepareForSceneChange()
