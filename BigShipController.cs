@@ -1,6 +1,6 @@
 using UnityEngine;
-
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent (typeof(ShipWeapons))]
 public class BigShipController : MonoBehaviour
 {
     [Header("Movement Settings")]
@@ -17,17 +17,12 @@ public class BigShipController : MonoBehaviour
     [SerializeField] private float attackRange = 60f;
     [SerializeField] private float loseTargetRange = 220f;
 
-    [Header("Combat")]
-    [SerializeField] private GameObject prejectilePrefab;
-    [SerializeField] private Transform firePoint;
-    [SerializeField] private float fireCoolDown = 2f;
-    [SerializeField] private float prejectileSpeed = 80f;
-
     [Header("Banking")]
     [SerializeField] private Transform visualModel;
     [SerializeField] private float maxBankAngle = 12f;
     [SerializeField] private float bankSpeed = 4f;
 
+    private ShipWeapons shipWeapons;
     private float currentBank = 0;
     private int currentWayPointIndex = 0;
     private Rigidbody body;
@@ -46,6 +41,7 @@ public class BigShipController : MonoBehaviour
     void Awake()
     {
         body = GetComponent<Rigidbody>();
+        shipWeapons = GetComponent<ShipWeapons>();
         if (visualModel != null )
         {
             visualStartRotation = visualModel.localRotation;
@@ -90,6 +86,11 @@ public class BigShipController : MonoBehaviour
 
             case ShipState.Attack:
                 MoveTowards(player.position);
+
+                if (shipWeapons != null)
+                {
+                    shipWeapons.Fire(player);
+                }
 
                 if (distanceToPlayer > attackRange)
                 {

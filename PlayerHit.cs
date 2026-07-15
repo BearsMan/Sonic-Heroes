@@ -1,7 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(UltimatePlayerMovement))]
 public class PlayerHit : MonoBehaviour
 {
     public AudioClip clip;
@@ -23,7 +22,7 @@ public class PlayerHit : MonoBehaviour
 
     public void Hit()
     {
-        
+
         int rings = GameInstance.RemoveRings();
         if (rings > 0)
         {
@@ -48,7 +47,7 @@ public class PlayerHit : MonoBehaviour
         float x = Random.Range(-1, 1);
         float z = Random.Range(-1, 1);
 
-        GameObject newRing = Instantiate(ringPrefab, transform.position+transform.up, Quaternion.identity);
+        GameObject newRing = Instantiate(ringPrefab, transform.position + transform.up, Quaternion.identity);
         newRing.GetComponent<Ring>().StartPhase();
         Rigidbody ringbody = newRing.GetComponent<Rigidbody>();
         ringbody.linearVelocity = new Vector3(x, 1, z) * force;
