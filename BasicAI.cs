@@ -1,10 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-
+[RequireComponent(typeof(NavMeshAgent))]
 public class BasicAI : MonoBehaviour
 {
+    [Header("AI Settings")]
+    public float chaseRange = 20f;
+    public float attackRange = 2f;
+
+    [Header("References")]
     public Transform targetposition;
     public NavMeshAgent agent;
     public enum STATE
@@ -18,14 +21,36 @@ public class BasicAI : MonoBehaviour
     }
 
     public STATE curState = STATE.Move;
-    // Start is called before the first frame update
-    void Start()
-    {
 
+    private void Awake()
+    {
+        if (agent == null)
+        {
+            agent = GetComponent<NavMeshAgent>();
+        }
+    }
+    // Find the player automatically if no target has been assigned
+    private void Start()
+    {
+        if (targetposition != null)
+        {
+            return;
+        }
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null )
+        {
+            targetposition = player.transform;
+        }
+
+        else
+        {
+            Debug.LogWarning("Basic AI could not find an object tagged player", this);
+        }
     }
 
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
         switch (curState)
         {
@@ -60,13 +85,38 @@ public class BasicAI : MonoBehaviour
     #region states
     public void IdleState()
     {
+        if (targetposition == null)
+        {
+            return;
+        }
 
+        float distanceToTarget = Vector3.Distance(transform.position, targetposition.position);
+
+        if (distanceToTarget <= chaseRange)
+        {
+            SetState(STATE.Move);
+        }
     }
 
     public void MoveState()
     {
-        agent.SetDestination(targetposition.position);
+        if (agent == null || targetposition == null)
+        {
+            return;
+        }
+            agent.SetDestination(targetposition.position);
 
+        float distanceToTarget = Vector3.Distance(transform.position, targetposition.position);
+        if (distanceToTarget <= chaseRange)
+        {
+            agent.isStopped = false;
+        }
+
+        else
+        {
+            agent.isStopped = true;
+            SetState(STATE.Idle);
+        }
     }
     public void SpecialState()
     {
@@ -74,7 +124,7 @@ public class BasicAI : MonoBehaviour
     }
     public void AttackState()
     {
-
+        
     }
     public void InairState()
     {
@@ -84,9 +134,5 @@ public class BasicAI : MonoBehaviour
     {
 
     }
-
-
-
-
     #endregion
 }
