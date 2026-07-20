@@ -1,23 +1,29 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(SpriteRenderer))]
 public class ItemBalloon : MonoBehaviour
 {
+    [Header("Item Box")]
+    [Range(5, 20)]
+    public int ringValue = 5;
     public GameObject levelUpHUD;
     public GameObject levelUpParent;
     public GameObject levelUpPrefab;
     public List<AudioClip> characterSFX = new List<AudioClip>();
     public bool levelingUp = false;
-    public int ringValue = 0;
-    public float speedCoreLevelUp = 0f;
-    public float powerCoreLevelUp = 0f;
-    public float flyCoreLevelUp = 0f;
-    public bool isSpeed, isFlying, isPower = false;
+    public ItemType itemType;
     public Sprite pickUpSprite;
     public Sprite bluePowerCore, redPowerCore, yellowPowerCore;
+    public Sprite shieldSprite;
+    public Sprite invincibleSprite;
+    public Sprite extraLife;
+    public Sprite teamBlastSprite;
+    public Sprite keySprite;
+    public Sprite emeraldSprite;
     private AudioSource ballonAudioPop;
     // Start is called before the first frame update
     void Start()
@@ -53,21 +59,66 @@ public class ItemBalloon : MonoBehaviour
             {
                 sr.enabled = false;
             }
-            if (isSpeed)
+            CharacterType character = other.GetComponentInChildren<CharacterType>();
+            switch (itemType)
             {
-                GameInstance.speedLevelUp++;
-                pickUpSprite = bluePowerCore;
-            }
+                case ItemType.Rings:
+                    if (character != null)
+                    {
+                        GameInstance.AddRings(character.type, ringValue);
+                    }
+                    break;
 
-            if (isFlying)
-            {
-                GameInstance.flyLevelUp++;
-                pickUpSprite = yellowPowerCore;
-            }
-            if (isPower)
-            {
-                GameInstance.powerLevelUp++;
-                pickUpSprite = redPowerCore;
+                case ItemType.SpeedCore:
+                    GameInstance.speedCoreLevelUp++;
+                    pickUpSprite = bluePowerCore;
+                    break;
+
+                case ItemType.FlyCore:
+                    GameInstance.flyCorelevelUp++;
+                    pickUpSprite = yellowPowerCore;
+                    break;
+
+                case ItemType.PowerCore:
+                    GameInstance.powerLevelUpCore++;
+                    pickUpSprite = redPowerCore;
+                    break;
+
+                case ItemType.Shield:
+                    pickUpSprite = shieldSprite;
+                    if (character != null)
+                    {
+                        GiveShield(character.gameObject);
+                    }
+                    break;
+
+                case ItemType.Invinciblity:
+                    pickUpSprite = invincibleSprite;
+                    break;
+
+                case ItemType.TeamBlast:
+                    pickUpSprite = teamBlastSprite;
+                    
+                    break;
+
+                case ItemType.ExtraLife:
+                    GameInstance.livesCount++;
+                    pickUpSprite = extraLife;
+                    break;
+
+                case ItemType.SpecialKey:
+                    pickUpSprite = keySprite;
+                    
+                    break;
+
+                case ItemType.ChaosEmerald:
+                    pickUpSprite = emeraldSprite;
+                    // TODO: Award the Chaos Emerald
+                    break;
+
+                 default:
+                    Debug.LogWarning("Unknown itemType" + itemType);
+                    break;
             }
 
             if (levelUpPrefab != null && levelUpParent != null)
@@ -75,12 +126,6 @@ public class ItemBalloon : MonoBehaviour
                 Instantiate(levelUpPrefab, levelUpParent.transform);
             }
 
-            CharacterType character = other.GetComponentInChildren<CharacterType>();
-            if (character != null)
-            {
-                GameInstance.AddRings(character.type, ringValue);
-            }
-            Debug.Log($"Speed={isSpeed}, Fly={isFlying}, Power={isPower}");
             Debug.Log($"Ring Value={ringValue}");
             Debug.Log($"Pickup Sprite={(pickUpSprite == null ? "NULL" : pickUpSprite.name)}");
             HUD hud = FindAnyObjectByType<HUD>();
@@ -102,6 +147,21 @@ public class ItemBalloon : MonoBehaviour
             }
             StartCoroutine(PlayLevelUpSFX());
         }
+    }
+
+    public void GiveShield(GameObject player)
+    {
+        if (player == null)
+            return;
+
+        PlayerShield shield = player.GetComponent<PlayerShield>();
+
+        if (shield == null)
+        {
+            shield = player.AddComponent<PlayerShield>();
+        }
+
+        shield.ActivateShield();
     }
 
     public IEnumerator PlayLevelUpSFX()
