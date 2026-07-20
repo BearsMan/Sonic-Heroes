@@ -176,6 +176,10 @@ public class HUD : MonoBehaviour
 
     public void ShowPickUp(Sprite item)
     {
+        Debug.Log("ShowPickUp called with:" + (item != null ? item.name : "NULL"));
+
+        itemPickUp.sprite = item;
+        StartCoroutine(ShowItem());
         itemPickUp.sprite = item;
         StartCoroutine(ShowItem());
     }

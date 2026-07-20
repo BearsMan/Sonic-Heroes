@@ -52,6 +52,7 @@ public class PickUpObject : MonoBehaviour
         if (hud != null)
         {
             hud.AddPower(powerValue);
+            hud.ShowPickUp(itemSprite);
         }
 
         if (ringValue > 0)

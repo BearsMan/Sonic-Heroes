@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -62,20 +60,28 @@ public static class GameInstance
         }
     }
 
-    public static void AddRings(CHARACTERTYPES type)
+    public static void AddRings(CHARACTERTYPES type, int amount = 1)
     {
-        if (type == CHARACTERTYPES.Speed) speedScore += 10;
-        if (type == CHARACTERTYPES.Fly) flyScore += 10;
-        if (type == CHARACTERTYPES.Power) powerScore += 10;
-        currentRings += 1;
-        UpdateData?.Invoke();
+        currentRings += amount;
+        AddScore(10 * amount, type);
     }
 
     public static void AddScore(int points, CHARACTERTYPES type)
     {
-        if (type == CHARACTERTYPES.Speed) speedScore += points;
-        if (type == CHARACTERTYPES.Fly) flyScore += points;
-        if (type == CHARACTERTYPES.Power) powerScore += points;
+        switch (type)
+        {
+            case CHARACTERTYPES.Speed:
+                speedScore += points;
+                break;
+            case CHARACTERTYPES.Fly:
+                flyScore += points;
+                break;
+            case CHARACTERTYPES.Power:
+                powerScore += points;
+                break;
+        }
+
+        scoreCount += points;
         UpdateData?.Invoke();
     }
 
