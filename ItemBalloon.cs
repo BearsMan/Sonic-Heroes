@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 [RequireComponent(typeof(AudioSource))]
@@ -19,7 +18,7 @@ public class ItemBalloon : MonoBehaviour
     public Sprite pickUpSprite;
     public Sprite bluePowerCore, redPowerCore, yellowPowerCore;
     public Sprite shieldSprite;
-    public Sprite invincibleSprite;
+    public Sprite invinciblitySprite;
     public Sprite extraLife;
     public Sprite teamBlastSprite;
     public Sprite keySprite;
@@ -93,7 +92,7 @@ public class ItemBalloon : MonoBehaviour
                     break;
 
                 case ItemType.Invinciblity:
-                    pickUpSprite = invincibleSprite;
+                    pickUpSprite = invinciblitySprite;
                     break;
 
                 case ItemType.TeamBlast:
