@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(SpriteRenderer))]
 public class ItemBalloon : MonoBehaviour
@@ -15,6 +16,7 @@ public class ItemBalloon : MonoBehaviour
     public List<AudioClip> characterSFX = new List<AudioClip>();
     public bool levelingUp = false;
     public ItemType itemType;
+    public Sprite pickUpSprite;
     private AudioSource ballonAudioPop;
     // Start is called before the first frame update
     void Start()
@@ -40,6 +42,7 @@ public class ItemBalloon : MonoBehaviour
     }
     public void OnTriggerEnter(Collider other)
     {
+        
         Debug.Log("Item Ballon triggered by:" + other.name);
         if (other.CompareTag("Player") && levelingUp == false)
         {
@@ -51,6 +54,89 @@ public class ItemBalloon : MonoBehaviour
                 sr.enabled = false;
             }
             CharacterType character = other.GetComponentInChildren<CharacterType>();
+            switch (itemType)
+            {
+                case ItemType.Rings:
+                    if (character != null)
+                    {
+                        GameInstance.AddRings(character.type, ringValue);
+                    }
+                    break;
+
+                case ItemType.SpeedCore:
+                    GameInstance.speedCoreLevelUp++;
+                    break;
+
+                case ItemType.FlyCore:
+                    GameInstance.flyCorelevelUp++;
+                    break;
+
+                case ItemType.PowerCore:
+                    GameInstance.powerLevelUpCore++;
+                    break;
+
+                case ItemType.Shield:
+                    if (character != null)
+                    {
+                        GiveShield(character.gameObject);
+                    }
+                    break;
+
+                case ItemType.Invinciblity:
+                    break;
+
+                case ItemType.TeamBlast:
+                    break;
+
+                case ItemType.ExtraLife:
+                    GameInstance.livesCount++;
+                    break;
+
+                case ItemType.SpecialKey:
+                    break;
+
+                case ItemType.ChaosEmerald:
+                    // TODO: Award the Chaos Emerald
+                    break;
+
+                default:
+                    Debug.LogWarning("Unknown itemType " + itemType);
+                    break;
+            }
+
+            if (PickupIconDatabase.Instance != null)
+            {
+                pickUpSprite = PickupIconDatabase.Instance.GetIcon(itemType);
+            }
+
+            else
+            {
+                Debug.LogWarning("PickUpIconDatabase is not found.");
+            }
+
+            if (levelUpPrefab != null && levelUpParent != null)
+            {
+                Instantiate(levelUpPrefab, levelUpParent.transform);
+            }
+
+            HUD hud = FindAnyObjectByType<HUD>();
+
+            if (hud != null)
+            {
+                hud.AddPower(5);
+
+                if (pickUpSprite != null)
+                {
+                    hud.ShowPickUp(pickUpSprite);
+                }
+
+                hud.UpdateRings();
+            }
+            else
+            {
+                Debug.LogWarning("HUD not found.");
+            }
+
             StartCoroutine(PlayLevelUpSFX());
         }
     }
