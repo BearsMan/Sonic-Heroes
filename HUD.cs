@@ -12,7 +12,7 @@ public class HUD : MonoBehaviour
     public List<Character> teamSprites;
     public List<Image> lightsSpeed, lightsFly, lightsPower;
     public Image livesImage;
-    TeamComposition curTeam;
+    public TeamComposition curTeam;
     public static float timer;
     public Sprite speedSprite, flySprite, powerSprite;
     public Slider powerUpGauge;
@@ -121,13 +121,19 @@ public class HUD : MonoBehaviour
     public void UpdateCharacterLevels()
     {
         foreach (Image img in lightsSpeed)
+        {
             img.enabled = false;
+        }
 
         foreach (Image img in lightsFly)
+        {
             img.enabled = false;
+        }
 
         foreach (Image img in lightsPower)
+        {
             img.enabled = false;
+        }
 
         GameInstance.speedLevelUp = Mathf.Clamp(GameInstance.speedLevelUp, 0, 3);
         GameInstance.flyLevelUp = Mathf.Clamp(GameInstance.flyLevelUp, 0, 3);
@@ -176,10 +182,9 @@ public class HUD : MonoBehaviour
 
     public void ShowPickUp(Sprite item)
     {
+        Debug.Log("Show PickUp called");
         Debug.Log("ShowPickUp called with:" + (item != null ? item.name : "NULL"));
 
-        itemPickUp.sprite = item;
-        StartCoroutine(ShowItem());
         itemPickUp.sprite = item;
         StartCoroutine(ShowItem());
     }

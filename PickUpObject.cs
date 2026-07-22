@@ -23,21 +23,26 @@ public class PickUpObject : MonoBehaviour
         Debug.LogWarning("PickUpObject: playerMovement is " + (playerMovement != null ? "not null" : "null") + ", followerNavigation is " + (followerNavigation != null ? "not null" : "null"));
         CharacterType teamCharacters = null;
 
-        if (playerMovement != null && playerMovement.currentCharacter != null)
+        if (playerMovement != null)
         {
-            teamCharacters = playerMovement.currentCharacter.GetComponent<CharacterType>();
-
+            teamCharacters = playerMovement.GetComponentInChildren<CharacterType>();
         }
         else if (followerNavigation != null)
         {
             teamCharacters = followerNavigation.GetComponentInChildren<CharacterType>();
         }
-            Debug.LogWarning("PickUpObject: teamCharacters is " + (teamCharacters != null ? "not null" : "null"));
+        Debug.LogWarning("PickUpObject: teamCharacters is " + (teamCharacters != null ? "not null" : "null"));
 
         if (teamCharacters != null)
         {
+            Debug.Log("Calling AddEffect for " + teamCharacters.type);
+
             collected = true;
             AddEffect(teamCharacters.type);
+        }
+        else
+        {
+            Debug.LogError("teamCharacters is NULL - pickup not awarded.");
         }
     }
 
@@ -48,6 +53,7 @@ public class PickUpObject : MonoBehaviour
 
     protected virtual void AddEffect(CHARACTERTYPES characterTypes)
     {
+        Debug.Log("AddEffect called. Ring Value = " + ringValue);
         HUD hud = FindAnyObjectByType<HUD>();
         if (hud != null)
         {
@@ -58,6 +64,11 @@ public class PickUpObject : MonoBehaviour
         if (ringValue > 0)
         {
            GameInstance.AddRings(characterTypes, ringValue);
+           TeamBlast teamBlast = FindAnyObjectByType<TeamBlast>();
+           if (teamBlast != null)
+            {
+                teamBlast.AddGauge(ringValue * 2f);
+            }
         }
 
         vis.SetActive(false);

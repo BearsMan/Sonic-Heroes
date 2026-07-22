@@ -34,7 +34,7 @@ public class UltimatePlayerMovement : MonoBehaviour
         }
     }
 
-    public bool isGrounded;
+    public bool isGrounded = false;
     private float jumpSustainTime = 0f;
     private bool isSurrendered = false;
 
@@ -97,7 +97,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         if (tutorialPlaying)
         {
-            right = Vector3.zero; 
+            right = Vector3.zero;
             forward = Vector3.zero;
         }
 
@@ -150,7 +150,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         if (tutorialPlaying)
         {
-            right = Vector3.zero; 
+            right = Vector3.zero;
             forward = Vector3.zero;
         }
 
@@ -238,7 +238,7 @@ public class UltimatePlayerMovement : MonoBehaviour
                 return;
             }
 
-            
+
 
             Vector3 cross = Vector3.Cross(transform.right, newup); // new foward direction
 

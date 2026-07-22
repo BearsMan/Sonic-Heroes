@@ -4,6 +4,7 @@ public class Ring : MonoBehaviour
 {
     GameObject source;
     public AudioClip clip;
+    public Sprite ringPickUp;
     public Collider physicalCollider;
     private bool phased = false;
     // Start is called before the first frame update
@@ -36,13 +37,23 @@ public class Ring : MonoBehaviour
             }
 
             GameInstance.AddRings(other.GetComponentInChildren<CharacterType>().type);
+            // Add Team Blast gauge
+            TeamBlast teamBlast = Object.FindAnyObjectByType<TeamBlast>();
+            if (teamBlast != null)
+            {
+                teamBlast.AddGauge(2f);
+            }
             Debug.Log("Rings after pickup" + GameInstance.currentRings);
             var hud = Object.FindAnyObjectByType<HUD>();
 
-            if (hud != null)
+            if (hud != null && ringPickUp != null)
             {
-                hud.UpdateRings();
-                hud.AddPower(1);
+                hud.ShowPickUp(ringPickUp);
+            }
+
+            if (ringPickUp != null)
+            {
+                hud.ShowPickUp(ringPickUp);
             }
 
             Destroy (gameObject);

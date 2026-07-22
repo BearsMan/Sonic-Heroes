@@ -1,7 +1,5 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 public class HealthBar : MonoBehaviour
 {
     private float timeSinceLastHit = 6f;
@@ -9,10 +7,10 @@ public class HealthBar : MonoBehaviour
     public Sprite[] bars = new Sprite[3];
     public Sprite[] sleepSprite;
     public SpriteRenderer bar;
-    bool sleeping = true;
+    private bool sleeping = true;
     private void Awake()
     {
-        
+
         StartCoroutine(Sleep());
     }
     // Update is called once per frame
@@ -46,8 +44,8 @@ public class HealthBar : MonoBehaviour
             yield return new WaitForSeconds(1);
             bar.sprite = sleepSprite[2];
             yield return new WaitForSeconds(1);
-            
-            
+
+
         }
     }
 
