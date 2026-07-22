@@ -48,7 +48,7 @@ public class GoalRing : MonoBehaviour
 
         if (GameInstance.hasSpecialKey)
         {
-            GameInstance.hasSpecialKey = false;
+            GameInstance.returnScene = NextLevelName;
             SceneManager.LoadScene(specialStageSceneName);
         }
         else

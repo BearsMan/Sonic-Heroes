@@ -6,7 +6,6 @@ public class SpecialStageManager : MonoBehaviour
     [Header("Special Stage")]
 
     [SerializeField] private float stageTime = 90f;
-    [SerializeField] private string returnScene;
     public ItemBalloon.EmeraldType rewardEmerald;
 
     private bool finished;
@@ -28,36 +27,19 @@ public class SpecialStageManager : MonoBehaviour
 
     public void CompleteStage()
     {
-        if (finished)
-        {
-            return;
-        }
-
-        finished = true;
-
-        GameInstance.emerald[GameInstance.nextEmeraldIndex] = true;
-        Debug.Log("Collected" + rewardEmerald + "Chaos Emerald!");
-
-        Debug.Log("Collected Emerald: " + GameInstance.nextEmeraldIndex);
-
-        if (GameInstance.nextEmeraldIndex < GameInstance.emerald.Length - 1)
-        {
-            GameInstance.nextEmeraldIndex++;
-        }
+        // ...
 
         GameInstance.hasSpecialKey = false;
 
         CheckLastStory();
 
-        SceneManager.LoadScene(returnScene);
+        SceneManager.LoadScene(GameInstance.returnScene);
     }
 
     public void FailStage()
     {
         if (finished)
-        {
             return;
-        }
 
         finished = true;
 
@@ -65,7 +47,7 @@ public class SpecialStageManager : MonoBehaviour
 
         Debug.Log("Special Stage Failed");
 
-        SceneManager.LoadScene(returnScene);
+        SceneManager.LoadScene(GameInstance.returnScene);
     }
 
     void CheckLastStory()
