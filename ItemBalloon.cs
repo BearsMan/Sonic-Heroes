@@ -7,9 +7,15 @@ using UnityEngine;
 [RequireComponent(typeof(SpriteRenderer))]
 public class ItemBalloon : MonoBehaviour
 {
+    public enum RingType
+    {
+        Rings5,
+        Rings10,
+        Rings20
+    }
     [Header("Item Box")]
-    [Range(5, 20)]
-    public int ringValue;
+    public int ringValue = 0;
+    public RingType type;
     public GameObject levelUpHUD;
     public GameObject levelUpParent;
     public GameObject levelUpPrefab;
@@ -54,13 +60,44 @@ public class ItemBalloon : MonoBehaviour
                 sr.enabled = false;
             }
             CharacterType character = other.GetComponentInChildren<CharacterType>();
+            switch (type)
+            {
+                case RingType.Rings5:
+                    ringValue = 5;
+                    break;
+
+                case RingType.Rings10:
+                    ringValue = 10;
+                    break;
+
+                case RingType.Rings20:
+                    ringValue = 20;
+                    break;
+
+                default:
+                    ringValue = 5;
+                    break;
+        }   
+
             switch (itemType)
             {
                 case ItemType.Rings:
-                    if (character != null)
+
+                    Debug.Log("Ring Value = " + ringValue);
+
+                    if (character == null)
                     {
-                        GameInstance.AddRings(character.type, ringValue);
+                        Debug.LogError("Character is NULL!");
                     }
+                    else
+                    {
+                        Debug.Log("Character = " + character.type);
+
+                        GameInstance.AddRings(character.type, ringValue);
+
+                        Debug.Log("Current Rings = " + GameInstance.currentRings);
+                    }
+
                     break;
 
                 case ItemType.SpeedCore:
