@@ -8,21 +8,13 @@ public class ItemBalloon : MonoBehaviour
 {
     [Header("Item Box")]
     [Range(5, 20)]
-    public int ringValue = 5;
+    public int ringValue;
     public GameObject levelUpHUD;
     public GameObject levelUpParent;
     public GameObject levelUpPrefab;
     public List<AudioClip> characterSFX = new List<AudioClip>();
     public bool levelingUp = false;
     public ItemType itemType;
-    public Sprite pickUpSprite;
-    public Sprite bluePowerCore, redPowerCore, yellowPowerCore;
-    public Sprite shieldSprite;
-    public Sprite invinciblitySprite;
-    public Sprite extraLife;
-    public Sprite teamBlastSprite;
-    public Sprite keySprite;
-    public Sprite emeraldSprite;
     private AudioSource ballonAudioPop;
     // Start is called before the first frame update
     void Start()
@@ -59,91 +51,6 @@ public class ItemBalloon : MonoBehaviour
                 sr.enabled = false;
             }
             CharacterType character = other.GetComponentInChildren<CharacterType>();
-            switch (itemType)
-            {
-                case ItemType.Rings:
-                    if (character != null)
-                    {
-                        GameInstance.AddRings(character.type, ringValue);
-                    }
-                    break;
-
-                case ItemType.SpeedCore:
-                    GameInstance.speedCoreLevelUp++;
-                    pickUpSprite = bluePowerCore;
-                    break;
-
-                case ItemType.FlyCore:
-                    GameInstance.flyCorelevelUp++;
-                    pickUpSprite = yellowPowerCore;
-                    break;
-
-                case ItemType.PowerCore:
-                    GameInstance.powerLevelUpCore++;
-                    pickUpSprite = redPowerCore;
-                    break;
-
-                case ItemType.Shield:
-                    pickUpSprite = shieldSprite;
-                    if (character != null)
-                    {
-                        GiveShield(character.gameObject);
-                    }
-                    break;
-
-                case ItemType.Invinciblity:
-                    pickUpSprite = invinciblitySprite;
-                    break;
-
-                case ItemType.TeamBlast:
-                    pickUpSprite = teamBlastSprite;
-                    
-                    break;
-
-                case ItemType.ExtraLife:
-                    GameInstance.livesCount++;
-                    pickUpSprite = extraLife;
-                    break;
-
-                case ItemType.SpecialKey:
-                    pickUpSprite = keySprite;
-                    
-                    break;
-
-                case ItemType.ChaosEmerald:
-                    pickUpSprite = emeraldSprite;
-                    // TODO: Award the Chaos Emerald
-                    break;
-
-                 default:
-                    Debug.LogWarning("Unknown itemType" + itemType);
-                    break;
-            }
-
-            if (levelUpPrefab != null && levelUpParent != null)
-            {
-                Instantiate(levelUpPrefab, levelUpParent.transform);
-            }
-
-            Debug.Log($"Ring Value={ringValue}");
-            Debug.Log($"Pickup Sprite={(pickUpSprite == null ? "NULL" : pickUpSprite.name)}");
-            HUD hud = FindAnyObjectByType<HUD>();
-            if (hud != null)
-            {
-                hud.AddPower(5);
-
-                if (pickUpSprite != null)
-                {
-                    hud.ShowPickUp(pickUpSprite);
-                }
-
-                hud.UpdateRings();
-            }
-
-            else
-            {
-                Debug.LogWarning("HUD not found.");
-            }
             StartCoroutine(PlayLevelUpSFX());
         }
     }
@@ -151,7 +58,9 @@ public class ItemBalloon : MonoBehaviour
     public void GiveShield(GameObject player)
     {
         if (player == null)
+        {
             return;
+        }
 
         PlayerShield shield = player.GetComponent<PlayerShield>();
 
@@ -200,8 +109,6 @@ public class ItemBalloon : MonoBehaviour
         }
         speedCharacter.GetComponent<UltimatePlayerMovement>().leftFollower.SetActive(true);
         speedCharacter.GetComponent<UltimatePlayerMovement>().rightFollower.SetActive(true);
-
-
         yield return null;
     }
 
