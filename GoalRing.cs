@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -7,6 +6,7 @@ public class GoalRing : MonoBehaviour
 {
     public GameObject LevelEndHUD;
     public string NextLevelName;
+    public string specialStageSceneName;
     private bool LoadingNextScene = false;
     public AudioClip clip;
     private GameObject source;
@@ -36,14 +36,23 @@ public class GoalRing : MonoBehaviour
 
     public IEnumerator EndOfLevel()
     {
-        
+
         ScoreSystem sys = Object.FindAnyObjectByType<ScoreSystem>();
         if (sys != null)
         {
             sys.StartEndLevelSequence();
         }
-        //Displays Final Level Stats Here
+        // Displays Final Level Stats Here
         yield return new WaitForSeconds(3);
-        SceneManager.LoadScene(NextLevelName);
+
+        if (GameInstance.hasSpecialKey)
+        {
+            GameInstance.hasSpecialKey = false;
+            SceneManager.LoadScene(SpecialStageSceneName);
+        }
+        else
+        {
+            SceneManager.LoadScene(NextLevelName);
+        }
     }
 }

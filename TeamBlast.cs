@@ -34,14 +34,14 @@ public class TeamBlast : MonoBehaviour
     private bool blastActive = false;
     private AudioSource blastAudioSource;
     private Coroutine invincibilityCoroutine;
-    public bool BlastReady => GameInstance.teamBlastGauge >= maxGauge;
+    public bool BlastReady => GameInstance.teamBlastMeter >= maxGauge;
     public bool IsInvincible => isInvincible;
-    public float GaugePercent => maxGauge > 0f ? GameInstance.teamBlastGauge / maxGauge : 0f;
+    public float GaugePercent => maxGauge > 0f ? GameInstance.teamBlastMeter / maxGauge : 0f;
 
     private void Awake()
     {
         blastAudioSource = GetComponent<AudioSource>();
-        GameInstance.maxTeamBlastGauge = maxGauge;
+        GameInstance.maxTeamBlastMeter = maxGauge;
 
     }
 
@@ -60,12 +60,12 @@ public class TeamBlast : MonoBehaviour
     }
     public void AddGauge(float amount)
     {
-        GameInstance.teamBlastGauge = Mathf.Clamp(GameInstance.teamBlastGauge + amount, 0, maxGauge);
+        GameInstance.teamBlastMeter = Mathf.Clamp(GameInstance.teamBlastMeter + amount, 0, maxGauge);
     }
 
     public void ResetGauge()
     {
-        GameInstance.teamBlastGauge = 0f;
+        GameInstance.teamBlastMeter = 0f;
     }
 
     private void ActivateTeamBlast()

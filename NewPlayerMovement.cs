@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class NewPlayerMovement : MonoBehaviour
@@ -119,13 +117,20 @@ public class NewPlayerMovement : MonoBehaviour
     }
     public void BecomeSuper()
     {
-        GameInstance.greenEmerald = true;
-        GameInstance.blueEmerald = true;
-        GameInstance.yellowEmerald = true;
-        GameInstance.whiteEmerald = true;
-        GameInstance.lightBlueEmerald = true;
-        GameInstance.purpleEmerald = true;
-        GameInstance.redEmerald = true;
+        foreach (bool collected in GameInstance.emerald)
+        {
+            if (!collected)
+            {
+                Debug.Log("You need all 7 Chaos Emeralds!");
+                return;
+            }
+        }
+
+        if (GameInstance.currentRings < 50)
+        {
+            Debug.Log("You need at least 50 Rings!");
+            return;
+        }
 
         teamSetup.GetComponent<TeamSetup>().SwapForSuper();
     }
