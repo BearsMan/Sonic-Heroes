@@ -36,19 +36,20 @@ public class GoalRing : MonoBehaviour
 
     public IEnumerator EndOfLevel()
     {
-
         ScoreSystem sys = Object.FindAnyObjectByType<ScoreSystem>();
+
         if (sys != null)
         {
             sys.StartEndLevelSequence();
         }
+
         // Displays Final Level Stats Here
         yield return new WaitForSeconds(3);
 
         if (GameInstance.hasSpecialKey)
         {
             GameInstance.hasSpecialKey = false;
-            SceneManager.LoadScene(SpecialStageSceneName);
+            SceneManager.LoadScene(specialStageSceneName);
         }
         else
         {
