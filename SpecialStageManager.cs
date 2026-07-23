@@ -27,7 +27,22 @@ public class SpecialStageManager : MonoBehaviour
 
     public void CompleteStage()
     {
-        // ...
+        if (finished)
+        {
+            return;
+        }
+
+        finished = true;
+
+        GameInstance.emerald[GameInstance.nextEmeraldIndex] = true;
+
+        Debug.Log("Collected " + rewardEmerald + " Chaos Emerald!");
+        Debug.Log("Collected Emerald: " + GameInstance.nextEmeraldIndex);
+
+        if (GameInstance.nextEmeraldIndex < GameInstance.emerald.Length - 1)
+        {
+            GameInstance.nextEmeraldIndex++;
+        }
 
         GameInstance.hasSpecialKey = false;
 
