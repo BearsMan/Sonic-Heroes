@@ -176,20 +176,23 @@ public class UltimatePlayerMovement : MonoBehaviour
     {
         maxAirSpeed = currentSpeed;
         direction = mov * currentSpeed;
+
         if (direction.magnitude > currentSpeed)
         {
             direction = direction.normalized * currentSpeed;
         }
 
-        body.MovePosition(transform.position + transform.TransformDirection(direction) * Time.fixedDeltaTime);
+        body.MovePosition(transform.position + direction * Time.fixedDeltaTime);
     }
     private float maxAirSpeed;
     private float airControl = 20f;
     private void AirMovement(Vector3 mov)
     {
-        body.AddForce(transform.TransformDirection(mov * airControl));
+        body.AddForce(mov * airControl);
+
         Vector3 veloXZ = body.linearVelocity;
         veloXZ.y = 0;
+
         if (veloXZ.magnitude > maxAirSpeed)
         {
             veloXZ = veloXZ.normalized * maxAirSpeed;
@@ -204,7 +207,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     {
         if (Input.GetKey(KeyCode.Space) && isGrounded)
         {
-            Vector3 velo = transform.TransformDirection(direction * 0.8f);
+            Vector3 velo = direction * 0.8f;
             velo.y = Mathf.Sqrt(jumpHeight * -2 * Physics.gravity.y);
             body.linearVelocity = velo;
         }
