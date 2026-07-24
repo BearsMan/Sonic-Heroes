@@ -34,15 +34,11 @@ public class SpecialStageManager : MonoBehaviour
 
         finished = true;
 
-        GameInstance.emerald[GameInstance.nextEmeraldIndex] = true;
+        int emeraldIndex = (int)rewardEmerald;
+        GameInstance.emerald[emeraldIndex] = true;
 
         Debug.Log("Collected " + rewardEmerald + " Chaos Emerald!");
-        Debug.Log("Collected Emerald: " + GameInstance.nextEmeraldIndex);
-
-        if (GameInstance.nextEmeraldIndex < GameInstance.emerald.Length - 1)
-        {
-            GameInstance.nextEmeraldIndex++;
-        }
+        Debug.Log("Collected Emerald Index: " + emeraldIndex);
 
         GameInstance.hasSpecialKey = false;
 
