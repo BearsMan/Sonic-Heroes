@@ -18,6 +18,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     public GameObject superSonic;
     public Rigidbody body;
     public Transform cam;
+    public Transform groundCheck;
     public LayerMask groundMask;
     public Vector3 moveForce;
     public bool tutorialPlaying = false;
@@ -59,7 +60,16 @@ public class UltimatePlayerMovement : MonoBehaviour
     }
     private void Update()
     {
-        isGrounded = Physics.CheckSphere(transform.position + transform.up * 0.1f, 0.49f, groundMask);
+        if (groundCheck != null)
+        {
+            isGrounded = Physics.CheckSphere(groundCheck.position, 0.2f, groundMask);
+        }
+
+        else
+        {
+            Debug.LogWarning("GroundCheck is not assigned!");
+        }
+
         if (tutorialPlaying)
         {
             return;
