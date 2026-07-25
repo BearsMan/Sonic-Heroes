@@ -1,130 +1,327 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Speed Formation aerial tornado attack.
+/// Attach this to the player/team root that owns UltimatePlayerMovement.
+/// </summary>
+[RequireComponent(typeof(Rigidbody))]
 public class TornadoJump : MonoBehaviour
 {
-    [Header("Pole References")]
-    public GameObject pole;
-    public GameObject ExitPole;
-    public GameObject JumpDirection;
+    [Header("References")]
+    [SerializeField] private UltimatePlayerMovement movement;
+    [SerializeField] private TeamActionController actionController;
+    [SerializeField] private Animator animator;
+    [SerializeField] private Transform attackCenter;
+    [SerializeField] private ParticleSystem tornadoEffect;
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip tornadoSound;
 
-    [Header("Swing Settings")]
-    public float orbitRadius = 1.5f;       // How far from the pole center the character orbits
-    public float orbitSpeed = 360f;        // Degrees per second around the pole
-    public float climbSpeed = 4f;          // Units per second rising up the pole
-    public float entrySnapSpeed = 10f;     // How fast the character snaps to orbit start
+    [Header("Input")]
+    [SerializeField] private KeyCode attackKey = KeyCode.B;
 
-    [Header("Launch Settings")]
-    public float launchForce = 18f;        // Speed of the fling at the top
-    public float launchUpwardBias = 0.3f;  // Adds upward arc to the launch direction
+    [Header("Movement")]
+    [SerializeField, Min(0f)] private float upwardSpeed = 8f;
+    [SerializeField] private bool preserveGreaterUpwardSpeed = true;
+    [SerializeField, Min(0.01f)] private float attackDuration = 0.55f;
+    [SerializeField, Min(0f)] private float recoveryTime = 0.1f;
 
-    public bool tornadoJump;
-    public bool teamSwing;
+    [Header("Attack")]
+    [SerializeField, Min(0.1f)] private float attackRadius = 2.25f;
+    [SerializeField, Min(0)] private int damage = 1;
+    [SerializeField] private LayerMask targetLayers = ~0;
+    [SerializeField]
+    private QueryTriggerInteraction triggerInteraction =
+        QueryTriggerInteraction.Collide;
 
-    // ── Trigger: player presses B while inside the collider ──────────────────
-    public void OnTriggerStay(Collider other)
+    [Header("Animation")]
+    [SerializeField] private string tornadoTrigger = "Tornado Jump";
+    [SerializeField] private string tornadoBool = "TornadoJump";
+
+    [Header("Debug")]
+    [SerializeField] private bool drawAttackRadius = true;
+
+    private readonly HashSet<GameObject> hitObjects = new();
+
+    private Rigidbody body;
+    private Coroutine attackRoutine;
+    private bool usedThisJump;
+    private bool isPerforming;
+    private bool transferredToPole;
+
+    public bool IsPerforming => isPerforming;
+    public bool UsedThisJump => usedThisJump;
+
+    private Vector3 AttackPosition =>
+        attackCenter != null ? attackCenter.position : transform.position;
+
+    private void Awake()
     {
-        if (other.CompareTag("Player") && Input.GetKeyDown(KeyCode.B))
-        {
-            StartCoroutine(Swinging(other.gameObject));
-        }
+        body = GetComponent<Rigidbody>();
+
+        if (movement == null)
+            movement = GetComponent<UltimatePlayerMovement>();
+
+        if (movement == null)
+            movement = GetComponentInParent<UltimatePlayerMovement>();
+
+        if (actionController == null)
+            actionController = GetComponent<TeamActionController>();
+
+        if (actionController == null)
+            actionController = GetComponentInParent<TeamActionController>();
+
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>();
+
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
     }
 
-    // ── Main coroutine ────────────────────────────────────────────────────────
-    public IEnumerator Swinging(GameObject speedCharacter)
+    private void Update()
     {
-        // 1. Lock player input and physics
-        UltimatePlayerMovement upm = speedCharacter.GetComponent<UltimatePlayerMovement>();
-        Rigidbody rb = speedCharacter.GetComponent<Rigidbody>();
+        if (movement == null)
+            return;
 
-        UltimatePlayerMovement.Controllable = false;
-        rb.useGravity = false;
-        rb.linearVelocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-
-        upm.leftFollower.SetActive(false);
-        upm.rightFollower.SetActive(false);
-
-        // 2. Determine the orbit start position
-        //    Project the character onto the XZ plane of the pole,
-        //    keep them orbitRadius away, start at the angle they approached from.
-        Vector3 poleBase = transform.position;          // this object IS the entry point
-        Vector3 toChar = speedCharacter.transform.position - poleBase;
-        toChar.y = 0f;
-
-        float startAngle = Mathf.Atan2(toChar.z, toChar.x) * Mathf.Rad2Deg;
-        if (toChar.magnitude < 0.01f) startAngle = 0f;  // fallback if standing on center
-
-        float currentAngle = startAngle;
-        float currentY = poleBase.y;
-        float exitY = ExitPole.transform.position.y;
-
-        // 3. Smooth snap into orbit position before swinging begins
-        Vector3 OrbitPos(float angle, float y)
+        if (movement.isGrounded)
         {
-            float rad = angle * Mathf.Deg2Rad;
-            return new Vector3(
-                poleBase.x + Mathf.Cos(rad) * orbitRadius,
-                y,
-                poleBase.z + Mathf.Sin(rad) * orbitRadius
-            );
+            usedThisJump = false;
+
+            if (isPerforming && !transferredToPole)
+                FinishAttack();
+
+            return;
         }
 
-        float snapTimer = 0f;
-        Vector3 snapStart = speedCharacter.transform.position;
-        Vector3 snapTarget = OrbitPos(currentAngle, currentY);
+        if (Input.GetKeyDown(attackKey))
+            TryStartTornadoJump();
+    }
 
-        while (snapTimer < 1f)
+    public bool TryStartTornadoJump()
+    {
+        if (movement == null || body == null)
+            return false;
+
+        if (movement.isGrounded || usedThisJump || isPerforming)
+            return false;
+
+        if (actionController != null)
         {
-            snapTimer += Time.deltaTime * entrySnapSpeed;
-            speedCharacter.transform.position = Vector3.Lerp(snapStart, snapTarget, snapTimer);
+            bool accepted = actionController.TryBeginAction(
+                TeamActionController.TeamAction.TornadoJump,
+                TeamActionController.TeamFormation.Speed,
+                mustBeGrounded: false,
+                mustBeAirborne: true,
+                surrenderMovementControl: false);
+
+            if (!accepted)
+                return false;
+        }
+
+        usedThisJump = true;
+        isPerforming = true;
+        transferredToPole = false;
+        hitObjects.Clear();
+
+        ApplyUpwardLift();
+        BeginPresentation();
+
+        attackRoutine = StartCoroutine(TornadoRoutine());
+
+        return true;
+    }
+
+    private void ApplyUpwardLift()
+    {
+        Vector3 velocity = body.linearVelocity;
+
+        if (preserveGreaterUpwardSpeed)
+            velocity.y = Mathf.Max(velocity.y, upwardSpeed);
+        else
+            velocity.y = upwardSpeed;
+
+        body.linearVelocity = velocity;
+    }
+
+    private IEnumerator TornadoRoutine()
+    {
+        float elapsed = 0f;
+
+        while (elapsed < attackDuration)
+        {
+            DetectTargets();
+
+            elapsed += Time.deltaTime;
             yield return null;
         }
 
-        // 4. Spiral upward around the pole
-        //    Character orbits at orbitSpeed deg/s while rising at climbSpeed u/s.
-        //    Matches the visual of "swinging around the pole" seen in Sonic Heroes.
-        while (currentY < exitY)
-        {
-            currentAngle += orbitSpeed * Time.deltaTime;
-            currentY += climbSpeed * Time.deltaTime;
-            currentY = Mathf.Min(currentY, exitY);
+        if (recoveryTime > 0f)
+            yield return new WaitForSeconds(recoveryTime);
 
-            speedCharacter.transform.position = OrbitPos(currentAngle, currentY);
-
-            // Face the direction of travel (tangent of orbit)
-            float tangentAngle = (currentAngle + 90f) * Mathf.Deg2Rad;
-            Vector3 facing = new Vector3(Mathf.Cos(tangentAngle), 0f, Mathf.Sin(tangentAngle));
-            if (facing != Vector3.zero)
-                speedCharacter.transform.rotation = Quaternion.LookRotation(facing, Vector3.up);
-
-            yield return null;
-        }
-
-        // 5. Snap to exit position and fling in the preset arrow direction
-        speedCharacter.transform.position = ExitPole.transform.position;
-
-        // JumpDirection is a child/marker whose world-space position relative to
-        // ExitPole encodes the launch direction (same as the original intent).
-        Vector3 rawDir = (ExitPole.transform.position + JumpDirection.transform.position).normalized;
-        Vector3 launchDir = (rawDir + Vector3.up * launchUpwardBias).normalized;
-
-        // Restore physics and hand velocity back to the rigidbody for a proper arc
-        rb.useGravity = true;
-        rb.linearVelocity = launchDir * launchForce;
-
-        // Re-enable control after a short airtime so the player can steer the landing
-        yield return new WaitForSeconds(0.15f);
-        UltimatePlayerMovement.Controllable = true;
-
-        upm.leftFollower.SetActive(true);
-        upm.rightFollower.SetActive(true);
+        FinishAttack();
     }
 
-    // ── Stubs kept for compatibility ──────────────────────────────────────────
-    public void RotateToSwing(GameObject speedCharacter) { }
-    public void Swing()
+    private void DetectTargets()
     {
-        
+        Collider[] hits = Physics.OverlapSphere(
+            AttackPosition,
+            attackRadius,
+            targetLayers,
+            triggerInteraction);
+
+        foreach (Collider hit in hits)
+        {
+            if (hit == null || hit.transform.IsChildOf(transform))
+                continue;
+
+            GameObject targetRoot =
+                hit.attachedRigidbody != null
+                    ? hit.attachedRigidbody.gameObject
+                    : hit.transform.root.gameObject;
+
+            if (!hitObjects.Add(targetRoot))
+                continue;
+
+            TornadoPole pole = hit.GetComponentInParent<TornadoPole>();
+
+            if (pole != null && pole.TryActivate(gameObject, this))
+            {
+                TransferToPole();
+                return;
+            }
+
+            targetRoot.SendMessage(
+                "OnTornadoHit",
+                gameObject,
+                SendMessageOptions.DontRequireReceiver);
+
+            if (damage > 0)
+            {
+                targetRoot.SendMessage(
+                    "TakeDamage",
+                    damage,
+                    SendMessageOptions.DontRequireReceiver);
+            }
+        }
+    }
+
+    private void BeginPresentation()
+    {
+        if (animator != null)
+        {
+            if (!string.IsNullOrWhiteSpace(tornadoTrigger))
+                animator.SetTrigger(tornadoTrigger);
+
+            if (!string.IsNullOrWhiteSpace(tornadoBool))
+                animator.SetBool(tornadoBool, true);
+        }
+
+        if (tornadoEffect != null)
+            tornadoEffect.Play();
+
+        if (audioSource != null && tornadoSound != null)
+            audioSource.PlayOneShot(tornadoSound);
+    }
+
+    private void EndPresentation()
+    {
+        if (animator != null &&
+            !string.IsNullOrWhiteSpace(tornadoBool))
+        {
+            animator.SetBool(tornadoBool, false);
+        }
+
+        if (tornadoEffect != null)
+        {
+            tornadoEffect.Stop(
+                true,
+                ParticleSystemStopBehavior.StopEmitting);
+        }
+    }
+
+    public void TransferToPole()
+    {
+        if (!isPerforming)
+            return;
+
+        transferredToPole = true;
+
+        if (attackRoutine != null)
+        {
+            StopCoroutine(attackRoutine);
+            attackRoutine = null;
+        }
+
+        isPerforming = false;
+        EndPresentation();
+    }
+
+    public void FinishAttack()
+    {
+        if (transferredToPole)
+            return;
+
+        if (attackRoutine != null)
+        {
+            StopCoroutine(attackRoutine);
+            attackRoutine = null;
+        }
+
+        isPerforming = false;
+        EndPresentation();
+
+        if (actionController != null &&
+            actionController.CurrentAction ==
+            TeamActionController.TeamAction.TornadoJump)
+        {
+            actionController.EndAction(
+                restoreMovementControl: false);
+        }
+    }
+
+    public void FinishPoleAction()
+    {
+        transferredToPole = false;
+        isPerforming = false;
+        EndPresentation();
+
+        if (actionController != null &&
+            actionController.CurrentAction ==
+            TeamActionController.TeamAction.TornadoJump)
+        {
+            actionController.EndAction();
+        }
+        else
+        {
+            UltimatePlayerMovement.Controllable = true;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (attackRoutine != null)
+        {
+            StopCoroutine(attackRoutine);
+            attackRoutine = null;
+        }
+
+        EndPresentation();
+
+        if (!transferredToPole)
+            FinishAttack();
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (!drawAttackRadius)
+            return;
+
+        Vector3 center =
+            attackCenter != null
+                ? attackCenter.position
+                : transform.position;
+
+        Gizmos.DrawWireSphere(center, attackRadius);
     }
 }
