@@ -477,11 +477,8 @@ public class ThunderShoot : MonoBehaviour
 
         if (preparationDuration <= 0f)
         {
-            powerTeammate.position =
-                GetShootPosition();
-
-            powerTeammate.rotation =
-                GetLaunchRotation();
+            powerTeammate.position = GetShootPosition();
+            powerTeammate.rotation = GetLaunchRotation();
 
             yield break;
         }
@@ -555,12 +552,7 @@ public class ThunderShoot : MonoBehaviour
                     desiredDirection,
                     turnAmount).normalized;
 
-            currentProjectileSpeed =
-                Mathf.MoveTowards(
-                    currentProjectileSpeed,
-                    maximumSpeed,
-                    acceleration *
-                    Time.fixedDeltaTime);
+            currentProjectileSpeed = maximumSpeed;
 
             Vector3 startPosition =
                 powerTeammate.position;
