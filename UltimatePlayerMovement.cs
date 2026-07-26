@@ -54,6 +54,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     public object TeamSetup { get; private set; }
     private void Awake()
     {
+        Controllable = true;
         var camCtrl = Object.FindAnyObjectByType<CameraController>();
         if (camCtrl != null)
             cam = camCtrl.transform;
@@ -154,6 +155,10 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     public void Move()
     {
+        if (!Controllable)
+        {
+            return;
+        }
         Vector3 right = Vector3.Cross(transform.up, cam.forward);
         Vector3 forward = Vector3.Cross(right, transform.up);
 
@@ -215,6 +220,10 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     public void Jump()
     {
+        if (!Controllable)
+        {
+            return;
+        }
         if (Input.GetKey(KeyCode.Space) && isGrounded)
         {
             Vector3 velo = direction * 0.8f;
@@ -226,6 +235,10 @@ public class UltimatePlayerMovement : MonoBehaviour
     }
     public void Turn()
     {
+        if (!Controllable)
+        {
+            return;
+        }
         transform.Rotate(transform.up, Input.GetAxis("Mouse X"));
     }
     public void RotateToGround()

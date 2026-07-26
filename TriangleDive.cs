@@ -261,7 +261,7 @@ public class TriangleDive : MonoBehaviour
                 mustBeAirborne: true,
                 surrenderMovementControl: true);
 
-            if (!accepted)
+            if (accepted == false)
                 return false;
         }
         else
