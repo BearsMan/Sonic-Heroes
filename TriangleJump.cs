@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class TriangleJump : MonoBehaviour
@@ -9,7 +8,7 @@ public class TriangleJump : MonoBehaviour
     public float launchAngle = 60f;        // Angle of launch relative to wall normal
     public float stickDuration = 0.25f;    // How long the character sticks before input is accepted
     public float gravityRestoreDelay = 0.1f;
-
+    private UltimatePlayerMovement movement;
     [Header("State")]
     public bool triangleJumpReady = false; // True while stuck, waiting for jump input
     public bool isJumping = false;
@@ -40,7 +39,17 @@ public class TriangleJump : MonoBehaviour
     private IEnumerator StickRoutine(GameObject speedCharacter)
     {
         // ---- Freeze character ----
-        UltimatePlayerMovement.Controllable = false;
+        movement = speedCharacter.GetComponent<UltimatePlayerMovement>();
+
+        if (movement == null)
+        {
+            movement = speedCharacter.GetComponentInParent<UltimatePlayerMovement>();
+        }
+
+        if (movement != null)
+        {
+            movement.DisableMovement();
+        }
 
         Rigidbody rb = speedCharacter.GetComponent<Rigidbody>();
         rb.useGravity = false;
@@ -104,7 +113,10 @@ public class TriangleJump : MonoBehaviour
             anim.Play("Jump");
 
         // Give control back to the player
-        UltimatePlayerMovement.Controllable = true;
+        if (movement != null)
+        {
+            movement.EnableMovement();
+        }
 
         stuckCharacter = null;
         stickCoroutine = null;
@@ -124,7 +136,10 @@ public class TriangleJump : MonoBehaviour
         Rigidbody rb = speedCharacter.GetComponent<Rigidbody>();
         rb.useGravity = true;
 
-        UltimatePlayerMovement.Controllable = true;
+        if (movement != null)
+        {
+            movement.EnableMovement();
+        }
 
         stuckCharacter = null;
         stickCoroutine = null;

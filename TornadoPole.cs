@@ -103,7 +103,7 @@ public class TornadoPole : MonoBehaviour
         Animator animator =
             player.GetComponentInChildren<Animator>();
 
-        UltimatePlayerMovement.Controllable = false;
+        movement.DisableMovement();
         movement.enabled = false;
 
         body.linearVelocity = Vector3.zero;
@@ -227,11 +227,10 @@ public class TornadoPole : MonoBehaviour
 
         if (controlReturnDelay > 0f)
         {
-            yield return new WaitForSeconds(
-                controlReturnDelay);
+            yield return new WaitForSeconds(controlReturnDelay);
         }
 
-        UltimatePlayerMovement.Controllable = true;
+        movement.EnableMovement();
 
         if (movement.leftFollower != null)
         {

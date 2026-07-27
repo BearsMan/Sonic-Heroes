@@ -294,7 +294,7 @@ public class TornadoJump : MonoBehaviour
         }
         else
         {
-            UltimatePlayerMovement.Controllable = true;
+            movement.EnableMovement();
         }
     }
 

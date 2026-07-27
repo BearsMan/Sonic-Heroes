@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(CameraController))]
 public class UltimatePlayerMovement : MonoBehaviour
 {
     #region constant variables
@@ -16,78 +18,76 @@ public class UltimatePlayerMovement : MonoBehaviour
     public GameObject rightFollower;
     public GameObject sonic;
     public GameObject superSonic;
-    public Rigidbody body;
-    public Transform cam;
-    public Transform groundCheck;
+    [SerializeField] private Rigidbody body;
+    [SerializeField] private Transform cam;
+    [SerializeField] private Transform groundCheck;
     public LayerMask groundMask;
-    public Vector3 moveForce;
     public bool tutorialPlaying = false;
+    [Header("Runtime Debug")]
+    [SerializeField] private bool movementEnabledDebug;
     #endregion
 
     #region private variables
     public GameObject currentCharacter;
-    public bool useGravity = false;
-    private Quaternion CameraWorldFoward
-    {
-        get
-        {
-            return Quaternion.LookRotation(cam.forward, transform.up);
-        }
-    }
 
     public bool isGrounded = false;
-    private float jumpSustainTime = 0f;
     private bool isSurrendered = false;
-
-    private float currentMaxSpeed
-    {
-        get
-        {
-            return isGrounded ? currentSpeed : airSpeed;
-        }
-    }
-
-    public static bool Controllable { get; internal set; }
     public bool TrickZone { get; internal set; }
+
+    public bool MovementEnabled {  get; internal set; }
     public object LeftTeamMember { get; internal set; }
     public object RightTeamMember { get; internal set; }
     public object TeamSetup { get; private set; }
+
     private void Awake()
     {
-        Controllable = true;
-        var camCtrl = Object.FindAnyObjectByType<CameraController>();
-        if (camCtrl != null)
-            cam = camCtrl.transform;
+        MovementEnabled = true;
+
+        if (body == null)
+        {
+            body = GetComponent<Rigidbody>();
+        }
+
+        if (cam == null)
+        {
+            var camCtrl = FindAnyObjectByType<CameraController>();
+            if (camCtrl != null)
+            {
+                cam = camCtrl.transform;
+            }
+        }
     }
     private void Update()
     {
+        movementEnabledDebug = MovementEnabled;
         if (groundCheck != null)
         {
             isGrounded = Physics.CheckSphere(groundCheck.position, 0.2f, groundMask);
-        }
 
-        else
-        {
-            Debug.LogWarning("GroundCheck is not assigned!");
-        }
+            if (tutorialPlaying)
+            {
+                return;
+            }
 
-        if (tutorialPlaying)
-        {
-            return;
-        }
+            if (anim != null)
+            {
+                anim.SetBool("InAir", !isGrounded);
+            }
+            if (isGrounded == true)
+            {
+                if (leftFollower != null && leftFollower.TryGetComponent<FollowerNavigation>(out var lfNav) && lfNav.agent != null)
+                {
+                    lfNav.agent.enabled = true;
+                }
 
-        if (anim != null)
-        {
-            anim.SetBool("InAir", !isGrounded);
+                if (rightFollower != null && rightFollower.TryGetComponent<FollowerNavigation>(out var rfNav) && rfNav.agent != null)
+                {
+                    rfNav.agent.enabled = true;
+                }
+            }
+
+            RotateToGround();
         }
-        if (isGrounded == true)
-        {
-            if (leftFollower != null && leftFollower.TryGetComponent<FollowerNavigation>(out var lfNav) && lfNav.agent != null)
-                lfNav.agent.enabled = true;
-            if (rightFollower != null && rightFollower.TryGetComponent<FollowerNavigation>(out var rfNav) && rfNav.agent != null)
-                rfNav.agent.enabled = true;
-        }
-        // RotateToGround();
     }
 
     private void FixedUpdate()
@@ -100,68 +100,16 @@ public class UltimatePlayerMovement : MonoBehaviour
         anim = GetComponentInChildren<Animator>();
     }
 
-
-    public void OldMove()
-    {
-        Vector3 right = Vector3.Cross(transform.up, cam.forward);
-        Vector3 forward = Vector3.Cross(right, transform.up);
-
-        if (tutorialPlaying)
-        {
-            right = Vector3.zero;
-            forward = Vector3.zero;
-        }
-
-        Vector3 mov = Vector3.zero;
-
-
-
-        if (!isSurrendered)
-        {
-            mov = Input.GetAxis("Vertical") * forward + Input.GetAxis("Horizontal") * right;
-            Jump();
-            Turn();
-        }
-
-
-        Vector3 velocityXZ = body.linearVelocity;
-        velocityXZ.y = 0;
-        direction = mov * currentSpeed;
-        if (isGrounded)
-        {
-            body.useGravity = false;
-            // body.velocity = mov * runSpeed;
-            body.MovePosition(transform.position + (mov * currentSpeed * Time.fixedDeltaTime));
-        }
-        else
-        {
-            body.useGravity = true;
-            // body.AddForce(Vector3.down * 90);
-            body.AddForce(mov * 50);
-
-            if (velocityXZ.magnitude > currentSpeed)
-            {
-                velocityXZ = velocityXZ.normalized * currentSpeed;
-                velocityXZ.y = body.linearVelocity.y;
-                body.linearVelocity = velocityXZ;
-            }
-        }
-        if (anim != null)
-        {
-            anim.SetFloat("Speed", velocityXZ.magnitude);
-        }
-
-    }
-
     public void Move()
     {
-        if (!Controllable)
+        if (!MovementEnabled || cam == null || body == null)
         {
             return;
         }
-        Vector3 right = Vector3.Cross(transform.up, cam.forward);
-        Vector3 forward = Vector3.Cross(right, transform.up);
 
+        Vector3 forward = Vector3.ProjectOnPlane(cam.forward, Vector3.up).normalized;
+
+        Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
 
         if (tutorialPlaying)
         {
@@ -170,12 +118,17 @@ public class UltimatePlayerMovement : MonoBehaviour
         }
 
         Vector3 mov = Vector3.zero;
+
         if (!isSurrendered)
         {
-            mov = Input.GetAxis("Vertical") * forward + Input.GetAxis("Horizontal") * right;
+            mov = Input.GetAxisRaw("Vertical") * forward + Input.GetAxisRaw("Horizontal") * right;
+
+            mov = Vector3.ClampMagnitude(mov, 1f);
+
             Jump();
             Turn();
         }
+
         if (isGrounded)
         {
             GroundMovement(mov);
@@ -184,11 +137,12 @@ public class UltimatePlayerMovement : MonoBehaviour
         {
             AirMovement(mov);
         }
-
     }
 
     private void GroundMovement(Vector3 mov)
     {
+        mov.y = 0f;
+
         maxAirSpeed = currentSpeed;
         direction = mov * currentSpeed;
 
@@ -197,7 +151,18 @@ public class UltimatePlayerMovement : MonoBehaviour
             direction = direction.normalized * currentSpeed;
         }
 
-        body.MovePosition(transform.position + direction * Time.fixedDeltaTime);
+        // Stop any remaining downward velocity after reaching the ground.
+        Vector3 velocity = body.linearVelocity;
+
+        if (velocity.y < 0f)
+        {
+            velocity.y = 0f;
+            body.linearVelocity = velocity;
+        }
+
+        Vector3 targetPosition = body.position + direction * Time.fixedDeltaTime;
+
+        body.MovePosition(targetPosition);
     }
     private float maxAirSpeed;
     private float airControl = 20f;
@@ -206,7 +171,7 @@ public class UltimatePlayerMovement : MonoBehaviour
         body.AddForce(mov * airControl);
 
         Vector3 veloXZ = body.linearVelocity;
-        veloXZ.y = 0;
+        veloXZ.y = 0f;
 
         if (veloXZ.magnitude > maxAirSpeed)
         {
@@ -220,10 +185,11 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     public void Jump()
     {
-        if (!Controllable)
+        if (!MovementEnabled)
         {
             return;
         }
+        
         if (Input.GetKey(KeyCode.Space) && isGrounded)
         {
             Vector3 velo = direction * 0.8f;
@@ -235,10 +201,11 @@ public class UltimatePlayerMovement : MonoBehaviour
     }
     public void Turn()
     {
-        if (!Controllable)
+        if (!MovementEnabled)
         {
             return;
         }
+        
         transform.Rotate(transform.up, Input.GetAxis("Mouse X"));
     }
     public void RotateToGround()
@@ -264,8 +231,6 @@ public class UltimatePlayerMovement : MonoBehaviour
                 return;
             }
 
-
-
             Vector3 cross = Vector3.Cross(transform.right, newup); // new foward direction
 
 
@@ -279,6 +244,25 @@ public class UltimatePlayerMovement : MonoBehaviour
 
 
         }
+    }
+
+    public void StopMovement()
+    {
+        if (body != null)
+        {
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+        }
+    }
+
+    public void EnableMovement()
+    {
+        MovementEnabled = true;
+    }
+
+    public void DisableMovement()
+    {
+        MovementEnabled = false;
     }
 
     public void SurrenderControl(Vector2 up, float newSurrenderTime)
@@ -296,7 +280,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     public void Launch(Vector3 direction, float height)
     {
-        GetComponent<Rigidbody>().linearVelocity = Mathf.Sqrt(height * -2 * Physics.gravity.y) * direction;
+        body.linearVelocity = Mathf.Sqrt(height * -2 * Physics.gravity.y) * direction;
 
     }
 }

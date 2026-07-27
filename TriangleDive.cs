@@ -212,9 +212,9 @@ public class TriangleDive : MonoBehaviour
             if (!accepted)
                 return false;
         }
-        else
+        else if (movement != null)
         {
-            UltimatePlayerMovement.Controllable = false;
+            movement.DisableMovement();
         }
 
         diving = true;
@@ -412,9 +412,9 @@ public class TriangleDive : MonoBehaviour
         {
             actionController.EndAction();
         }
-        else
+        else if (movement != null)
         {
-            UltimatePlayerMovement.Controllable = true;
+            movement.EnableMovement();
         }
     }
 
@@ -470,6 +470,9 @@ public class TriangleDive : MonoBehaviour
 
     private void OnDestroy()
     {
-        UltimatePlayerMovement.Controllable = true;
+        if (movement != null)
+        {
+            movement.EnableMovement();
+        }
     }
 }

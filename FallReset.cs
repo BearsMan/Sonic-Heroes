@@ -1,19 +1,34 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class FallReset : MonoBehaviour
 {
-    public Transform resetPoint;
-    // Start is called before the first frame update
-    void Start()
-    {
+    [SerializeField] private Transform resetPoint;
+    [SerializeField] private float fallLimit = -30f;
 
+    private Rigidbody body;
+
+    private void Awake()
+    {
+        body = GetComponent<Rigidbody>();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        if (transform.position.y < -30) transform.position = resetPoint.position;
+        if (resetPoint == null || transform.position.y >= fallLimit)
+        {
+            return;
+        }
+
+        if (body != null)
+        {
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.position = resetPoint.position;
+        }
+        else
+        {
+            transform.position = resetPoint.position;
+        }
     }
 }

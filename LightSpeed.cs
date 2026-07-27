@@ -18,17 +18,17 @@ public class LightSpeed : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
     public void DashPrep(GameObject speedCharacter)
     {
         string charname = speedCharacter.gameObject.name;
-        if (charname != "Sonic The Hedgehog" || charname != "Shadow The Hedgehog" || charname != "Super Sonic")
+        if (charname != "Sonic The Hedgehog" && charname != "Shadow The Hedgehog" && charname != "Super Sonic")
         {
             return;
         }
         speedCharacter.GetComponent<Rigidbody>().useGravity = false;
-        speedCharacter.GetComponentInParent<UltimatePlayerMovement>().body.linearVelocity = Vector3.zero;
+        speedCharacter.GetComponentInParent<UltimatePlayerMovement>().StopMovement();
         speedCharacter.GetComponent<Animator>().Play("Light Speed Attack");
         StartCoroutine(Dash(speedCharacter));
     }
@@ -48,13 +48,13 @@ public class LightSpeed : MonoBehaviour
     public void DashExit(GameObject SpeedCharacter)
     {
         SpeedCharacter.GetComponent<Rigidbody>().useGravity = true;
-        SpeedCharacter.GetComponentInParent<UltimatePlayerMovement>().body.linearVelocity = Vector3.zero;
+        SpeedCharacter.GetComponentInParent<UltimatePlayerMovement>().StopMovement();
         SpeedCharacter.GetComponent<Animator>().Play("Jump Down");
 
     }
     public void OnTriggerStay(Collider other)
     {
-        
+
         if (other.GetComponent<UltimatePlayerMovement>() == true && Input.GetKey(KeyCode.B))
         {
             DashPrep(other.gameObject);

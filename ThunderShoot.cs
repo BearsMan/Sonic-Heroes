@@ -354,18 +354,17 @@ public class ThunderShoot : MonoBehaviour
 
         if (actionController != null)
         {
-            bool accepted =
-                actionController.TryBeginAction(
-                    TeamActionController.TeamAction.ThunderShoot,
-                    TeamActionController.TeamFormation.Fly,
-                    mustBeGrounded: false,
-                    mustBeAirborne: false,
-                    surrenderMovementControl: false);
+            bool accepted = actionController.TryBeginAction(TeamActionController.TeamAction.ThunderShoot, TeamActionController.TeamFormation.Fly, mustBeGrounded: false, mustBeAirborne: false, surrenderMovementControl: false);
 
             if (!accepted)
                 return false;
 
             actionStarted = true;
+
+            if (movement != null)
+            {
+                movement.DisableMovement();
+            }
         }
 
         currentTarget = FindBestTarget();
@@ -1292,6 +1291,10 @@ public class ThunderShoot : MonoBehaviour
         currentProjectileSpeed = 0f;
         damagedTargets.Clear();
         state = ThunderShootState.Ready;
+        if (movement != null)
+        {
+            movement.EnableMovement();
+        }
     }
 
     private void FinishTeamAction()
@@ -1299,11 +1302,13 @@ public class ThunderShoot : MonoBehaviour
         if (!actionStarted)
             return;
 
-        if (actionController != null &&
-            actionController.CurrentAction ==
-            TeamActionController.TeamAction.ThunderShoot)
+        if (actionController != null && actionController.CurrentAction == TeamActionController.TeamAction.ThunderShoot)
         {
             actionController.EndAction();
+        }
+        else if (movement != null)
+        {
+            movement.EnableMovement();
         }
 
         actionStarted = false;
