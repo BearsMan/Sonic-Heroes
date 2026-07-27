@@ -1,17 +1,14 @@
-using System.Collections;
 using UnityEngine;
 
 /// <summary>
 /// Sonic Heroes-style Triangle Dive.
 ///
-/// Behaviour:
-/// - Requires Power Formation.
-/// - Starts while airborne by pressing the jump button again.
-/// - Places the other two teammates into a triangle formation.
-/// - Slows falling while preserving forward movement.
-/// - Allows limited horizontal steering.
-/// - Rises when inside an updraft.
-/// - Ends when the player lands, releases the button, or cancels.
+/// Attach this component only to Test Player:
+/// - Test Player must have a Rigidbody.
+/// - Test Player must have UltimatePlayerMovement.
+/// - Test Player should have TeamActionController.
+///
+/// The action is available only in Power Formation.
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
 public class TriangleDive : MonoBehaviour
@@ -20,35 +17,71 @@ public class TriangleDive : MonoBehaviour
     [SerializeField] private UltimatePlayerMovement movement;
     [SerializeField] private TeamActionController actionController;
     [SerializeField] private Rigidbody body;
-    [SerializeField] private Animator animator;
     [SerializeField] private Transform cameraTransform;
 
     [Header("Team References")]
-    [Tooltip("The currently controlled Power character.")]
+    [Tooltip("The visible Power character in the scene.")]
     [SerializeField] private Transform powerCharacter;
 
-    [Tooltip("The existing Speed teammate. Do not use a prefab.")]
+    [Tooltip("The visible Speed character in the scene.")]
     [SerializeField] private Transform speedCharacter;
 
-    [Tooltip("The existing Fly teammate. Do not use a prefab.")]
+    [Tooltip("The visible Fly character in the scene.")]
     [SerializeField] private Transform flyCharacter;
 
+    [Header("Input")]
+    [SerializeField] private KeyCode diveKey = KeyCode.Space;
+
+    [Tooltip("Minimum time the player must be airborne before Triangle Dive can start.")]
+    [SerializeField, Min(0f)]
+    private float minimumAirTime = 0.1f;
+
+    [Tooltip("End Triangle Dive when Space is released.")]
+    [SerializeField]
+    private bool requireButtonHeld = true;
+
+    [Header("Dive Movement")]
+    [SerializeField, Min(0f)]
+    private float forwardSpeed = 10f;
+
+    [SerializeField, Min(0f)]
+    private float maximumForwardSpeed = 24f;
+
+    [SerializeField, Min(0f)]
+    private float fallSpeed = 2.5f;
+
+    [SerializeField, Min(0f)]
+    private float verticalAcceleration = 16f;
+
+    [SerializeField, Min(0f)]
+    private float steeringAcceleration = 16f;
+
+    [SerializeField, Min(0f)]
+    private float maximumSideSpeed = 7f;
+
+    [SerializeField, Min(0f)]
+    private float turningSharpness = 10f;
+
+    [Header("Updraft")]
+    [SerializeField] private LayerMask updraftLayers;
+
+    [SerializeField, Min(0f)]
+    private float updraftRiseSpeed = 12f;
+
+    [SerializeField, Min(0f)]
+    private float updraftAcceleration = 22f;
+
+    [SerializeField, Min(0f)]
+    private float updraftGraceTime = 0.08f;
+
     [Header("Triangle Formation")]
-    [Tooltip("Speed teammate's local position relative to the Power character.")]
     [SerializeField]
     private Vector3 speedFormationOffset =
         new Vector3(-1.35f, 0.15f, -0.15f);
 
-    [Tooltip("Fly teammate's local position relative to the Power character.")]
     [SerializeField]
     private Vector3 flyFormationOffset =
         new Vector3(1.35f, 0.15f, -0.15f);
-
-    [SerializeField, Min(0.01f)]
-    private float formationEnterTime = 0.15f;
-
-    [SerializeField, Min(0.01f)]
-    private float formationExitTime = 0.12f;
 
     [SerializeField, Min(0f)]
     private float teammatePositionSharpness = 20f;
@@ -56,103 +89,17 @@ public class TriangleDive : MonoBehaviour
     [SerializeField, Min(0f)]
     private float teammateRotationSharpness = 15f;
 
-    [Header("Input")]
-    [SerializeField] private KeyCode diveKey = KeyCode.Space;
-
-    [Tooltip("End Triangle Dive when the jump button is released.")]
-    [SerializeField] private bool requireButtonHeld = true;
-
-    [Tooltip(
-        "Prevents Triangle Dive from starting on the same input that began the jump.")]
-    [SerializeField, Min(0f)]
-    private float minimumAirTime = 0.08f;
-
-    [Header("Glide Movement")]
-    [Tooltip("Minimum forward speed while Triangle Diving.")]
-    [SerializeField, Min(0f)]
-    private float forwardSpeed = 10f;
-
-    [Tooltip("Maximum forward speed preserved from the player's current velocity.")]
-    [SerializeField, Min(0f)]
-    private float maximumForwardSpeed = 24f;
-
-    [Tooltip("Normal downward speed during the glide.")]
-    [SerializeField, Min(0f)]
-    private float fallSpeed = 2.5f;
-
-    [Tooltip("How quickly vertical velocity approaches the target fall speed.")]
-    [SerializeField, Min(0f)]
-    private float verticalAcceleration = 16f;
-
-    [Tooltip("Horizontal steering strength.")]
-    [SerializeField, Min(0f)]
-    private float steeringAcceleration = 16f;
-
-    [Tooltip("Maximum sideways speed created by steering.")]
-    [SerializeField, Min(0f)]
-    private float maximumSideSpeed = 7f;
-
-    [Tooltip("How quickly the team turns toward the movement direction.")]
-    [SerializeField, Min(0f)]
-    private float turningSharpness = 10f;
-
-    [Header("Updraft")]
-    [Tooltip("Layers containing Triangle Dive updraft triggers.")]
-    [SerializeField] private LayerMask updraftLayers;
-
-    [Tooltip("Upward speed while riding an updraft.")]
-    [SerializeField, Min(0f)]
-    private float updraftRiseSpeed = 12f;
-
-    [Tooltip("How quickly upward speed is gained inside an updraft.")]
-    [SerializeField, Min(0f)]
-    private float updraftAcceleration = 22f;
-
-    [Tooltip(
-        "Seconds to retain the updraft after leaving its trigger. " +
-        "This prevents flickering near trigger boundaries.")]
-    [SerializeField, Min(0f)]
-    private float updraftGraceTime = 0.08f;
-
-    [Header("Limits")]
-    [Tooltip("Set to zero for no duration limit.")]
-    [SerializeField, Min(0f)]
-    private float maximumDiveDuration;
-
     [Header("Animation")]
+    [SerializeField] private Animator animator;
     [SerializeField] private string triangleDiveBool = "Triangle Dive";
-
-    [SerializeField]
-    private string triangleDiveTrigger =
-        "Start Triangle Dive";
-
-    [Header("Effects")]
-    [SerializeField] private ParticleSystem diveEffect;
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private AudioClip startSound;
-    [SerializeField] private AudioClip updraftSound;
 
     [Header("Runtime Debug")]
     [SerializeField] private bool diving;
     [SerializeField] private bool insideUpdraft;
+    [SerializeField] private bool jumpWasReleased;
+    [SerializeField] private float airborneTime;
 
-    private Coroutine formationRoutine;
-
-    private Transform originalSpeedParent;
-    private Transform originalFlyParent;
-
-    private Vector3 originalSpeedLocalPosition;
-    private Vector3 originalFlyLocalPosition;
-
-    private Quaternion originalSpeedLocalRotation;
-    private Quaternion originalFlyLocalRotation;
-
-    private float airborneTime;
-    private float diveTime;
     private float lastUpdraftTime = float.NegativeInfinity;
-
-    private bool cachedOriginalTransforms;
-    private bool playedUpdraftSound;
 
     public bool IsDiving => diving;
 
@@ -162,31 +109,22 @@ public class TriangleDive : MonoBehaviour
 
     private void Awake()
     {
-        if (body == null)
-            body = GetComponent<Rigidbody>();
-
         if (movement == null)
             movement = GetComponent<UltimatePlayerMovement>();
-
-        if (movement == null)
-            movement = GetComponentInParent<UltimatePlayerMovement>();
 
         if (actionController == null)
             actionController = GetComponent<TeamActionController>();
 
-        if (actionController == null)
-            actionController = GetComponentInParent<TeamActionController>();
-
-        if (animator == null)
-            animator = GetComponentInChildren<Animator>();
+        if (body == null)
+            body = GetComponent<Rigidbody>();
 
         if (cameraTransform == null && Camera.main != null)
             cameraTransform = Camera.main.transform;
 
-        if (powerCharacter == null)
-            powerCharacter = transform;
+        if (animator == null && powerCharacter != null)
+            animator = powerCharacter.GetComponentInChildren<Animator>();
 
-        CacheTeammateTransforms();
+        jumpWasReleased = true;
     }
 
     private void Update()
@@ -194,19 +132,15 @@ public class TriangleDive : MonoBehaviour
         if (movement == null || body == null)
             return;
 
-        UpdateAirborneTimer();
+        UpdateAirborneState();
 
         if (!diving)
         {
-            if (CanReadStartInput())
-                TryStartTriangleDive();
-
+            ReadStartInput();
             return;
         }
 
-        diveTime += Time.deltaTime;
-
-        if (ShouldEndDive())
+        if (ShouldStopDive())
             StopTriangleDive();
     }
 
@@ -216,26 +150,43 @@ public class TriangleDive : MonoBehaviour
             return;
 
         ApplyDiveMovement();
-        UpdateTeamFormation();
+        UpdateTriangleFormation();
     }
 
-    private void UpdateAirborneTimer()
+    private void UpdateAirborneState()
     {
         if (movement.isGrounded)
+        {
             airborneTime = 0f;
-        else
-            airborneTime += Time.deltaTime;
+
+            // While grounded, prepare for the normal jump.
+            jumpWasReleased = !Input.GetKey(diveKey);
+            return;
+        }
+
+        airborneTime += Time.deltaTime;
+
+        // Triangle Dive cannot begin until Space has been released
+        // after the initial jump.
+        if (!Input.GetKey(diveKey))
+            jumpWasReleased = true;
     }
 
-    private bool CanReadStartInput()
+    private void ReadStartInput()
     {
         if (movement.isGrounded)
-            return false;
+            return;
 
         if (airborneTime < minimumAirTime)
-            return false;
+            return;
 
-        return Input.GetKeyDown(diveKey);
+        if (!jumpWasReleased)
+            return;
+
+        if (!Input.GetKeyDown(diveKey))
+            return;
+
+        TryStartTriangleDive();
     }
 
     public bool TryStartTriangleDive()
@@ -249,9 +200,6 @@ public class TriangleDive : MonoBehaviour
         if (movement.isGrounded)
             return false;
 
-        if (airborneTime < minimumAirTime)
-            return false;
-
         if (actionController != null)
         {
             bool accepted = actionController.TryBeginAction(
@@ -261,7 +209,7 @@ public class TriangleDive : MonoBehaviour
                 mustBeAirborne: true,
                 surrenderMovementControl: true);
 
-            if (accepted == false)
+            if (!accepted)
                 return false;
         }
         else
@@ -269,20 +217,17 @@ public class TriangleDive : MonoBehaviour
             UltimatePlayerMovement.Controllable = false;
         }
 
-        CacheTeammateTransforms();
-
         diving = true;
-        diveTime = 0f;
         insideUpdraft = false;
-        playedUpdraftSound = false;
+        jumpWasReleased = false;
+        lastUpdraftTime = float.NegativeInfinity;
 
-        StartPresentation();
-        BeginFormation();
+        SetAnimation(true);
 
         return true;
     }
 
-    private bool ShouldEndDive()
+    private bool ShouldStopDive()
     {
         if (movement.isGrounded)
             return true;
@@ -290,21 +235,12 @@ public class TriangleDive : MonoBehaviour
         if (requireButtonHeld && !Input.GetKey(diveKey))
             return true;
 
-        if (maximumDiveDuration > 0f &&
-            diveTime >= maximumDiveDuration)
-        {
-            return true;
-        }
-
         return false;
     }
 
     private void ApplyDiveMovement()
     {
         Vector3 currentVelocity = body.linearVelocity;
-
-        Vector3 horizontalVelocity =
-            Vector3.ProjectOnPlane(currentVelocity, Vector3.up);
 
         Vector3 facingDirection =
             Vector3.ProjectOnPlane(transform.forward, Vector3.up);
@@ -314,6 +250,9 @@ public class TriangleDive : MonoBehaviour
 
         facingDirection.Normalize();
 
+        Vector3 horizontalVelocity =
+            Vector3.ProjectOnPlane(currentVelocity, Vector3.up);
+
         float retainedForwardSpeed =
             Vector3.Dot(horizontalVelocity, facingDirection);
 
@@ -322,9 +261,6 @@ public class TriangleDive : MonoBehaviour
             forwardSpeed,
             maximumForwardSpeed);
 
-        float horizontalInput = Input.GetAxisRaw("Horizontal");
-        float verticalInput = Input.GetAxisRaw("Vertical");
-
         Vector3 cameraForward = facingDirection;
         Vector3 cameraRight = transform.right;
 
@@ -332,12 +268,21 @@ public class TriangleDive : MonoBehaviour
         {
             cameraForward = Vector3.ProjectOnPlane(
                 cameraTransform.forward,
-                Vector3.up).normalized;
+                Vector3.up);
 
             cameraRight = Vector3.ProjectOnPlane(
                 cameraTransform.right,
-                Vector3.up).normalized;
+                Vector3.up);
+
+            if (cameraForward.sqrMagnitude > 0.001f)
+                cameraForward.Normalize();
+
+            if (cameraRight.sqrMagnitude > 0.001f)
+                cameraRight.Normalize();
         }
+
+        float horizontalInput = Input.GetAxisRaw("Horizontal");
+        float verticalInput = Input.GetAxisRaw("Vertical");
 
         Vector3 steeringDirection =
             cameraRight * horizontalInput +
@@ -347,9 +292,7 @@ public class TriangleDive : MonoBehaviour
             steeringDirection.Normalize();
 
         Vector3 desiredHorizontalVelocity =
-            facingDirection * retainedForwardSpeed;
-
-        desiredHorizontalVelocity +=
+            facingDirection * retainedForwardSpeed +
             steeringDirection * maximumSideSpeed;
 
         horizontalVelocity = Vector3.MoveTowards(
@@ -360,22 +303,24 @@ public class TriangleDive : MonoBehaviour
         float targetVerticalSpeed =
             UpdraftActive ? updraftRiseSpeed : -fallSpeed;
 
+        float acceleration =
+            UpdraftActive
+                ? updraftAcceleration
+                : verticalAcceleration;
+
         float verticalSpeed = Mathf.MoveTowards(
             currentVelocity.y,
             targetVerticalSpeed,
-            (UpdraftActive
-                ? updraftAcceleration
-                : verticalAcceleration) * Time.fixedDeltaTime);
+            acceleration * Time.fixedDeltaTime);
 
         body.linearVelocity =
             horizontalVelocity +
             Vector3.up * verticalSpeed;
 
-        RotateTowardVelocity(horizontalVelocity);
-        UpdateUpdraftPresentation();
+        RotateTowardMovement(horizontalVelocity);
     }
 
-    private void RotateTowardVelocity(Vector3 horizontalVelocity)
+    private void RotateTowardMovement(Vector3 horizontalVelocity)
     {
         if (horizontalVelocity.sqrMagnitude < 0.01f)
             return;
@@ -384,139 +329,70 @@ public class TriangleDive : MonoBehaviour
             horizontalVelocity.normalized,
             Vector3.up);
 
-        float rotationT =
-            1f - Mathf.Exp(-turningSharpness * Time.fixedDeltaTime);
+        float rotationAmount =
+            1f - Mathf.Exp(
+                -turningSharpness * Time.fixedDeltaTime);
 
         transform.rotation = Quaternion.Slerp(
             transform.rotation,
             targetRotation,
-            rotationT);
+            rotationAmount);
     }
 
-    private void BeginFormation()
-    {
-        if (formationRoutine != null)
-            StopCoroutine(formationRoutine);
-
-        formationRoutine = StartCoroutine(
-            BlendIntoFormation());
-    }
-
-    private IEnumerator BlendIntoFormation()
-    {
-        float elapsed = 0f;
-
-        Vector3 speedStartPosition =
-            speedCharacter != null
-                ? speedCharacter.position
-                : Vector3.zero;
-
-        Vector3 flyStartPosition =
-            flyCharacter != null
-                ? flyCharacter.position
-                : Vector3.zero;
-
-        Quaternion speedStartRotation =
-            speedCharacter != null
-                ? speedCharacter.rotation
-                : Quaternion.identity;
-
-        Quaternion flyStartRotation =
-            flyCharacter != null
-                ? flyCharacter.rotation
-                : Quaternion.identity;
-
-        while (elapsed < formationEnterTime && diving)
-        {
-            elapsed += Time.deltaTime;
-
-            float t = Mathf.Clamp01(
-                elapsed / formationEnterTime);
-
-            t = SmoothStep(t);
-
-            if (speedCharacter != null)
-            {
-                speedCharacter.position = Vector3.Lerp(
-                    speedStartPosition,
-                    GetFormationPosition(speedFormationOffset),
-                    t);
-
-                speedCharacter.rotation = Quaternion.Slerp(
-                    speedStartRotation,
-                    powerCharacter.rotation,
-                    t);
-            }
-
-            if (flyCharacter != null)
-            {
-                flyCharacter.position = Vector3.Lerp(
-                    flyStartPosition,
-                    GetFormationPosition(flyFormationOffset),
-                    t);
-
-                flyCharacter.rotation = Quaternion.Slerp(
-                    flyStartRotation,
-                    powerCharacter.rotation,
-                    t);
-            }
-
-            yield return null;
-        }
-
-        formationRoutine = null;
-    }
-
-    private void UpdateTeamFormation()
-    {
-        if (powerCharacter == null)
-            return;
-
-        float positionT =
-            1f - Mathf.Exp(
-                -teammatePositionSharpness *
-                Time.fixedDeltaTime);
-
-        float rotationT =
-            1f - Mathf.Exp(
-                -teammateRotationSharpness *
-                Time.fixedDeltaTime);
-
-        if (speedCharacter != null)
-        {
-            speedCharacter.position = Vector3.Lerp(
-                speedCharacter.position,
-                GetFormationPosition(speedFormationOffset),
-                positionT);
-
-            speedCharacter.rotation = Quaternion.Slerp(
-                speedCharacter.rotation,
-                powerCharacter.rotation,
-                rotationT);
-        }
-
-        if (flyCharacter != null)
-        {
-            flyCharacter.position = Vector3.Lerp(
-                flyCharacter.position,
-                GetFormationPosition(flyFormationOffset),
-                positionT);
-
-            flyCharacter.rotation = Quaternion.Slerp(
-                flyCharacter.rotation,
-                powerCharacter.rotation,
-                rotationT);
-        }
-    }
-
-    private Vector3 GetFormationPosition(Vector3 localOffset)
+    private void UpdateTriangleFormation()
     {
         Transform center =
             powerCharacter != null
                 ? powerCharacter
                 : transform;
 
-        return center.TransformPoint(localOffset);
+        float positionAmount =
+            1f - Mathf.Exp(
+                -teammatePositionSharpness *
+                Time.fixedDeltaTime);
+
+        float rotationAmount =
+            1f - Mathf.Exp(
+                -teammateRotationSharpness *
+                Time.fixedDeltaTime);
+
+        UpdateTeammate(
+            speedCharacter,
+            center,
+            speedFormationOffset,
+            positionAmount,
+            rotationAmount);
+
+        UpdateTeammate(
+            flyCharacter,
+            center,
+            flyFormationOffset,
+            positionAmount,
+            rotationAmount);
+    }
+
+    private static void UpdateTeammate(
+        Transform teammate,
+        Transform center,
+        Vector3 localOffset,
+        float positionAmount,
+        float rotationAmount)
+    {
+        if (teammate == null || center == null)
+            return;
+
+        Vector3 targetPosition =
+            center.TransformPoint(localOffset);
+
+        teammate.position = Vector3.Lerp(
+            teammate.position,
+            targetPosition,
+            positionAmount);
+
+        teammate.rotation = Quaternion.Slerp(
+            teammate.rotation,
+            center.rotation,
+            rotationAmount);
     }
 
     public void StopTriangleDive()
@@ -526,17 +402,9 @@ public class TriangleDive : MonoBehaviour
 
         diving = false;
         insideUpdraft = false;
-        playedUpdraftSound = false;
+        jumpWasReleased = false;
 
-        StopPresentation();
-
-        if (formationRoutine != null)
-        {
-            StopCoroutine(formationRoutine);
-            formationRoutine = null;
-        }
-
-        StartCoroutine(RestoreFormation());
+        SetAnimation(false);
 
         if (actionController != null &&
             actionController.CurrentAction ==
@@ -555,187 +423,15 @@ public class TriangleDive : MonoBehaviour
         StopTriangleDive();
     }
 
-    private IEnumerator RestoreFormation()
+    private void SetAnimation(bool active)
     {
-        if (!cachedOriginalTransforms)
-            yield break;
-
-        float elapsed = 0f;
-
-        Vector3 speedStartPosition =
-            speedCharacter != null
-                ? speedCharacter.localPosition
-                : Vector3.zero;
-
-        Vector3 flyStartPosition =
-            flyCharacter != null
-                ? flyCharacter.localPosition
-                : Vector3.zero;
-
-        Quaternion speedStartRotation =
-            speedCharacter != null
-                ? speedCharacter.localRotation
-                : Quaternion.identity;
-
-        Quaternion flyStartRotation =
-            flyCharacter != null
-                ? flyCharacter.localRotation
-                : Quaternion.identity;
-
-        if (speedCharacter != null &&
-            speedCharacter.parent != originalSpeedParent)
-        {
-            speedCharacter.SetParent(
-                originalSpeedParent,
-                true);
-        }
-
-        if (flyCharacter != null &&
-            flyCharacter.parent != originalFlyParent)
-        {
-            flyCharacter.SetParent(
-                originalFlyParent,
-                true);
-        }
-
-        while (elapsed < formationExitTime)
-        {
-            elapsed += Time.deltaTime;
-
-            float t = Mathf.Clamp01(
-                elapsed / formationExitTime);
-
-            t = SmoothStep(t);
-
-            if (speedCharacter != null)
-            {
-                speedCharacter.localPosition = Vector3.Lerp(
-                    speedStartPosition,
-                    originalSpeedLocalPosition,
-                    t);
-
-                speedCharacter.localRotation = Quaternion.Slerp(
-                    speedStartRotation,
-                    originalSpeedLocalRotation,
-                    t);
-            }
-
-            if (flyCharacter != null)
-            {
-                flyCharacter.localPosition = Vector3.Lerp(
-                    flyStartPosition,
-                    originalFlyLocalPosition,
-                    t);
-
-                flyCharacter.localRotation = Quaternion.Slerp(
-                    flyStartRotation,
-                    originalFlyLocalRotation,
-                    t);
-            }
-
-            yield return null;
-        }
-
-        if (speedCharacter != null)
-        {
-            speedCharacter.localPosition =
-                originalSpeedLocalPosition;
-
-            speedCharacter.localRotation =
-                originalSpeedLocalRotation;
-        }
-
-        if (flyCharacter != null)
-        {
-            flyCharacter.localPosition =
-                originalFlyLocalPosition;
-
-            flyCharacter.localRotation =
-                originalFlyLocalRotation;
-        }
-    }
-
-    private void CacheTeammateTransforms()
-    {
-        if (cachedOriginalTransforms)
+        if (animator == null)
             return;
 
-        if (speedCharacter != null)
-        {
-            originalSpeedParent = speedCharacter.parent;
-            originalSpeedLocalPosition =
-                speedCharacter.localPosition;
-            originalSpeedLocalRotation =
-                speedCharacter.localRotation;
-        }
-
-        if (flyCharacter != null)
-        {
-            originalFlyParent = flyCharacter.parent;
-            originalFlyLocalPosition =
-                flyCharacter.localPosition;
-            originalFlyLocalRotation =
-                flyCharacter.localRotation;
-        }
-
-        cachedOriginalTransforms = true;
-    }
-
-    private void StartPresentation()
-    {
-        if (animator != null)
-        {
-            if (!string.IsNullOrWhiteSpace(
-                triangleDiveTrigger))
-            {
-                animator.SetTrigger(triangleDiveTrigger);
-            }
-
-            if (!string.IsNullOrWhiteSpace(
-                triangleDiveBool))
-            {
-                animator.SetBool(triangleDiveBool, true);
-            }
-        }
-
-        if (diveEffect != null)
-            diveEffect.Play();
-
-        if (audioSource != null && startSound != null)
-            audioSource.PlayOneShot(startSound);
-    }
-
-    private void StopPresentation()
-    {
-        if (animator != null &&
-            !string.IsNullOrWhiteSpace(triangleDiveBool))
-        {
-            animator.SetBool(triangleDiveBool, false);
-        }
-
-        if (diveEffect != null)
-        {
-            diveEffect.Stop(
-                true,
-                ParticleSystemStopBehavior.StopEmitting);
-        }
-    }
-
-    private void UpdateUpdraftPresentation()
-    {
-        if (!UpdraftActive)
-        {
-            playedUpdraftSound = false;
-            return;
-        }
-
-        if (playedUpdraftSound)
+        if (string.IsNullOrWhiteSpace(triangleDiveBool))
             return;
 
-        if (audioSource != null && updraftSound != null)
-            audioSource.PlayOneShot(updraftSound);
-
-        playedUpdraftSound = true;
+        animator.SetBool(triangleDiveBool, active);
     }
 
     private void OnTriggerStay(Collider other)
@@ -743,9 +439,9 @@ public class TriangleDive : MonoBehaviour
         if (!diving || other == null)
             return;
 
-        int layerMask = 1 << other.gameObject.layer;
+        int otherLayer = 1 << other.gameObject.layer;
 
-        if ((updraftLayers.value & layerMask) == 0)
+        if ((updraftLayers.value & otherLayer) == 0)
             return;
 
         insideUpdraft = true;
@@ -757,9 +453,9 @@ public class TriangleDive : MonoBehaviour
         if (other == null)
             return;
 
-        int layerMask = 1 << other.gameObject.layer;
+        int otherLayer = 1 << other.gameObject.layer;
 
-        if ((updraftLayers.value & layerMask) == 0)
+        if ((updraftLayers.value & otherLayer) == 0)
             return;
 
         insideUpdraft = false;
@@ -775,10 +471,5 @@ public class TriangleDive : MonoBehaviour
     private void OnDestroy()
     {
         UltimatePlayerMovement.Controllable = true;
-    }
-
-    private static float SmoothStep(float value)
-    {
-        return value * value * (3f - 2f * value);
     }
 }
