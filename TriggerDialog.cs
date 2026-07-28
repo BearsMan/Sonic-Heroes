@@ -2,49 +2,98 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(UltimatePlayerMovement))]
+[RequireComponent(typeof(AudioClip))]
+[RequireComponent (typeof(AudioSource))]
 public class TriggerDialog : MonoBehaviour
 {
-    public List<AudioClip> dialogs = new List<AudioClip>();
-    private bool dialogread;
+    [Header("Dialog")]
+    public List<AudioClip> dialogs = new();
     public AudioSource omochaoTriggerDisable;
+
+    [Header("Runtime")]
     public bool pause = false;
-    // Start is called before the first frame update
-    void Start()
+
+    private bool dialogRead = false;
+    private UltimatePlayerMovement playerMovement;
+
+    private void Awake()
     {
+        playerMovement = FindAnyObjectByType<UltimatePlayerMovement>();
 
+        if (omochaoTriggerDisable == null)
+        {
+            omochaoTriggerDisable = GetComponent<AudioSource>();
+        }
     }
+    private Coroutine dialogCoroutine;
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
     private void OnTriggerEnter(Collider other)
     {
-        if (dialogread == false && other.CompareTag("Player"))
+        if (dialogRead || !other.CompareTag("Player"))
         {
-            dialogread = true;
+            return;
+        }
 
-            StartCoroutine(ReadDialog());
+        dialogRead = true;
+        dialogCoroutine = StartCoroutine(ReadDialog());
+    }
+
+    private IEnumerator ReadDialog()
+    {
+        if (playerMovement == null)
+        {
+            playerMovement = FindAnyObjectByType<UltimatePlayerMovement>();
+        }
+
+        playerMovement?.DisableMovement();
+
+        try
+        {
+            if (omochaoTriggerDisable == null)
+            {
+                Debug.LogError($"{name}: No AudioSource assigned to TriggerDialog.", this);
+
+                yield break;
+            }
+
+            foreach (AudioClip clip in dialogs)
+            {
+                if (clip == null)
+                {
+                    continue;
+                }
+
+                omochaoTriggerDisable.clip = clip;
+                omochaoTriggerDisable.Play();
+
+                while (omochaoTriggerDisable.isPlaying || pause)
+                {
+                    yield return null;
+                }
+            }
+        }
+        finally
+        {
+            dialogCoroutine = null;
+            playerMovement?.EnableMovement();
         }
     }
-    public IEnumerator ReadDialog()
+
+    private void OnDisable()
     {
-        var up = Object.FindAnyObjectByType<UltimatePlayerMovement>();
-        if (up != null) up.tutorialPlaying = true;
-        int counter = 0;
-            
-        while (counter < dialogs.Count)
+        if (dialogCoroutine != null)
         {
-            omochaoTriggerDisable.clip = dialogs[counter];
-            omochaoTriggerDisable.Play();
-            while (omochaoTriggerDisable.isPlaying || pause)
-            {
-                yield return new WaitForSeconds(Time.deltaTime);
-            }
-            counter += 1;
+            StopCoroutine(dialogCoroutine);
+            dialogCoroutine = null;
         }
-        var up2 = Object.FindAnyObjectByType<UltimatePlayerMovement>();
-        if (up2 != null) up2.tutorialPlaying = false;
+
+        if (omochaoTriggerDisable != null)
+        {
+            omochaoTriggerDisable.Stop();
+        }
+
+        pause = false;
+        playerMovement?.EnableMovement();
     }
 }
