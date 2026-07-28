@@ -36,6 +36,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float runSpeed = 20f;
     [SerializeField] private float airSpeed = 15f;
+    [SerializeField] private float jumpForce = 10f;
     [SerializeField] private float airControl = 20f;
 
     public bool TrickZone { get; internal set; }
@@ -102,6 +103,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     }
     private void FixedUpdate()
     {
+        CheckGrounded();
 
         if (!CanMove())
         {
@@ -119,12 +121,12 @@ public class UltimatePlayerMovement : MonoBehaviour
             AirMovement(movementInput);
         }
 
+        Turn(movementInput);
         RotateToGround();
     }
     private void Update()
     {
-
-        CheckGrounded();
+        Jump();
 
         if (anim != null)
         {
@@ -233,6 +235,38 @@ public class UltimatePlayerMovement : MonoBehaviour
         Quaternion groundRotation = Quaternion.LookRotation(groundDirection);
 
         transform.rotation = Quaternion.LerpUnclamped(transform.rotation, groundRotation, Time.deltaTime * 100f);
+    }
+    private void Jump()
+    {
+        if (!isGrounded)
+        {
+            return;
+        }
+
+        if (!Input.GetKeyDown(KeyCode.Space))
+        {
+            return;
+        }
+
+        body.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
+
+        isGrounded = false;
+    }
+
+    private void Turn(Vector3 movementInput)
+    {
+        if (movementInput.sqrMagnitude < 0.001f)
+        {
+            return;
+        }
+
+        Quaternion targetRotation =
+            Quaternion.LookRotation(movementInput);
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRotation,
+            Time.fixedDeltaTime * 15f);
     }
 
     public void StopMovement()
