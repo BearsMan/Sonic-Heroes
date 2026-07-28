@@ -84,7 +84,7 @@ public class TornadoJump : MonoBehaviour
         if (movement == null)
             return;
 
-        if (movement.isGrounded)
+        if (movement.IsGrounded)
         {
             usedThisJump = false;
 
@@ -103,7 +103,7 @@ public class TornadoJump : MonoBehaviour
         if (movement == null || body == null)
             return false;
 
-        if (movement.isGrounded || usedThisJump || isPerforming)
+        if (movement.IsGrounded || usedThisJump || isPerforming)
             return false;
 
         if (actionController != null)

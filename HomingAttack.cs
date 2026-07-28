@@ -1,49 +1,115 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class HomingAttack : MonoBehaviour
 {
-    public bool homingAttackAvailable = false;
+    [Header("State")]
+    public bool homingAttackAvailable = true;
     public bool homingAttackUsed = false;
-    private Animator anim;
-    public UltimatePlayerMovement movement;
-    // Start is called before the first frame update
-    void Start()
+
+    [Header("References")]
+    [SerializeField] private UltimatePlayerMovement movement;
+    [SerializeField] private TeamActionController actionController;
+    [SerializeField] private Animator anim;
+
+    private void Start()
     {
-        movement = GetComponentInParent<UltimatePlayerMovement>();
-        anim = gameObject.GetComponentInChildren<Animator>();
+        if (movement == null)
+        {
+            movement = GetComponentInParent<UltimatePlayerMovement>();
+        }
+
+        if (actionController == null)
+        {
+            actionController = GetComponentInParent<TeamActionController>();
+        }
+
+        if (anim == null)
+        {
+            anim = GetComponentInChildren<Animator>();
+        }
+
+        if (movement == null)
+        {
+            Debug.LogError("HomingAttack could not find UltimatePlayerMovement.");
+        }
+
+        if (actionController == null)
+        {
+            Debug.LogError("HomingAttack could not find TeamActionController.");
+        }
+
+        if (anim == null)
+        {
+            Debug.LogError("HomingAttack could not find Animator.");
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
+        if (movement == null)
+            return;
 
-
-        
-        if (movement.isGrounded)
+        // Reset when the player lands.
+        if (movement.IsGrounded)
         {
-            homingAttackUsed = false;
             homingAttackAvailable = true;
+            homingAttackUsed = false;
 
+            if (anim != null)
+            {
+                anim.SetBool("Spin", false);
+                anim.SetBool("Dive Roll", false);
+            }
+
+            return;
         }
-        if (movement.isGrounded == false && Input.GetKeyDown(KeyCode.Space) && homingAttackAvailable == true && homingAttackUsed == false)
+
+        // Already used during this jump.
+        if (homingAttackUsed)
         {
+            return;
+        }
+
+        // Start the Homing Attack.
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            if (actionController != null)
+            {
+                bool accepted = actionController.TryBeginAction(
+                    TeamActionController.TeamAction.HomingAttack,
+                    TeamActionController.TeamFormation.Speed,
+                    mustBeGrounded: false,
+                    mustBeAirborne: true);
+
+                if (!accepted)
+                {
+                    return;
+                }
+            }
+
             homingAttackUsed = true;
-            anim.SetBool("Spin", true);
-        }
+            homingAttackAvailable = false;
 
-        if (movement.isGrounded)
-        {
-            anim.SetBool("Dive Roll", false);
+            if (anim != null)
+            {
+                anim.SetBool("Spin", true);
+            }
         }
-
     }
+
     public void ResetHomingAttack()
     {
-        anim.SetBool("Spin", false);
-
         homingAttackUsed = false;
+        homingAttackAvailable = true;
 
+        if (anim != null)
+        {
+            anim.SetBool("Spin", false);
+        }
+
+        if (actionController != null)
+        {
+            actionController.EndAction();
+        }
     }
 }

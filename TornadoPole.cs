@@ -92,14 +92,6 @@ public class TornadoPole : MonoBehaviour
         bool gravityWasEnabled = body.useGravity;
         bool wasKinematic = body.isKinematic;
 
-        bool leftFollowerWasActive =
-            movement.leftFollower != null &&
-            movement.leftFollower.activeSelf;
-
-        bool rightFollowerWasActive =
-            movement.rightFollower != null &&
-            movement.rightFollower.activeSelf;
-
         Animator animator =
             player.GetComponentInChildren<Animator>();
 
@@ -110,12 +102,6 @@ public class TornadoPole : MonoBehaviour
         body.angularVelocity = Vector3.zero;
         body.useGravity = false;
         body.isKinematic = true;
-
-        if (movement.leftFollower != null)
-            movement.leftFollower.SetActive(false);
-
-        if (movement.rightFollower != null)
-            movement.rightFollower.SetActive(false);
 
         if (animator != null &&
             !string.IsNullOrWhiteSpace(swingBool))
@@ -231,18 +217,6 @@ public class TornadoPole : MonoBehaviour
         }
 
         movement.EnableMovement();
-
-        if (movement.leftFollower != null)
-        {
-            movement.leftFollower.SetActive(
-                leftFollowerWasActive);
-        }
-
-        if (movement.rightFollower != null)
-        {
-            movement.rightFollower.SetActive(
-                rightFollowerWasActive);
-        }
 
         if (wasKinematic)
             body.isKinematic = true;

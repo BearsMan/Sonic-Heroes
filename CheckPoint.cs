@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(AudioSource))]
@@ -61,16 +60,6 @@ public class CheckPoint : MonoBehaviour
     private IEnumerator ActivateFollowers(UltimatePlayerMovement move)
     {
         yield return null;
-
-        if (move.leftFollower != null)
-        {
-            move.leftFollower.SetActive(true);
-        }
-
-        if (move.rightFollower != null)
-        {
-            move.rightFollower.SetActive(true);
-        }
     }
 
     private void ShowTeamLevelUpUI(GameObject player)

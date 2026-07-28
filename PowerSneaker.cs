@@ -22,9 +22,7 @@ public class PowerSneaker : PickUpObject
     private IEnumerator SpeedBoost()
     {
         UltimatePlayerMovement player = Object.FindAnyObjectByType<UltimatePlayerMovement>();
-        player.currentSpeed = player.currentSpeed + 5;
         yield return new WaitForSeconds(15);
-        player.currentSpeed = 20;
         Destroy(gameObject);
     }
 }

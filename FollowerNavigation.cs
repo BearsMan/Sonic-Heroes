@@ -129,6 +129,22 @@ public class FollowerNavigation : MonoBehaviour
             transform.rotation = target.rotation;
         }
     }
+
+    public void EnableAgent()
+    {
+        if (agent != null && !agent.enabled)
+        {
+            agent.enabled = true;
+        }
+    }
+
+    public void DisableAgent()
+    {
+        if (agent != null && agent.enabled)
+        {
+            agent.enabled = false;
+        }
+    }
     public void Jump(Vector3 velocity)
     {
         agent.enabled = false;

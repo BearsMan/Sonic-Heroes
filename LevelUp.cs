@@ -2,78 +2,96 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(AudioSource))]
+[RequireComponent(typeof(SpriteRenderer))]
 public class LevelUp : MonoBehaviour
 {
-    public GameObject levelUpHUD;
     public GameObject levelUpParent;
     public GameObject levelUpPrefab;
     public List<AudioClip> characterSFX = new List<AudioClip>();
-    public bool levelingUp;
-    public float speedCoreLevelUp;
-    public float powerCoreLevelUp;
-    public float flyCoreLevelUp;
-    public bool isSpeed, isFlying, isPower;
-    public Sprite bluePowerCore, redPowerCore, yellowPowerCore;
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public bool levelingUp;
+
     public void LevelUpSound()
     {
-        GetComponent<AudioSource>().Play();
+        AudioSource audio = GetComponent<AudioSource>();
+        if (audio != null) audio.Play();
     }
-    public void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player") && levelingUp == false)
-        {
-            levelingUp = true;
-            GetComponent<SpriteRenderer>().enabled = false;
-            GameInstance.speedLevelUp += 1;
-            GameInstance.flyLevelUp += 1;
-            GameInstance.powerLevelUp += 1;
-            Instantiate(levelUpPrefab, levelUpParent.transform);
-            StartCoroutine(PlayLevelUpSFX());
-            FindFirstObjectByType<HUD>().AddPower(5);
-        }
-    }
-    
-    public IEnumerator PlayLevelUpSFX()
-    {
-        GetComponent<AudioSource>().Play();
-        while (GetComponent<AudioSource>().isPlaying == true)
-        {
-            yield return new WaitForSeconds(Time.deltaTime);
-        }
-        GetComponent<AudioSource>().clip = characterSFX[GameInstance.currentTeam];
-        GetComponent<AudioSource>().Play();
 
-        while (GetComponent<AudioSource>().isPlaying == true)
+    private void OnTriggerEnter(Collider other)
+    {
+        if (!other.CompareTag("Player") || levelingUp)
+            return;
+
+        levelingUp = true;
+
+        SpriteRenderer spriteRenderer = GetComponent<SpriteRenderer>();
+        spriteRenderer.enabled = false;
+
+        GameInstance.speedLevelUp += 1;
+        GameInstance.flyLevelUp += 1;
+        GameInstance.powerLevelUp += 1;
+        if (levelUpPrefab != null && levelUpParent != null)
         {
-            yield return new WaitForSeconds(Time.deltaTime);
+            GameObject levelUpInstance = Instantiate(levelUpPrefab, levelUpParent.transform);
+            levelUpInstance.transform.localPosition = Vector3.zero;
         }
+        HUD hud = FindAnyObjectByType<HUD>(FindObjectsInactive.Exclude);
+        if (hud != null)
+        {
+            hud.AddPower(5);
+        }
+
+        StartCoroutine(PlayLevelUpSFX());
+    }
+
+    private IEnumerator PlayLevelUpSFX()
+    {
+        AudioSource audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            Destroy(gameObject);
+            yield break;
+        }
+
+        audioSource.Play();
+
+        while (audioSource.isPlaying)
+        {
+            yield return null;
+        }
+
+        if (characterSFX != null &&
+            GameInstance.currentTeam >= 0 &&
+            GameInstance.currentTeam < characterSFX.Count &&
+            characterSFX[GameInstance.currentTeam] != null)
+        {
+            audioSource.clip = characterSFX[GameInstance.currentTeam];
+            audioSource.Play();
+
+            while (audioSource.isPlaying)
+            {
+                yield return null;
+            }
+        }
+
         Destroy(gameObject);
     }
+
     public IEnumerator LevelUpCharacter(GameObject speedCharacter)
     {
-        speedCharacter.GetComponent<UltimatePlayerMovement>().leftFollower.SetActive(true);
-        speedCharacter.GetComponent<UltimatePlayerMovement>().rightFollower.SetActive(true);
-        
+        if (speedCharacter != null)
+        {
+            TeamActionController controller = speedCharacter.GetComponent<TeamActionController>();
+
+            if (controller == null)
+            {
+                controller = speedCharacter.GetComponentInParent<TeamActionController>();
+            }
+
+            controller?.EnableFollowers();
+        }
 
         yield return null;
     }
-
-    //This is the team selections setup from LevelUpCore.cs for Character Level Up Sound Effects to be played in correct team order
-    //Team Sonic = 0
-    //Team Dark = 1
-    //Team Rose = 2
-    //Team Chaotix = 3
-    
-   
 }

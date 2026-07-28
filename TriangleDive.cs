@@ -155,7 +155,7 @@ public class TriangleDive : MonoBehaviour
 
     private void UpdateAirborneState()
     {
-        if (movement.isGrounded)
+        if (movement.IsGrounded)
         {
             airborneTime = 0f;
 
@@ -174,7 +174,7 @@ public class TriangleDive : MonoBehaviour
 
     private void ReadStartInput()
     {
-        if (movement.isGrounded)
+        if (movement.IsGrounded)
             return;
 
         if (airborneTime < minimumAirTime)
@@ -197,7 +197,7 @@ public class TriangleDive : MonoBehaviour
         if (movement == null || body == null)
             return false;
 
-        if (movement.isGrounded)
+        if (movement.IsGrounded)
             return false;
 
         if (actionController != null)
@@ -229,7 +229,7 @@ public class TriangleDive : MonoBehaviour
 
     private bool ShouldStopDive()
     {
-        if (movement.isGrounded)
+        if (movement.IsGrounded)
             return true;
 
         if (requireButtonHeld && !Input.GetKey(diveKey))

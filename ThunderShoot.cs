@@ -344,7 +344,7 @@ public class ThunderShoot : MonoBehaviour
 
         bool grounded =
             movement != null &&
-            movement.isGrounded;
+            movement.IsGrounded;
 
         if (grounded && !allowGroundedUse)
             return false;

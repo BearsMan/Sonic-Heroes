@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class RocketAccel : MonoBehaviour
@@ -24,15 +23,18 @@ public class RocketAccel : MonoBehaviour
     }
     public void SpinTeamAcceleration()
     {
-        GetComponent<AudioSource>().Play();
+        AudioSource audio = GetComponent<AudioSource>();
+        if (audio != null) audio.Play();
     }
-    
+
 
     public IEnumerator SpeedRocketAcceleration(GameObject speedCharacter)
     {
-        speedCharacter.GetComponent<UltimatePlayerMovement>().leftFollower.SetActive(false);
-        speedCharacter.GetComponent<UltimatePlayerMovement>().rightFollower.SetActive(false);
-        
+        if (speedCharacter != null && speedCharacter.TryGetComponent<UltimatePlayerMovement>(out var spUp))
+        {
+            
+        }
+
 
 
         yield return null;
