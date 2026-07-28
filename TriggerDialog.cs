@@ -2,15 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent (typeof(AudioSource))]
+[RequireComponent(typeof(AudioSource))]
 public class TriggerDialog : MonoBehaviour
 {
     [Header("Dialog")]
     public List<AudioClip> dialogs = new();
-    [SerializeField] private AudioSource omochaoTriggerDisable;
 
-    [Header("Runtime")]
-    private bool dialogRead = false;
+    [SerializeField]
+    private AudioSource omochaoTriggerDisable;
+
+    private bool dialogRead;
     private Coroutine dialogCoroutine;
     private UltimatePlayerMovement playerMovement;
 
@@ -39,7 +40,8 @@ public class TriggerDialog : MonoBehaviour
     {
         if (playerMovement == null)
         {
-            playerMovement = FindAnyObjectByType<UltimatePlayerMovement>();
+            playerMovement =
+                FindAnyObjectByType<UltimatePlayerMovement>();
         }
 
         playerMovement?.DisableMovement();
@@ -73,7 +75,7 @@ public class TriggerDialog : MonoBehaviour
         {
             if (omochaoTriggerDisable != null)
             {
-                omochaoTriggerDisable = null;
+                omochaoTriggerDisable.clip = null;
             }
 
             dialogCoroutine = null;
@@ -92,7 +94,9 @@ public class TriggerDialog : MonoBehaviour
         if (omochaoTriggerDisable != null)
         {
             omochaoTriggerDisable.Stop();
+            omochaoTriggerDisable.clip = null;
         }
+
         playerMovement?.EnableMovement();
     }
 }
