@@ -6,10 +6,8 @@ using UnityEngine;
 public class TriggerDialog : MonoBehaviour
 {
     [Header("Dialog")]
-    public List<AudioClip> dialogs = new();
-
-    [SerializeField]
-    private AudioSource omochaoTriggerDisable;
+    [SerializeField] private List<AudioClip> dialogs = new();
+    [SerializeField] private AudioSource omochaoTriggerDisable;
 
     private bool dialogRead;
     private Coroutine dialogCoroutine;
@@ -27,7 +25,9 @@ public class TriggerDialog : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (dialogRead || dialogCoroutine != null || !other.CompareTag("Player"))
+        if (dialogRead ||
+            dialogCoroutine != null ||
+            !other.CompareTag("Player"))
         {
             return;
         }
@@ -40,21 +40,41 @@ public class TriggerDialog : MonoBehaviour
     {
         if (playerMovement == null)
         {
-            playerMovement =
-                FindAnyObjectByType<UltimatePlayerMovement>();
+            Debug.LogError(
+                $"{name}: UltimatePlayerMovement not found.",
+                this);
+
+            dialogRead = false;
+            dialogCoroutine = null;
+            yield break;
         }
 
-        playerMovement?.DisableMovement();
+        if (omochaoTriggerDisable == null)
+        {
+            Debug.LogError(
+                $"{name}: AudioSource missing.",
+                this);
+
+            dialogRead = false;
+            dialogCoroutine = null;
+            yield break;
+        }
+
+        if (dialogs.Count == 0)
+        {
+            Debug.LogWarning(
+                $"{name}: No dialog clips assigned.",
+                this);
+
+            dialogRead = false;
+            dialogCoroutine = null;
+            yield break;
+        }
+
+        playerMovement.DisableMovement();
 
         try
         {
-            if (omochaoTriggerDisable == null)
-            {
-                Debug.LogError($"{name}: No AudioSource assigned to TriggerDialog.", this);
-
-                yield break;
-            }
-
             foreach (AudioClip clip in dialogs)
             {
                 if (clip == null)
