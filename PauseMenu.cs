@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -8,10 +9,8 @@ public class PauseMenu : MonoBehaviour
     [SerializeField] private GameObject pauseMenu;
 
     [Header("Scene Navigation")]
-    [SerializeField] private string normalStageReturnScene = "Menu Select";
+    [SerializeField] private string normalStageReturnScene = "Menu (Selector)";
     [SerializeField] private string teamBattleReturnScene = "2 Players";
-
-
 
     [Header("Settings")]
     [SerializeField] private KeyCode pauseKey = KeyCode.Escape;
@@ -30,20 +29,18 @@ public class PauseMenu : MonoBehaviour
     {
         if (pauseMenu == null)
         {
-            Debug.LogWarning($"{nameof(PauseMenu)} on '{name}' has no pause menu assigned.", this);
+            Debug.LogWarning(
+                $"{nameof(PauseMenu)} on '{name}' has no pause menu assigned.",
+                this);
+
             return;
         }
 
-        if (pauseMenu.activeSelf)
-        {
-            pauseMenu.SetActive(false);
-        }
+        pauseMenu.SetActive(false);
     }
 
     private void Start()
     {
-        // Protect against entering this scene while another scene left
-        // the global time scale at zero.
         if (Time.timeScale <= 0f)
         {
             Time.timeScale = 1f;
@@ -54,7 +51,12 @@ public class PauseMenu : MonoBehaviour
 
     private void Update()
     {
-        if (!isChangingScene && Input.GetKeyDown(pauseKey))
+        if (isChangingScene)
+        {
+            return;
+        }
+
+        if (Input.GetKeyDown(pauseKey))
         {
             TogglePause();
         }
@@ -72,7 +74,7 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
-    // Keeps existing Unity button events working if they use SwitchPause.
+    // Compatibility method for existing button events.
     public void SwitchPause()
     {
         TogglePause();
@@ -86,18 +88,18 @@ public class PauseMenu : MonoBehaviour
         }
 
         isPaused = true;
-
-        previousTimeScale =
-            Time.timeScale > 0f ? Time.timeScale : 1f;
-
-        if (pauseAudio)
-        {
-            PausePlayingAudio();
-        }
+        previousTimeScale = Time.timeScale > 0f
+            ? Time.timeScale
+            : 1f;
 
         if (pauseDialogs)
         {
             SetDialogsPaused(true);
+        }
+
+        if (pauseAudio)
+        {
+            PausePlayingAudio();
         }
 
         if (pauseMenu != null)
@@ -117,6 +119,8 @@ public class PauseMenu : MonoBehaviour
 
         isPaused = false;
 
+        RestoreTimeScale();
+
         if (pauseAudio)
         {
             ResumePausedAudio();
@@ -127,63 +131,16 @@ public class PauseMenu : MonoBehaviour
             SetDialogsPaused(false);
         }
 
-        if (pauseMenu != null && pauseMenu.activeSelf)
+        if (pauseMenu != null)
         {
             pauseMenu.SetActive(false);
         }
-
-        RestoreTimeScale();
     }
 
-    // Keeps existing Unity button events working if they use UnpauseGame.
+    // Compatibility method for existing button events.
     public void UnpauseGame()
     {
         ResumeGame();
-    }
-
-    private void PausePlayingAudio()
-    {
-        pausedSounds.Clear();
-
-        AudioSource[] audioSources = FindObjectsByType<AudioSource>(FindObjectsInactive.Exclude);
-
-        foreach (AudioSource source in audioSources)
-        {
-            if (source == null || !source.isActiveAndEnabled || !source.isPlaying)
-            {
-                continue;
-            }
-
-            source.Pause();
-            pausedSounds.Add(source);
-        }
-    }
-
-    private void ResumePausedAudio()
-    {
-        foreach (AudioSource source in pausedSounds)
-        {
-            // The object may have been destroyed while the game was paused.
-            if (source != null && source.isActiveAndEnabled)
-            {
-                source.UnPause();
-            }
-        }
-
-        pausedSounds.Clear();
-    }
-
-    private void SetDialogsPaused(bool paused)
-    {
-        TriggerDialog[] dialogs = FindObjectsByType<TriggerDialog>(FindObjectsInactive.Exclude);
-
-        foreach (TriggerDialog dialog in dialogs)
-        {
-            if (dialog != null)
-            {
-                dialog.pause = paused;
-            }
-        }
     }
 
     public void RestartLevel()
@@ -197,19 +154,22 @@ public class PauseMenu : MonoBehaviour
 
         if (!gameplayScene.IsValid() || gameplayScene.buildIndex < 0)
         {
-            Debug.LogError("The gameplay scene could not be restarted.", this);
+            Debug.LogError(
+                "The gameplay scene could not be restarted.",
+                this);
+
             return;
         }
 
         isChangingScene = true;
         PrepareForSceneChange();
 
-        // This is only correct if loading this scene normally reconstructs
-        // HUD, Event, and all required additive scenes.
-        SceneManager.LoadScene(gameplayScene.buildIndex, LoadSceneMode.Single);
+        SceneManager.LoadScene(
+            gameplayScene.buildIndex,
+            LoadSceneMode.Single);
     }
 
-    // Keeps an existing button wired to the old capitalization working.
+    // Compatibility method for an older button event.
     public void Restartlevel()
     {
         RestartLevel();
@@ -226,30 +186,100 @@ public class PauseMenu : MonoBehaviour
 
         if (!gameplayScene.IsValid())
         {
-            Debug.LogError("Could not identify the current gameplay scene.", this);
+            Debug.LogError(
+                "Could not identify the current gameplay scene.",
+                this);
+
             return;
         }
 
-        bool isTeamBattle = IsTeamBattleScene(gameplayScene.name);
+        bool isTeamBattle =
+            IsTeamBattleScene(gameplayScene.name);
 
-        string destination = isTeamBattle ? teamBattleReturnScene : normalStageReturnScene;
+        string destination = isTeamBattle
+            ? teamBattleReturnScene
+            : normalStageReturnScene;
 
         if (string.IsNullOrWhiteSpace(destination))
         {
-            Debug.LogError("No return scene has been assigned.", this);
+            Debug.LogError(
+                "No return scene has been assigned.",
+                this);
+
             return;
         }
 
         if (!Application.CanStreamedLevelBeLoaded(destination))
         {
-            Debug.LogError($"Return scene '{destination}' cannot be loaded. " + "Check its exact name and include it in the Build Profile.", this);
+            Debug.LogError(
+                $"Return scene '{destination}' cannot be loaded. " +
+                "Check its exact name and include it in the Build Profile.",
+                this);
+
             return;
         }
 
         isChangingScene = true;
         PrepareForSceneChange();
 
-        SceneManager.LoadScene(destination, LoadSceneMode.Single);
+        SceneManager.LoadScene(
+            destination,
+            LoadSceneMode.Single);
+    }
+
+    private void PausePlayingAudio()
+    {
+        pausedSounds.Clear();
+
+        AudioSource[] audioSources = FindObjectsByType<AudioSource>();
+
+        foreach (AudioSource source in audioSources)
+        {
+            if (source == null ||
+                !source.isActiveAndEnabled ||
+                !source.isPlaying)
+            {
+                continue;
+            }
+
+            source.Pause();
+            pausedSounds.Add(source);
+        }
+    }
+
+    private void ResumePausedAudio()
+    {
+        foreach (AudioSource source in pausedSounds)
+        {
+            if (source != null && source.isActiveAndEnabled)
+            {
+                source.UnPause();
+            }
+        }
+
+        pausedSounds.Clear();
+    }
+
+    private void SetDialogsPaused(bool paused)
+    {
+        TriggerDialog[] dialogs = FindObjectsByType<TriggerDialog>();
+
+        foreach (TriggerDialog dialog in dialogs)
+        {
+            if (dialog == null)
+            {
+                continue;
+            }
+
+            if (paused)
+            {
+                dialog.PauseDialog();
+            }
+            else
+            {
+                dialog.ResumeDialog();
+            }
+        }
     }
 
     private Scene GetGameplayScene()
@@ -261,11 +291,11 @@ public class PauseMenu : MonoBehaviour
             return activeScene;
         }
 
-        // Search backward because the gameplay scene is often loaded after
-        // shared/bootstrap scenes.
-        for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
+        for (int index = SceneManager.sceneCount - 1;
+             index >= 0;
+             index--)
         {
-            Scene scene = SceneManager.GetSceneAt(i);
+            Scene scene = SceneManager.GetSceneAt(index);
 
             if (IsGameplayScene(scene))
             {
@@ -276,15 +306,6 @@ public class PauseMenu : MonoBehaviour
         return default;
     }
 
-    private static bool IsTeamBattleScene(string sceneName)
-    {
-        if (string.IsNullOrWhiteSpace(sceneName))
-        {
-            return false;
-        }
-
-        return sceneName.StartsWith("Team ", System.StringComparison.OrdinalIgnoreCase) || sceneName.StartsWith("2P ", System.StringComparison.OrdinalIgnoreCase);
-    }
     private static bool IsGameplayScene(Scene scene)
     {
         if (!scene.IsValid() || !scene.isLoaded)
@@ -294,13 +315,39 @@ public class PauseMenu : MonoBehaviour
 
         string sceneName = scene.name;
 
-            return  
-            sceneName.StartsWith("Stage ", System.StringComparison.OrdinalIgnoreCase) || sceneName.StartsWith("Team ", System.StringComparison.OrdinalIgnoreCase) || sceneName.StartsWith("2P ", System.StringComparison.OrdinalIgnoreCase);
+        return
+            sceneName.StartsWith(
+                "Stage ",
+                StringComparison.OrdinalIgnoreCase) ||
+            sceneName.StartsWith(
+                "Team ",
+                StringComparison.OrdinalIgnoreCase) ||
+            sceneName.StartsWith(
+                "2P ",
+                StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsTeamBattleScene(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+        {
+            return false;
+        }
+
+        return
+            sceneName.StartsWith(
+                "Team ",
+                StringComparison.OrdinalIgnoreCase) ||
+            sceneName.StartsWith(
+                "2P ",
+                StringComparison.OrdinalIgnoreCase);
     }
 
     private void PrepareForSceneChange()
     {
         isPaused = false;
+
+        Time.timeScale = 1f;
 
         ResumePausedAudio();
 
@@ -309,17 +356,17 @@ public class PauseMenu : MonoBehaviour
             SetDialogsPaused(false);
         }
 
-        if (pauseMenu != null && pauseMenu.activeSelf)
+        if (pauseMenu != null)
         {
             pauseMenu.SetActive(false);
         }
-
-        Time.timeScale = 1f;
     }
 
     private void RestoreTimeScale()
     {
-        Time.timeScale = previousTimeScale > 0f ? previousTimeScale : 1f;
+        Time.timeScale = previousTimeScale > 0f
+            ? previousTimeScale
+            : 1f;
     }
 
     private void OnDisable()
@@ -332,7 +379,6 @@ public class PauseMenu : MonoBehaviour
         isPaused = false;
 
         RestoreTimeScale();
-
         ResumePausedAudio();
 
         if (pauseDialogs)
@@ -340,7 +386,7 @@ public class PauseMenu : MonoBehaviour
             SetDialogsPaused(false);
         }
 
-        if (pauseMenu != null && pauseMenu.activeSelf)
+        if (pauseMenu != null)
         {
             pauseMenu.SetActive(false);
         }

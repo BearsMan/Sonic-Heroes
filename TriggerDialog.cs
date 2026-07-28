@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 [RequireComponent(typeof(AudioSource))]
@@ -8,6 +9,7 @@ public class TriggerDialog : MonoBehaviour
     [Header("Dialog")]
     [SerializeField] private List<AudioClip> dialogs = new();
     [SerializeField] private AudioSource omochaoTriggerDisable;
+    [SerializeField] private bool isPaused = false;
 
     private bool dialogRead;
     private Coroutine dialogCoroutine;
@@ -85,7 +87,7 @@ public class TriggerDialog : MonoBehaviour
                 omochaoTriggerDisable.clip = clip;
                 omochaoTriggerDisable.Play();
 
-                while (omochaoTriggerDisable.isPlaying)
+                while (omochaoTriggerDisable.isPlaying || isPaused)
                 {
                     yield return null;
                 }
@@ -103,6 +105,15 @@ public class TriggerDialog : MonoBehaviour
         }
     }
 
+    public void PauseDialog()
+    {
+        isPaused = true;
+    }
+
+    public void ResumeDialog()
+    {
+        isPaused = false;
+    }
     private void OnDisable()
     {
         if (dialogCoroutine != null)
@@ -116,7 +127,6 @@ public class TriggerDialog : MonoBehaviour
             omochaoTriggerDisable.Stop();
             omochaoTriggerDisable.clip = null;
         }
-
         playerMovement?.EnableMovement();
     }
 }
