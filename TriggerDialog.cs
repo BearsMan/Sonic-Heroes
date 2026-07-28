@@ -2,19 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(UltimatePlayerMovement))]
-[RequireComponent(typeof(AudioClip))]
 [RequireComponent (typeof(AudioSource))]
 public class TriggerDialog : MonoBehaviour
 {
     [Header("Dialog")]
     public List<AudioClip> dialogs = new();
-    public AudioSource omochaoTriggerDisable;
+    [SerializeField] private AudioSource omochaoTriggerDisable;
 
     [Header("Runtime")]
-    public bool pause = false;
-
     private bool dialogRead = false;
+    private Coroutine dialogCoroutine;
     private UltimatePlayerMovement playerMovement;
 
     private void Awake()
@@ -26,11 +23,10 @@ public class TriggerDialog : MonoBehaviour
             omochaoTriggerDisable = GetComponent<AudioSource>();
         }
     }
-    private Coroutine dialogCoroutine;
 
     private void OnTriggerEnter(Collider other)
     {
-        if (dialogRead || !other.CompareTag("Player"))
+        if (dialogRead || dialogCoroutine != null || !other.CompareTag("Player"))
         {
             return;
         }
@@ -67,7 +63,7 @@ public class TriggerDialog : MonoBehaviour
                 omochaoTriggerDisable.clip = clip;
                 omochaoTriggerDisable.Play();
 
-                while (omochaoTriggerDisable.isPlaying || pause)
+                while (omochaoTriggerDisable.isPlaying)
                 {
                     yield return null;
                 }
@@ -75,6 +71,11 @@ public class TriggerDialog : MonoBehaviour
         }
         finally
         {
+            if (omochaoTriggerDisable != null)
+            {
+                omochaoTriggerDisable = null;
+            }
+
             dialogCoroutine = null;
             playerMovement?.EnableMovement();
         }
@@ -92,8 +93,6 @@ public class TriggerDialog : MonoBehaviour
         {
             omochaoTriggerDisable.Stop();
         }
-
-        pause = false;
         playerMovement?.EnableMovement();
     }
 }
