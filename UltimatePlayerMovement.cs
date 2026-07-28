@@ -260,13 +260,9 @@ public class UltimatePlayerMovement : MonoBehaviour
             return;
         }
 
-        Quaternion targetRotation =
-            Quaternion.LookRotation(movementInput);
+        Quaternion targetRotation = Quaternion.LookRotation(movementInput);
 
-        transform.rotation = Quaternion.Slerp(
-            transform.rotation,
-            targetRotation,
-            Time.fixedDeltaTime * 15f);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * 15f);
     }
 
     public void StopMovement()
