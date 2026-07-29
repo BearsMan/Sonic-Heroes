@@ -10,20 +10,19 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     public const float acceleration = 5f;
     public const float deceleration = 3f;
-
     private const float groundCheckRadius = 0.3f;
 
-    #endregion
-
     #region Animation States
-    private static readonly int StateHash =
-    Animator.StringToHash("State");
+    private static readonly int StateHash = Animator.StringToHash("State");
 
     private static readonly int GroundedHash = Animator.StringToHash("Grounded");
 
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
 
     private static readonly int VerticalSpeedHash = Animator.StringToHash("VerticalSpeed");
+    #endregion
+
+
 
     #region Inspector
     [SerializeField] private Rigidbody playerRigidbody;
@@ -399,20 +398,14 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         if (homingDirection.sqrMagnitude > 0.001f)
         {
-            Quaternion targetRotation =
-                Quaternion.LookRotation(homingDirection, Vector3.up);
+            Quaternion targetRotation = Quaternion.LookRotation(homingDirection, Vector3.up);
 
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRotation,
-                Time.fixedDeltaTime * turnSpeed);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * turnSpeed);
         }
 
         if (stateTimer <= 0f)
         {
-            ChangeState(isGrounded
-                ? PlayerState.Ground
-                : PlayerState.Air);
+            ChangeState(isGrounded? PlayerState.Ground: PlayerState.Air);
         }
     }
 
@@ -435,16 +428,11 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     private void UpdateGrindingState()
     {
-        playerRigidbody.linearVelocity =
-            grindingDirection * grindingSpeed;
+        playerRigidbody.linearVelocity = grindingDirection * grindingSpeed;
 
-        Quaternion targetRotation =
-            Quaternion.LookRotation(grindingDirection, Vector3.up);
+        Quaternion targetRotation = Quaternion.LookRotation(grindingDirection, Vector3.up);
 
-        transform.rotation = Quaternion.Slerp(
-            transform.rotation,
-            targetRotation,
-            Time.fixedDeltaTime * turnSpeed);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * turnSpeed);
     }
 
     public void StopGrinding()
@@ -502,9 +490,7 @@ public class UltimatePlayerMovement : MonoBehaviour
             return;
         }
 
-        ChangeState(isGrounded
-            ? PlayerState.Ground
-            : PlayerState.Air);
+        ChangeState(isGrounded? PlayerState.Ground: PlayerState.Air);
     }
 
     private void UpdateFlyingState(Vector3 movementInput)
@@ -521,8 +507,7 @@ public class UltimatePlayerMovement : MonoBehaviour
             verticalInput -= 1f;
         }
 
-        Vector3 flyingVelocity =
-            movementInput * flyingSpeed;
+        Vector3 flyingVelocity = movementInput * flyingSpeed;
 
         flyingVelocity.y = verticalInput * flyingVerticalSpeed;
 
@@ -638,8 +623,7 @@ public class UltimatePlayerMovement : MonoBehaviour
     {
         if (!isGrounded)
         {
-            Vector3 cross =
-                Vector3.Cross(transform.right, Vector3.up);
+            Vector3 cross = Vector3.Cross(transform.right, Vector3.up);
 
             Quaternion airRotation = Quaternion.LookRotation(cross);
 
@@ -682,9 +666,7 @@ public class UltimatePlayerMovement : MonoBehaviour
             return;
         }
 
-        playerRigidbody.AddForce(
-            Vector3.up * jumpForce,
-            ForceMode.VelocityChange);
+        playerRigidbody.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
 
         isGrounded = false;
 
