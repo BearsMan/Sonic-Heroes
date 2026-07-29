@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -14,9 +15,19 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     #endregion
 
+    #region Animation States
+    private static readonly int StateHash =
+    Animator.StringToHash("State");
+
+    private static readonly int GroundedHash = Animator.StringToHash("Grounded");
+
+    private static readonly int SpeedHash = Animator.StringToHash("Speed");
+
+    private static readonly int VerticalSpeedHash = Animator.StringToHash("VerticalSpeed");
+
     #region Inspector
-    [SerializeField] private Rigidbody body;
-    [SerializeField] private Transform cam;
+    [SerializeField] private Rigidbody playerRigidbody;
+    [SerializeField] private Transform cameraTransform;
     [SerializeField] private Transform groundCheck;
     [SerializeField] private LayerMask groundMask;
 
@@ -29,15 +40,40 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     public bool IsGrounded => isGrounded;
     private bool isSurrendered;
-    private Animator anim;
+    [SerializeField] private Animator playerAnimator;
+    #endregion
 
     private float maxAirSpeed;
 
     [Header("Movement")]
     [SerializeField] private float runSpeed = 20f;
     [SerializeField] private float airSpeed = 15f;
+    [SerializeField] private float turnSpeed = 15f;
     [SerializeField] private float jumpForce = 10f;
     [SerializeField] private float airControl = 20f;
+
+    [Header("Rolling")]
+    [SerializeField] private float rollingSpeed = 25f;
+    [SerializeField] private float rollingTurnSpeed = 6f;
+
+    [Header("Homing Attack")]
+    [SerializeField] private float homingAttackSpeed = 35f;
+    [SerializeField] private float homingAttackDuration = 0.5f;
+
+    [Header("Grinding")]
+    [SerializeField] private float grindingSpeed = 30f;
+
+    [Header("Flying")]
+    [SerializeField] private float flyingSpeed = 15f;
+    [SerializeField] private float flyingVerticalSpeed = 10f;
+
+    [Header("Hurt")]
+    [SerializeField] private float defaultHurtDuration = 1f;
+
+    [Header("Player States")]
+    [SerializeField] private PlayerState currentState = PlayerState.Ground;
+
+    public PlayerState CurrentState => currentState;
 
     public bool TrickZone { get; internal set; }
 
@@ -49,22 +85,34 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     #endregion
 
+    public enum PlayerState
+    {
+        Ground,
+        Air,
+        Rolling,
+        HomingAttack,
+        Grinding,
+        Spring,
+        Hurt,
+        Flying,
+        PowerAction
+    }
     private void Awake()
     {
         MovementEnabled = true;
 
-        if (body == null)
+        if (playerRigidbody == null)
         {
-            body = GetComponent<Rigidbody>();
+            playerRigidbody = GetComponent<Rigidbody>();
         }
 
-        if (cam == null)
+        if (cameraTransform == null)
         {
             CameraController camCtrl = FindAnyObjectByType<CameraController>();
 
             if (camCtrl != null)
             {
-                cam = camCtrl.transform;
+                cameraTransform = camCtrl.transform;
             }
         }
 
@@ -77,17 +125,26 @@ public class UltimatePlayerMovement : MonoBehaviour
                 teamController = GetComponentInParent<TeamActionController>();
             }
         }
+
+        if (playerAnimator == null)
+        {
+            playerAnimator = GetComponentInChildren<Animator>();
+        }
+
+        UpdateAnimatorState();
     }
-    private bool wasGrounded = false;
+    private bool isGroundLastFrame;
 
-
+    private Vector3 homingDirection;
+    private Vector3 grindingDirection;
+    private float stateTimer;
     private Vector3 GetMovementInput()
     {
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
 
-        Vector3 cameraForward = cam.forward;
-        Vector3 cameraRight = cam.right;
+        Vector3 cameraForward = cameraTransform.forward;
+        Vector3 cameraRight = cameraTransform.right;
 
         cameraForward.y = 0f;
         cameraRight.y = 0f;
@@ -95,15 +152,24 @@ public class UltimatePlayerMovement : MonoBehaviour
         cameraForward.Normalize();
         cameraRight.Normalize();
 
-        Vector3 movementInput =
-            cameraForward * vertical +
-            cameraRight * horizontal;
+        Vector3 movementInput = cameraForward * vertical + cameraRight * horizontal;
 
         return Vector3.ClampMagnitude(movementInput, 1f);
     }
     private void FixedUpdate()
     {
-        CheckGrounded();
+        isGroundLastFrame = isGrounded;
+        isGrounded = CheckGrounded();
+
+        if (!isGroundLastFrame && isGrounded)
+        {
+            OnLanded();
+        }
+
+        if (isGroundLastFrame && !isGrounded)
+        {
+            OnLeftGround();
+        }
 
         if (!CanMove())
         {
@@ -112,33 +178,51 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         Vector3 movementInput = GetMovementInput();
 
-        if (isGrounded)
+        switch (currentState)
         {
-            GroundMovement(movementInput);
-        }
-        else
-        {
-            AirMovement(movementInput);
-        }
+            case PlayerState.Ground:
+                UpdateGroundState(movementInput);
+                break;
 
-        Turn(movementInput);
+            case PlayerState.Air:
+                UpdateAirState(movementInput);
+                break;
+
+            case PlayerState.Rolling:
+                UpdateRollingState(movementInput);
+                break;
+
+            case PlayerState.HomingAttack:
+                UpdateHomingAttackState();
+                break;
+
+            case PlayerState.Grinding:
+                UpdateGrindingState();
+                break;
+
+            case PlayerState.Spring:
+                UpdateSpringState(movementInput);
+                break;
+
+            case PlayerState.Hurt:
+                UpdateHurtState();
+                break;
+
+            case PlayerState.Flying:
+                UpdateFlyingState(movementInput);
+                break;
+
+            case PlayerState.PowerAction:
+                UpdatePowerActionState(movementInput);
+                break;
+
+        }
         RotateToGround();
     }
     private void Update()
     {
         Jump();
-
-        if (anim != null)
-        {
-            anim.SetBool("InAir", !isGrounded);
-        }
-
-        if (isGrounded && !wasGrounded)
-        {
-            teamController?.EnableFollowers();
-        }
-
-        wasGrounded = isGrounded;
+        UpdateAnimation();
     }
 
     private bool CanMove()
@@ -148,22 +232,372 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     private bool HasRequiredComponents()
     {
-        return body != null && cam != null;
+        return playerRigidbody != null && cameraTransform != null;
     }
-    private void CheckGrounded()
+    private bool CheckGrounded()
     {
         if (groundCheck == null)
         {
-            isGrounded = false;
+            return false;
+        }
+
+        return Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundMask, QueryTriggerInteraction.Ignore);
+    }
+
+    private void OnLanded()
+    {
+        ChangeState(PlayerState.Ground);
+
+        /*
+         * TODO:
+         * Play landing sound
+         * Spawn landing particles
+         * Reset jump state
+         */
+    }
+
+    private void OnLeftGround()
+    {
+        if (currentState == PlayerState.Ground)
+        {
+            ChangeState(PlayerState.Air);
+        }
+    }
+
+    private void UpdateGroundState(Vector3 movementInput)
+    {
+        GroundMovement(movementInput);
+        Turn(movementInput);
+    }
+
+    private void UpdateAirState(Vector3 movementInput)
+    {
+        AirMovement(movementInput);
+    }
+
+    private void ChangeState(PlayerState newState)
+    {
+        if (currentState == newState)
+        {
             return;
         }
 
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundMask, QueryTriggerInteraction.Ignore);
+        ExitState(currentState);
+
+        currentState = newState;
+
+        UpdateAnimatorState();
+        EnterState(currentState);
     }
 
+    private void EnterState(PlayerState state)
+    {
+        switch (state)
+        {
+            case PlayerState.Ground:
+                teamController?.EnableFollowers();
+                break;
+
+            case PlayerState.Rolling:
+                break;
+
+            case PlayerState.HomingAttack:
+                stateTimer = homingAttackDuration;
+                break;
+
+            case PlayerState.Hurt:
+                stateTimer = defaultHurtDuration;
+                break;
+        }
+    }
+
+    private void ExitState(PlayerState state)
+    {
+        switch (state)
+        {
+            case PlayerState.HomingAttack:
+                homingDirection = Vector3.zero;
+                break;
+
+            case PlayerState.Grinding:
+                grindingDirection = Vector3.zero;
+                break;
+        }
+    }
+    private void UpdateRollingState(Vector3 movementInput)
+    {
+        Vector3 forward = transform.forward;
+
+        Vector3 rollingVelocity = forward * rollingSpeed;
+        rollingVelocity.y = playerRigidbody.linearVelocity.y;
+
+        playerRigidbody.linearVelocity = rollingVelocity;
+
+        if (movementInput.sqrMagnitude > 0.001f)
+        {
+            Quaternion targetRotation =
+                Quaternion.LookRotation(movementInput, transform.up);
+
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                Time.fixedDeltaTime * rollingTurnSpeed);
+        }
+
+        if (!isGrounded)
+        {
+            ChangeState(PlayerState.Air);
+        }
+    }
+
+    public void StartRolling()
+    {
+        if (!isGrounded || currentState != PlayerState.Ground)
+        {
+            return;
+        }
+
+        ChangeState(PlayerState.Rolling);
+    }
+
+    public void StopRolling()
+    {
+        if (currentState != PlayerState.Rolling)
+        {
+            return;
+        }
+
+        ChangeState(isGrounded
+            ? PlayerState.Ground
+            : PlayerState.Air);
+    }
+
+    public void StartHomingAttack(Vector3 targetPosition)
+    {
+        if (currentState == PlayerState.Hurt)
+        {
+            return;
+        }
+
+        homingDirection =
+            (targetPosition - playerRigidbody.position).normalized;
+
+        if (homingDirection.sqrMagnitude < 0.001f)
+        {
+            return;
+        }
+
+        ChangeState(PlayerState.HomingAttack);
+    }
+
+    private void UpdateHomingAttackState()
+    {
+        stateTimer -= Time.fixedDeltaTime;
+
+        playerRigidbody.linearVelocity =
+            homingDirection * homingAttackSpeed;
+
+        if (homingDirection.sqrMagnitude > 0.001f)
+        {
+            Quaternion targetRotation =
+                Quaternion.LookRotation(homingDirection, Vector3.up);
+
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                Time.fixedDeltaTime * turnSpeed);
+        }
+
+        if (stateTimer <= 0f)
+        {
+            ChangeState(isGrounded
+                ? PlayerState.Ground
+                : PlayerState.Air);
+        }
+    }
+
+    public void StartGrinding(Vector3 railDirection)
+    {
+        if (railDirection.sqrMagnitude < 0.001f)
+        {
+            return;
+        }
+
+        grindingDirection = railDirection.normalized;
+
+        if (Vector3.Dot(grindingDirection, transform.forward) < 0f)
+        {
+            grindingDirection = -grindingDirection;
+        }
+
+        ChangeState(PlayerState.Grinding);
+    }
+
+    private void UpdateGrindingState()
+    {
+        playerRigidbody.linearVelocity =
+            grindingDirection * grindingSpeed;
+
+        Quaternion targetRotation =
+            Quaternion.LookRotation(grindingDirection, Vector3.up);
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRotation,
+            Time.fixedDeltaTime * turnSpeed);
+    }
+
+    public void StopGrinding()
+    {
+        if (currentState != PlayerState.Grinding)
+        {
+            return;
+        }
+
+        ChangeState(PlayerState.Air);
+    }
+
+    public void LaunchFromSpring(Vector3 launchDirection, float height)
+    {
+        if (playerRigidbody == null)
+        {
+            return;
+        }
+
+        Vector3 direction = launchDirection.normalized;
+
+        float launchSpeed =
+            Mathf.Sqrt(height * -2f * Physics.gravity.y);
+
+        playerRigidbody.linearVelocity = direction * launchSpeed;
+
+        ChangeState(PlayerState.Spring);
+    }
+
+    private void UpdateSpringState(Vector3 movementInput)
+    {
+        AirMovement(movementInput);
+
+        if (playerRigidbody.linearVelocity.y <= 0f)
+        {
+            ChangeState(PlayerState.Air);
+        }
+    }
+
+    public void EnterHurtState(Vector3 knockbackVelocity, float duration)
+    {
+        playerRigidbody.linearVelocity = knockbackVelocity;
+
+        stateTimer = Mathf.Max(0f, duration);
+
+        ChangeState(PlayerState.Hurt);
+    }
+
+    private void UpdateHurtState()
+    {
+        stateTimer -= Time.fixedDeltaTime;
+
+        if (stateTimer > 0f)
+        {
+            return;
+        }
+
+        ChangeState(isGrounded
+            ? PlayerState.Ground
+            : PlayerState.Air);
+    }
+
+    private void UpdateFlyingState(Vector3 movementInput)
+    {
+        float verticalInput = 0f;
+
+        if (Input.GetKey(KeyCode.Space))
+        {
+            verticalInput += 1f;
+        }
+
+        if (Input.GetKey(KeyCode.LeftControl))
+        {
+            verticalInput -= 1f;
+        }
+
+        Vector3 flyingVelocity =
+            movementInput * flyingSpeed;
+
+        flyingVelocity.y = verticalInput * flyingVerticalSpeed;
+
+        playerRigidbody.linearVelocity = flyingVelocity;
+
+        Turn(movementInput);
+    }
+
+    public void StartFlying()
+    {
+        ChangeState(PlayerState.Flying);
+    }
+
+    public void StopFlying()
+    {
+        ChangeState(isGrounded ? PlayerState.Ground : PlayerState.Air);
+    }
+
+    private void UpdatePowerActionState(Vector3 movementInput)
+    {
+        if (isGrounded)
+        {
+            GroundMovement(movementInput);
+            Turn(movementInput);
+        }
+        else
+        {
+            AirMovement(movementInput);
+        }
+    }
+
+    public void StartPowerAction()
+    {
+        ChangeState(PlayerState.PowerAction);
+    }
+
+    public void StopPowerAction()
+    {
+        ChangeState(isGrounded ? PlayerState.Ground : PlayerState.Air);
+    }
+
+    private void UpdateAnimation()
+    {
+        if (playerAnimator == null || playerRigidbody == null)
+        {
+            return;
+        }
+
+        Vector3 horizontalVelocity = playerRigidbody.linearVelocity;
+
+        horizontalVelocity.y = 0f;
+
+        playerAnimator.SetBool(GroundedHash, isGrounded);
+
+        playerAnimator.SetFloat(SpeedHash, horizontalVelocity.magnitude);
+
+        playerAnimator.SetFloat(VerticalSpeedHash, playerRigidbody.linearVelocity.y);
+    }
+
+    private void UpdateAnimatorState()
+    {
+        if (playerAnimator == null)
+        {
+            return;
+        }
+
+        playerAnimator.SetInteger(
+            StateHash,
+            (int)currentState);
+    }
     public void SetupAnimation()
     {
-        anim = GetComponentInChildren<Animator>();
+        playerAnimator = GetComponentInChildren<Animator>();
+
+        UpdateAnimatorState();
     }
     private void GroundMovement(Vector3 movementInput)
     {
@@ -171,32 +605,32 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         maxAirSpeed = airSpeed;
 
-        Vector3 velocity = body.linearVelocity;
+        Vector3 velocity = playerRigidbody.linearVelocity;
 
         if (velocity.y < 0f)
         {
             velocity.y = 0f;
-            body.linearVelocity = velocity;
+            playerRigidbody.linearVelocity = velocity;
         }
 
-        Vector3 targetPosition = body.position + movementInput * runSpeed * Time.fixedDeltaTime;
+        Vector3 targetPosition = playerRigidbody.position + movementInput * runSpeed * Time.fixedDeltaTime;
 
-        body.MovePosition(targetPosition);
+        playerRigidbody.MovePosition(targetPosition);
     }
 
     private void AirMovement(Vector3 movementInput)
     {
-        body.AddForce(movementInput * airControl, ForceMode.Acceleration);
+        playerRigidbody.AddForce(movementInput * airControl, ForceMode.Acceleration);
 
-        Vector3 horizontalVelocity = body.linearVelocity;
+        Vector3 horizontalVelocity = playerRigidbody.linearVelocity;
         horizontalVelocity.y = 0f;
 
         if (horizontalVelocity.magnitude > maxAirSpeed)
         {
             horizontalVelocity = horizontalVelocity.normalized * maxAirSpeed;
 
-            horizontalVelocity.y = body.linearVelocity.y;
-            body.linearVelocity = horizontalVelocity;
+            horizontalVelocity.y = playerRigidbody.linearVelocity.y;
+            playerRigidbody.linearVelocity = horizontalVelocity;
         }
     }
 
@@ -248,9 +682,13 @@ public class UltimatePlayerMovement : MonoBehaviour
             return;
         }
 
-        body.AddForce(Vector3.up * jumpForce, ForceMode.VelocityChange);
+        playerRigidbody.AddForce(
+            Vector3.up * jumpForce,
+            ForceMode.VelocityChange);
 
         isGrounded = false;
+
+        ChangeState(PlayerState.Air);
     }
 
     private void Turn(Vector3 movementInput)
@@ -262,18 +700,18 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         Quaternion targetRotation = Quaternion.LookRotation(movementInput);
 
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * 15f);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * turnSpeed);
     }
 
     public void StopMovement()
     {
-        if (body == null)
+        if (playerRigidbody == null)
         {
             return;
         }
 
-        body.linearVelocity = Vector3.zero;
-        body.angularVelocity = Vector3.zero;
+        playerRigidbody.linearVelocity = Vector3.zero;
+        playerRigidbody.angularVelocity = Vector3.zero;
     }
 
     public void EnableMovement()
@@ -303,12 +741,12 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     public void Launch(Vector3 launchDirection, float height)
     {
-        if (body == null)
+        if (playerRigidbody == null)
         {
             return;
         }
 
-        body.linearVelocity = Mathf.Sqrt(height *-2f * Physics.gravity.y) * launchDirection;
+        playerRigidbody.linearVelocity = Mathf.Sqrt(height * -2f * Physics.gravity.y) * launchDirection;
     }
 
     private void OnDrawGizmosSelected()
