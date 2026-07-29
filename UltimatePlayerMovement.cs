@@ -4,6 +4,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(CameraController))]
+[RequireComponent(typeof(RailGrinding))]
 public class UltimatePlayerMovement : MonoBehaviour
 {
     #region Constants
@@ -20,6 +21,10 @@ public class UltimatePlayerMovement : MonoBehaviour
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
 
     private static readonly int VerticalSpeedHash = Animator.StringToHash("VerticalSpeed");
+
+    // private static readonly int GroundHash = Animator.StringToHash("GroundHash");
+
+    // private static readonly int InAirHash = Animator.StringToHash("InAirHash");
     #endregion
 
 
@@ -31,6 +36,9 @@ public class UltimatePlayerMovement : MonoBehaviour
     [SerializeField] private LayerMask groundMask;
 
     [SerializeField] private TeamActionController teamController;
+
+    [Header("Grinding")]
+    [SerializeField] private RailGrinding grinding;
 
     #endregion
 
@@ -54,13 +62,15 @@ public class UltimatePlayerMovement : MonoBehaviour
     [Header("Rolling")]
     [SerializeField] private float rollingSpeed = 25f;
     [SerializeField] private float rollingTurnSpeed = 6f;
-
+    [SerializeField] private KeyCode rollKey = KeyCode.LeftShift;
     [Header("Homing Attack")]
     [SerializeField] private float homingAttackSpeed = 35f;
     [SerializeField] private float homingAttackDuration = 0.5f;
+    [SerializeField] private KeyCode homingAttackKey = KeyCode.Mouse0;
 
-    [Header("Grinding")]
-    [SerializeField] private float grindingSpeed = 30f;
+    [Header("Targeting")]
+    [SerializeField] private float homingRange = 20f;
+    [SerializeField] private LayerMask homingTargetMask;
 
     [Header("Flying")]
     [SerializeField] private float flyingSpeed = 15f;
@@ -105,6 +115,11 @@ public class UltimatePlayerMovement : MonoBehaviour
             playerRigidbody = GetComponent<Rigidbody>();
         }
 
+        if (grinding == null)
+        {
+            grinding = GetComponent<RailGrinding>();
+        }
+
         if (cameraTransform == null)
         {
             CameraController camCtrl = FindAnyObjectByType<CameraController>();
@@ -135,8 +150,29 @@ public class UltimatePlayerMovement : MonoBehaviour
     private bool isGroundLastFrame;
 
     private Vector3 homingDirection;
-    private Vector3 grindingDirection;
     private float stateTimer;
+    // private Animator groundHash;
+    // private Animator inAirHashAnimator;
+    private Transform FindHomingTarget()
+    {
+        Collider[] targets = Physics.OverlapSphere(transform.position, homingRange, homingTargetMask, QueryTriggerInteraction.Ignore);
+
+        Transform closestTarget = null;
+        float closestDistance = float.MaxValue;
+
+        foreach (Collider target in targets)
+        {
+            float distance = Vector3.SqrMagnitude(target.transform.position - transform.position);
+
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestTarget = target.transform;
+            }
+        }
+
+        return closestTarget;
+    }
     private Vector3 GetMovementInput()
     {
         float horizontal = Input.GetAxis("Horizontal");
@@ -216,11 +252,17 @@ public class UltimatePlayerMovement : MonoBehaviour
                 break;
 
         }
-        RotateToGround();
+
+        if (currentState != PlayerState.Grinding)
+        {
+            RotateToGround();
+        }
     }
     private void Update()
     {
         Jump();
+        HandleRollingInput();
+        HandleHomingAttackInput();
         UpdateAnimation();
     }
 
@@ -245,21 +287,50 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     private void OnLanded()
     {
+        if (currentState == PlayerState.Grinding)
+        {
+            return;
+        }
+
+        ResetAirAbilities();
         ChangeState(PlayerState.Ground);
 
         /*
          * TODO:
          * Play landing sound
          * Spawn landing particles
-         * Reset jump state
          */
     }
 
+    private void ResetAirAbilities()
+    {
+        homingDirection = Vector3.zero;
+        stateTimer = 0f;
+
+        /*
+         Add future resets here:
+         Reset homing attack availability
+         Reset flight time
+         Reset air-dash count
+         Reset double-jump count
+        */
+    }
+
+    private void OnJump()
+    {
+        ChangeState(PlayerState.Air);
+        ResetAirAbilities();
+    }
+
+    private void EnterAirState()
+    {
+        maxAirSpeed = airSpeed;
+    }
     private void OnLeftGround()
     {
         if (currentState == PlayerState.Ground)
         {
-            ChangeState(PlayerState.Air);
+            OnJump();
         }
     }
 
@@ -297,6 +368,10 @@ public class UltimatePlayerMovement : MonoBehaviour
                 teamController?.EnableFollowers();
                 break;
 
+            case PlayerState.Air:
+                EnterAirState();
+                break;
+
             case PlayerState.Rolling:
                 break;
 
@@ -316,10 +391,6 @@ public class UltimatePlayerMovement : MonoBehaviour
         {
             case PlayerState.HomingAttack:
                 homingDirection = Vector3.zero;
-                break;
-
-            case PlayerState.Grinding:
-                grindingDirection = Vector3.zero;
                 break;
         }
     }
@@ -349,6 +420,18 @@ public class UltimatePlayerMovement : MonoBehaviour
         }
     }
 
+    private void HandleRollingInput()
+    {
+        if (Input.GetKeyDown(rollKey))
+        {
+            StartRolling();
+        }
+
+        if (Input.GetKeyUp(rollKey))
+        {
+            StopRolling();
+        }
+    }
     public void StartRolling()
     {
         if (!isGrounded || currentState != PlayerState.Ground)
@@ -369,6 +452,28 @@ public class UltimatePlayerMovement : MonoBehaviour
         ChangeState(isGrounded
             ? PlayerState.Ground
             : PlayerState.Air);
+    }
+
+    private void HandleHomingAttackInput()
+    {
+        if (currentState != PlayerState.Air)
+        {
+            return;
+        }
+
+        if (!Input.GetKeyDown(homingAttackKey))
+        {
+            return;
+        }
+
+        Transform target = FindHomingTarget();
+
+        if (target == null)
+        {
+            return;
+        }
+
+        StartHomingAttack(target.position);
     }
 
     public void StartHomingAttack(Vector3 targetPosition)
@@ -409,33 +514,30 @@ public class UltimatePlayerMovement : MonoBehaviour
         }
     }
 
-    public void StartGrinding(Vector3 railDirection)
+
+
+
+    private void UpdateGrindingState()
     {
-        if (railDirection.sqrMagnitude < 0.001f)
+        if (grinding != null && grinding.IsGrinding)
         {
             return;
         }
 
-        grindingDirection = railDirection.normalized;
+        ChangeState(PlayerState.Air);
+    }
 
-        if (Vector3.Dot(grindingDirection, transform.forward) < 0f)
+    public void EnterGrindingState()
+    {
+        if (currentState == PlayerState.Hurt)
         {
-            grindingDirection = -grindingDirection;
+            return;
         }
 
         ChangeState(PlayerState.Grinding);
     }
 
-    private void UpdateGrindingState()
-    {
-        playerRigidbody.linearVelocity = grindingDirection * grindingSpeed;
-
-        Quaternion targetRotation = Quaternion.LookRotation(grindingDirection, Vector3.up);
-
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.fixedDeltaTime * turnSpeed);
-    }
-
-    public void StopGrinding()
+    public void ExitGrindingState()
     {
         if (currentState != PlayerState.Grinding)
         {
@@ -574,9 +676,7 @@ public class UltimatePlayerMovement : MonoBehaviour
             return;
         }
 
-        playerAnimator.SetInteger(
-            StateHash,
-            (int)currentState);
+        playerAnimator.SetInteger(StateHash, (int)currentState);
     }
     public void SetupAnimation()
     {
@@ -587,8 +687,6 @@ public class UltimatePlayerMovement : MonoBehaviour
     private void GroundMovement(Vector3 movementInput)
     {
         movementInput.y = 0f;
-
-        maxAirSpeed = airSpeed;
 
         Vector3 velocity = playerRigidbody.linearVelocity;
 
@@ -656,6 +754,11 @@ public class UltimatePlayerMovement : MonoBehaviour
     }
     private void Jump()
     {
+        if (currentState != PlayerState.Ground)
+        {
+            return;
+        }
+
         if (!isGrounded)
         {
             return;
@@ -670,7 +773,7 @@ public class UltimatePlayerMovement : MonoBehaviour
 
         isGrounded = false;
 
-        ChangeState(PlayerState.Air);
+        OnJump();
     }
 
     private void Turn(Vector3 movementInput)
