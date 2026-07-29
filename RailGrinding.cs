@@ -360,6 +360,7 @@ public class RailGrinding : MonoBehaviour
         isCrouching = false;
 
         playerRigidbody.useGravity = true;
+        playerRigidbody.WakeUp();
 
         if (jumped)
         {
