@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
-
+[RequireComponent (typeof(Rigidbody))]
+[RequireComponent(typeof(UltimatePlayerMovement))]
+[RequireComponent (typeof(FollowerNavigation))]
 public class TeamActionController : MonoBehaviour
 {
     public enum TeamFormation
@@ -27,12 +29,15 @@ public class TeamActionController : MonoBehaviour
     [Header("Current Team State")]
     [SerializeField] private TeamFormation currentFormation = TeamFormation.Speed;
     [SerializeField] private TeamAction currentAction = TeamAction.None;
+    [SerializeField] private FollowerNavigation leftFollower;
+    [SerializeField] private FollowerNavigation rightFollower;
 
     [Header("Team References")]
     [SerializeField] private GameObject speedCharacter;
     [SerializeField] private GameObject flyCharacter;
     [SerializeField] private GameObject powerCharacter;
     [SerializeField] private UltimatePlayerMovement movement;
+    [SerializeField] private RailGrinding railGrinding;
 
     [Header("Optional Formation Input")]
     [SerializeField] private bool readFormationInput = true;
@@ -70,6 +75,24 @@ public class TeamActionController : MonoBehaviour
         {
             movement = GetComponentInParent<UltimatePlayerMovement>();
         }
+
+        if (railGrinding == null)
+        {
+            railGrinding = GetComponent<RailGrinding>();
+        }
+
+        if (railGrinding == null)
+        {
+            railGrinding = GetComponentInParent<RailGrinding>();
+        }
+
+        ApplyFormationToSystems();
+    }
+
+    private void Start()
+    {
+        ApplyFormationToSystems();
+        FormationChanged?.Invoke(currentFormation);
     }
 
     private void Update()
@@ -102,19 +125,50 @@ public class TeamActionController : MonoBehaviour
 
         if (currentFormation == newFormation)
         {
+            ApplyFormationToSystems();
             return true;
         }
 
         currentFormation = newFormation;
 
+        ApplyFormationToSystems();
+
         if (logStateChanges)
         {
-            Debug.Log("Formation changed to " + currentFormation);
+            Debug.Log(
+                "Formation changed to " +
+                currentFormation);
         }
 
         FormationChanged?.Invoke(currentFormation);
 
         return true;
+    }
+
+    private void ApplyFormationToSystems()
+    {
+        if (railGrinding == null)
+        {
+            return;
+        }
+
+        RailGrinding.TeamType railTeamType =
+            currentFormation switch
+            {
+                TeamFormation.Speed =>
+                    RailGrinding.TeamType.Speed,
+
+                TeamFormation.Fly =>
+                    RailGrinding.TeamType.Fly,
+
+                TeamFormation.Power =>
+                    RailGrinding.TeamType.Power,
+
+                _ =>
+                    RailGrinding.TeamType.Speed
+            };
+
+        railGrinding.SetTeamType(railTeamType);
     }
 
     public bool CanBeginAction(TeamAction action, TeamFormation requiredFormation, bool mustBeGrounded = false, bool mustBeAirborne = false)
@@ -141,12 +195,12 @@ public class TeamActionController : MonoBehaviour
 
         if (movement != null)
         {
-            if (mustBeGrounded && !movement.isGrounded)
+            if (mustBeGrounded && !movement.IsGrounded)
             {
                 return false;
             }
 
-            if (mustBeAirborne && movement.isGrounded)
+            if (mustBeAirborne && movement.IsGrounded)
             {
                 return false;
             }
@@ -169,9 +223,9 @@ public class TeamActionController : MonoBehaviour
 
         currentAction = action;
 
-        if (surrenderMovementControl)
+        if (surrenderMovementControl && movement != null)
         {
-            UltimatePlayerMovement.Controllable = false;
+            movement.DisableMovement();
         }
 
         if (logStateChanges)
@@ -186,19 +240,14 @@ public class TeamActionController : MonoBehaviour
 
     public void EndAction(bool restoreMovementControl = true)
     {
-        if (currentAction == TeamAction.None)
+        if (restoreMovementControl && movement != null)
         {
-            return;
+            movement.EnableMovement();
         }
 
         TeamAction endedAction = currentAction;
 
         currentAction = TeamAction.None;
-
-        if (restoreMovementControl)
-        {
-            UltimatePlayerMovement.Controllable = true;
-        }
 
         if (logStateChanges)
         {
@@ -223,6 +272,17 @@ public class TeamActionController : MonoBehaviour
         }
     }
 
+    public void EnableFollowers()
+    {
+        leftFollower?.EnableAgent();
+        rightFollower?.EnableAgent();
+    }
+
+    public void DisableFollowers()
+    {
+        leftFollower?.DisableAgent();
+        rightFollower?.DisableAgent();
+    }
     public GameObject GetFormationLeader()
     {
         switch (currentFormation)
@@ -246,7 +306,11 @@ public class TeamActionController : MonoBehaviour
         if (IsPerformingAction)
         {
             currentAction = TeamAction.None;
-            UltimatePlayerMovement.Controllable = true;
+
+            if (movement != null)
+            {
+                movement.EnableMovement();
+            }
         }
     }
 }
