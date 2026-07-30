@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class LoadingScreenHUD : MonoBehaviour
 {
     public static LoadingScreenHUD Instance { get; private set; }
+    public float LoadingProgress { get; private set; }
 
     [Header("Loading Areas")]
     [SerializeField] private TMP_Text stageNumberText;
@@ -55,6 +56,24 @@ public class LoadingScreenHUD : MonoBehaviour
             enabled = false;
             return;
         }
+
+        if (loadingScreenCanvas == null)
+            Debug.LogWarning("Loading Screen Canvas is not assigned.", this);
+
+        if (loadingMusicSource == null)
+            Debug.LogWarning("Loading Music Source is not assigned.", this);
+
+        if (stageArtworkImage == null)
+            Debug.LogWarning("Stage Artwork Image is not assigned.", this);
+
+        if (backgroundArtworkImage == null)
+            Debug.LogWarning("Background Artwork Image is not assigned.", this);
+
+        if (teamLogoImage == null)
+            Debug.LogWarning("Team Logo Image is not assigned.", this);
+
+        if (loadingTipText == null)
+            Debug.LogWarning("Loading Tip Text is not assigned.", this);
 
         SetVisible(false);
         ValidateReferences();
@@ -165,9 +184,12 @@ public class LoadingScreenHUD : MonoBehaviour
     private IEnumerator LoadSceneRoutine(int buildIndex)
     {
         isLoading = true;
+        LoadingProgress = 0f;
+
         yield return FadeTo(1f);
 
         float shownAt = Time.unscaledTime;
+
         AsyncOperation operation =
             SceneManager.LoadSceneAsync(buildIndex);
 
@@ -177,8 +199,17 @@ public class LoadingScreenHUD : MonoBehaviour
             yield break;
         }
 
+        LoadingProgress = 0f;
+
         while (!operation.isDone)
+        {
+            LoadingProgress = operation.progress;
             yield return null;
+        }
+
+        LoadingProgress = 1f;
+
+        LoadingProgress = 1f;
 
         yield return CompleteLoading(shownAt);
     }
@@ -259,6 +290,7 @@ public class LoadingScreenHUD : MonoBehaviour
         loadingMusicSource.clip = loadingMusic;
         loadingMusicSource.volume = Mathf.Clamp01(volume);
         loadingMusicSource.loop = true;
+        loadingMusicSource.volume = 1f;
 
         if (loadingMusic != null)
             loadingMusicSource.Play();
@@ -295,7 +327,10 @@ public class LoadingScreenHUD : MonoBehaviour
         SetImage(teamLogoImage, null);
 
         if (accentImage != null)
+        {
             accentImage.color = Color.white;
+            accentImage.sprite = null;
+        }
 
         if (loadingTipText != null)
             loadingTipText.text = string.Empty;
