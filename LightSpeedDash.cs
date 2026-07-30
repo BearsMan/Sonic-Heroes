@@ -70,11 +70,11 @@ public class LightSpeedDash : MonoBehaviour
     [SerializeField] private bool drawDashPath = true;
     [SerializeField] private bool drawRingSearch = true;
     [SerializeField] private bool logStateChanges;
-
+    private LightSpeedDashRing currentRing;
     private readonly HashSet<GameObject> damagedObjects = new();
-    private readonly HashSet<Collider> visitedRings = new();
+    private readonly HashSet<LightSpeedDashRing> visitedRings = new();
     private Coroutine dashCoroutine;
-    private Collider currentRing;
+    
     private Vector3 dashDirection;
     private bool isDashing;
     private bool isFollowingRings;
@@ -129,9 +129,9 @@ public class LightSpeedDash : MonoBehaviour
             Debug.LogWarning("LightSpeedDash could not find a Rigidbody.", this);
             return false;
         }
-        Collider nearbyRing = prioritizeRingTrails
-            ? FindClosestRing(playerRigidbody.position, ringSearchRadius, null)
-            : null;
+        LightSpeedDashRing nearbyRing = prioritizeRingTrails
+    ? FindClosestRing(playerRigidbody.position, ringSearchRadius, null)
+    : null;
         if (!BeginTeamAction())
             return false;
         BeginDash(nearbyRing);
@@ -160,7 +160,7 @@ public class LightSpeedDash : MonoBehaviour
         return true;
     }
 
-    private void BeginDash(Collider startingRing)
+    private void BeginDash(LightSpeedDashRing startingRing)
     {
         isDashing = true;
         isFollowingRings = startingRing != null;
@@ -274,7 +274,7 @@ public class LightSpeedDash : MonoBehaviour
                     yield break;
                 }
             }
-            Vector3 targetPosition = currentRing.bounds.center;
+            Vector3 targetPosition = currentRing.DashPosition;
             Vector3 difference =
                 targetPosition - playerRigidbody.position;
             float distance = difference.magnitude;
@@ -287,7 +287,7 @@ public class LightSpeedDash : MonoBehaviour
                 DamageDashPath(targetPosition, targetPosition);
                 visitedRings.Add(currentRing);
                 dashDirection = arrivalDirection;
-                Collider previousRing = currentRing;
+                LightSpeedDashRing previousRing = currentRing;
                 currentRing = FindClosestRing(
                     targetPosition,
                     ringChainRadius,
@@ -339,28 +339,43 @@ public class LightSpeedDash : MonoBehaviour
         DamageDashPath(startPosition, endPosition);
     }
 
-    private Collider FindClosestRing(
-        Vector3 searchPosition,
-        float searchRadius,
-        Vector3? preferredDirection)
+    private LightSpeedDashRing FindClosestRing(
+    Vector3 searchPosition,
+    float searchRadius,
+    Vector3? preferredDirection)
     {
-        Collider[] nearbyRings = Physics.OverlapSphere(
+        Collider[] nearbyColliders = Physics.OverlapSphere(
             searchPosition,
             searchRadius,
             ringLayers,
             QueryTriggerInteraction.Collide);
-        Collider closestRing = null;
+
+        LightSpeedDashRing closestRing = null;
         float closestScore = float.MaxValue;
-        for (int i = 0; i < nearbyRings.Length; i++)
+
+        for (int i = 0; i < nearbyColliders.Length; i++)
         {
-            Collider ring = nearbyRings[i];
+            LightSpeedDashRing ring =
+                nearbyColliders[i].GetComponentInParent<LightSpeedDashRing>();
+
             if (!IsValidRing(ring) || visitedRings.Contains(ring))
                 continue;
-            Vector3 difference = ring.bounds.center - searchPosition;
+
+            Vector3 difference = ring.DashPosition - searchPosition;
             float distance = difference.magnitude;
+
             if (distance <= ringArrivalDistance)
                 continue;
+
+            float allowedChainRange = Mathf.Min(
+                searchRadius,
+                ring.ChainRange);
+
+            if (distance > allowedChainRange)
+                continue;
+
             float score = distance;
+
             if (preferredDirection.HasValue &&
                 preferredDirection.Value.sqrMagnitude > 0.0001f &&
                 difference.sqrMagnitude > 0.0001f)
@@ -368,24 +383,26 @@ public class LightSpeedDash : MonoBehaviour
                 float directionDot = Vector3.Dot(
                     preferredDirection.Value.normalized,
                     difference.normalized);
+
                 if (directionDot < minimumRingDirectionDot)
                     continue;
-                score -= directionDot * ringChainRadius * 0.5f;
+
+                score -= directionDot * allowedChainRange * 0.5f;
             }
+
             if (score >= closestScore)
                 continue;
+
             closestScore = score;
             closestRing = ring;
         }
+
         return closestRing;
     }
 
-    private bool IsValidRing(Collider ring)
+    private bool IsValidRing(LightSpeedDashRing ring)
     {
-        return ring != null &&
-               ring.enabled &&
-               ring.gameObject.activeInHierarchy &&
-               IsLayerInMask(ring.gameObject.layer, ringLayers);
+        return ring != null && ring.CanBeDashedThrough;
     }
 
     private bool CheckObstacle(
@@ -499,11 +516,6 @@ public class LightSpeedDash : MonoBehaviour
         return target == actionController.SpeedCharacter ||
                target == actionController.FlyCharacter ||
                target == actionController.PowerCharacter;
-    }
-
-    private bool IsLayerInMask(int layer, LayerMask layerMask)
-    {
-        return (layerMask.value & (1 << layer)) != 0;
     }
 
     public void CancelDash()
