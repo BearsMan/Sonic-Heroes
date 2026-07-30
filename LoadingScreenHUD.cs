@@ -57,9 +57,6 @@ public class LoadingScreenHUD : MonoBehaviour
             return;
         }
 
-        if (loadingScreenCanvas == null)
-            Debug.LogWarning("Loading Screen Canvas is not assigned.", this);
-
         if (loadingMusicSource == null)
             Debug.LogWarning("Loading Music Source is not assigned.", this);
 
@@ -175,9 +172,15 @@ public class LoadingScreenHUD : MonoBehaviour
             yield break;
         }
 
-        while (!operation.isDone)
-            yield return null;
+        LoadingProgress = 0f;
 
+        while (!operation.isDone)
+        {
+            LoadingProgress = operation.progress;
+            yield return null;
+        }
+
+        LoadingProgress = 1f;
         yield return CompleteLoading(shownAt);
     }
 
@@ -209,8 +212,6 @@ public class LoadingScreenHUD : MonoBehaviour
 
         LoadingProgress = 1f;
 
-        LoadingProgress = 1f;
-
         yield return CompleteLoading(shownAt);
     }
 
@@ -223,6 +224,7 @@ public class LoadingScreenHUD : MonoBehaviour
         ClearLoadingAssets();
 
         isLoading = false;
+        LoadingProgress = 0f;
     }
 
     private IEnumerator HandleLoadingFailure()
@@ -279,9 +281,7 @@ public class LoadingScreenHUD : MonoBehaviour
         UpdateInteraction(targetAlpha > 0f);
     }
 
-    private void SetLoadingMusic(
-        AudioClip loadingMusic,
-        float volume)
+    private void SetLoadingMusic(AudioClip loadingMusic, float volume)
     {
         if (loadingMusicSource == null)
             return;
@@ -290,7 +290,6 @@ public class LoadingScreenHUD : MonoBehaviour
         loadingMusicSource.clip = loadingMusic;
         loadingMusicSource.volume = Mathf.Clamp01(volume);
         loadingMusicSource.loop = true;
-        loadingMusicSource.volume = 1f;
 
         if (loadingMusic != null)
             loadingMusicSource.Play();
@@ -339,6 +338,7 @@ public class LoadingScreenHUD : MonoBehaviour
         {
             loadingMusicSource.Stop();
             loadingMusicSource.clip = null;
+            loadingMusicSource.volume = 1f;
         }
     }
 
