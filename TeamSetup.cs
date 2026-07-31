@@ -1,71 +1,58 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(CharacterSwitch))]
 public sealed class TeamSetup : MonoBehaviour
 {
-    private const float CharacterFacingAngle = 180f;
-    private const float SuperRingDrainInterval = 3f;
-
     [Header("Team")]
-    [FormerlySerializedAs("CurrentTeam")]
-    [SerializeField] private TeamComposition currentTeam;
+    [SerializeField] private TeamComposition team;
 
-    [Header("Character Parents")]
-    [FormerlySerializedAs("player")]
-    [SerializeField] private Transform playerParent;
+    [Header("Formation Slots")]
+    [SerializeField] private Transform leaderSlot;
+    [SerializeField] private Transform leftFollowerSlot;
+    [SerializeField] private Transform rightFollowerSlot;
 
-    [FormerlySerializedAs("leftTeamMember")]
-    [SerializeField] private Transform flyingCharacterParent;
-
-    [FormerlySerializedAs("rightTeamMember")]
-    [SerializeField] private Transform powerCharacterParent;
-
-    [Header("Formation Positions")]
-    [FormerlySerializedAs("pos1")]
-    [SerializeField] private GameObject positionOne;
-
-    [FormerlySerializedAs("pos2")]
-    [SerializeField] private GameObject positionTwo;
+    [Header("Starting Formation")]
+    [SerializeField]
+    private CHARACTERTYPES startingLeader =
+        CHARACTERTYPES.Speed;
 
     [Header("HUD")]
-    [FormerlySerializedAs("HUD")]
     [SerializeField] private HUD hud;
+
+    [Header("Super Form")]
+    [SerializeField, Min(0.1f)]
+    private float ringDrainInterval = 3f;
+
+    [SerializeField, Min(1)]
+    private int ringsDrainedPerInterval = 1;
+
+    private CharacterSwitch characterSwitch;
+    private Coroutine ringDrainRoutine;
+    private WaitForSeconds ringDrainWait;
+
+    private bool initialized;
+    private bool shuttingDown;
 
     public static TeamSetup Instance { get; private set; }
 
-    // Compatibility with scripts that still use TeamSetup.pc.
-    public static TeamSetup pc => Instance;
+    public TeamComposition Team => team;
 
-    public TeamComposition CurrentTeam => currentTeam;
-
-    public PlayableTeam CurrentPlayableTeam =>
-        currentTeam != null
-            ? currentTeam.PlayableTeam
+    public PlayableTeam PlayableTeam =>
+        team != null
+            ? team.PlayableTeam
             : default;
 
-    public GameObject PositionOne => positionOne;
-    public GameObject PositionTwo => positionTwo;
-    public Transform PlayerParent => playerParent;
-    public Transform FlyingCharacterParent => flyingCharacterParent;
-    public Transform PowerCharacterParent => powerCharacterParent;
-    public GameObject HUDObject => hud != null ? hud.gameObject : null;
-    public bool IsSuperFormActive => superFormRingCountdown != null;
-
-    private CharacterSwitch characterSwitch;
-    private UltimatePlayerMovement playerMovement;
-    private Coroutine superFormRingCountdown;
-    private WaitForSeconds superRingDrainDelay;
-    private bool teamInitialized;
+    public bool IsInitialized => initialized;
 
     private void Awake()
     {
         if (Instance != null && Instance != this)
         {
-            Debug.LogError(
-                "Only one TeamSetup may exist in the scene.",
+            Debug.LogError($"Duplicate TeamSetup detected. Existing object: " +
+                $"'{Instance.gameObject.name}'. Duplicate object: " +
+                $"'{gameObject.name}'.",
                 this);
 
             enabled = false;
@@ -74,16 +61,18 @@ public sealed class TeamSetup : MonoBehaviour
 
         Instance = this;
 
-        characterSwitch = GetComponent<CharacterSwitch>();
-        superRingDrainDelay =
-            new WaitForSeconds(SuperRingDrainInterval);
+        characterSwitch =
+            GetComponent<CharacterSwitch>();
+
+        ringDrainWait =
+            new WaitForSeconds(ringDrainInterval);
 
         ResolveReferences();
     }
 
     private void Start()
     {
-        if (!ValidateSetup())
+        if (!ValidateConfiguration())
         {
             enabled = false;
             return;
@@ -92,298 +81,365 @@ public sealed class TeamSetup : MonoBehaviour
         InitializeTeam();
     }
 
+    private void OnEnable()
+    {
+        if (characterSwitch != null)
+        {
+            characterSwitch.SuperFormChanged +=
+                HandleSuperFormChanged;
+        }
+    }
+
     private void OnDisable()
     {
-        StopSuperCountdown();
+        if (characterSwitch != null)
+        {
+            characterSwitch.SuperFormChanged -=
+                HandleSuperFormChanged;
+        }
+
+        StopRingDrain();
     }
 
     private void OnDestroy()
     {
+        shuttingDown = true;
+
         if (Instance == this)
             Instance = null;
     }
 
-    private void ResolveReferences()
+    public bool InitializeTeam()
     {
-        if (playerParent != null)
+        if (initialized)
+            return true;
+
+        if (!ValidateConfiguration())
+            return false;
+
+        ClearSlot(leaderSlot);
+        ClearSlot(leftFollowerSlot);
+        ClearSlot(rightFollowerSlot);
+
+        Transform speedCharacter =
+            SpawnCharacter(
+                team.SpeedCharacterPrefab,
+                leaderSlot);
+
+        Transform flyingCharacter =
+            SpawnCharacter(
+                team.FlyingCharacterPrefab,
+                leftFollowerSlot);
+
+        Transform powerCharacter =
+            SpawnCharacter(
+                team.PowerCharacterPrefab,
+                rightFollowerSlot);
+
+        if (speedCharacter == null ||
+            flyingCharacter == null ||
+            powerCharacter == null)
         {
-            playerParent.TryGetComponent(
-                out playerMovement);
+            Debug.LogError(
+                "TeamSetup failed to spawn the complete team.",
+                this);
+
+            DestroyCharacter(speedCharacter);
+            DestroyCharacter(flyingCharacter);
+            DestroyCharacter(powerCharacter);
+
+            return false;
         }
 
-        if (hud == null)
+        bool configured =
+            characterSwitch.ConfigureTeam(
+                speedCharacter,
+                flyingCharacter,
+                powerCharacter,
+                team.SpeedCharacterPrefab,
+                team.SuperCharacterPrefab,
+                startingLeader);
+
+        if (!configured)
         {
-            hud = Object.FindAnyObjectByType<HUD>();
+            Debug.LogError(
+                "CharacterSwitch rejected the spawned team.",
+                characterSwitch);
+
+            DestroyCharacter(speedCharacter);
+            DestroyCharacter(flyingCharacter);
+            DestroyCharacter(powerCharacter);
+
+            return false;
         }
+
+        GameInstance.currentTeam =
+            (int)team.PlayableTeam;
+
+        if (hud != null)
+        {
+            hud.Setup(team);
+            hud.UpdateRings();
+        }
+
+        initialized = true;
+
+        return true;
     }
 
-    private void InitializeTeam()
+    public bool RebuildTeam()
     {
-        if (teamInitialized)
-            return;
+        StopRingDrain();
 
-        teamInitialized = true;
+        initialized = false;
 
-        SpawnInitialTeam();
-        InitializeFollowers();
-        InitializeHUD();
-        ApplyCurrentTeam();
-        DetachCharacterParents();
+        return InitializeTeam();
     }
 
-    private void SpawnInitialTeam()
+    private Transform SpawnCharacter(
+        GameObject prefab,
+        Transform slot)
     {
-        GameObject speedCharacter =
-            SpawnTeamMember(
-                currentTeam.SpeedCharacterPrefab,
-                playerParent);
+        if (prefab == null ||
+            slot == null)
+        {
+            return null;
+        }
 
-        GameObject flyingCharacter =
-            SpawnTeamMember(
-                currentTeam.FlyingCharacterPrefab,
-                flyingCharacterParent);
-
-        GameObject powerCharacter =
-            SpawnTeamMember(
-                currentTeam.PowerCharacterPrefab,
-                powerCharacterParent);
-
-        characterSwitch.speedCharacter =
-            speedCharacter.transform;
-
-        characterSwitch.flyingCharacter =
-            flyingCharacter.transform;
-
-        characterSwitch.powerCharacter =
-            powerCharacter.transform;
-
-        characterSwitch.TeamMembers.Clear();
-        characterSwitch.TeamMembers.Add(speedCharacter);
-        characterSwitch.TeamMembers.Add(flyingCharacter);
-        characterSwitch.TeamMembers.Add(powerCharacter);
-
-        playerMovement?.SetupAnimation();
-    }
-
-    private GameObject SpawnTeamMember(
-        GameObject characterPrefab,
-        Transform parent)
-    {
         GameObject character =
-            Instantiate(characterPrefab, parent);
+            Instantiate(
+                prefab,
+                slot);
 
         character.transform.SetLocalPositionAndRotation(
             Vector3.zero,
             Quaternion.Euler(
                 0f,
-                CharacterFacingAngle,
+                180f,
                 0f));
 
-        return character;
+        return character.transform;
     }
 
-    private void InitializeFollowers()
+    private void HandleSuperFormChanged(
+        bool isSuperForm)
     {
-        InitializeFollower(flyingCharacterParent);
-        InitializeFollower(powerCharacterParent);
-    }
-
-    private void InitializeFollower(
-        Transform followerParent)
-    {
-        if (followerParent.TryGetComponent(
-            out FollowerNavigation follower))
+        if (isSuperForm)
         {
-            follower.Setup();
-        }
-    }
-
-    private void InitializeHUD()
-    {
-        if (hud == null)
+            StartRingDrain();
             return;
+        }
 
-        hud.Setup(currentTeam);
-        hud.UpdateRings();
+        StopRingDrain();
+        RefreshRingDisplay();
     }
 
-    private void ApplyCurrentTeam()
+    private void StartRingDrain()
     {
-        GameInstance.currentTeam =
-            (int)currentTeam.PlayableTeam;
-    }
+        StopRingDrain();
 
-    private void DetachCharacterParents()
-    {
-        playerParent.SetParent(null);
-        flyingCharacterParent.SetParent(null);
-        powerCharacterParent.SetParent(null);
-    }
-
-    public void SwapForSuper()
-    {
-        EnterSuperForm();
-    }
-
-    public void EnterSuperForm()
-    {
-        if (!teamInitialized ||
-            IsSuperFormActive)
+        if (!initialized ||
+            shuttingDown)
         {
             return;
         }
 
-        GameObject superCharacterPrefab =
-            currentTeam.SuperCharacterPrefab;
+        ringDrainRoutine =
+            StartCoroutine(
+                DrainSuperFormRings());
+    }
 
-        if (superCharacterPrefab == null)
+    private void StopRingDrain()
+    {
+        if (ringDrainRoutine == null)
+            return;
+
+        StopCoroutine(
+            ringDrainRoutine);
+
+        ringDrainRoutine = null;
+    }
+
+    private IEnumerator DrainSuperFormRings()
+    {
+        while (!shuttingDown &&
+               characterSwitch != null &&
+               characterSwitch.IsSuperForm)
         {
-            Debug.LogWarning(
-                $"Team '{currentTeam.name}' has no Super Character assigned.",
-                currentTeam);
+            if (GameInstance.currentRings <= 0)
+                break;
 
-            return;
-        }
+            yield return ringDrainWait;
 
-        ReplaceSpeedCharacter(
-            superCharacterPrefab);
-
-        StartSuperCountdown();
-    }
-
-    public void SwapForSonic()
-    {
-        RestoreSpeedCharacter();
-    }
-
-    public void RestoreSpeedCharacter()
-    {
-        StopSuperCountdown();
-
-        if (!teamInitialized ||
-            currentTeam.SpeedCharacterPrefab == null)
-        {
-            return;
-        }
-
-        ReplaceSpeedCharacter(
-            currentTeam.SpeedCharacterPrefab);
-
-        UpdateRingDisplay();
-    }
-
-    private void ReplaceSpeedCharacter(
-        GameObject characterPrefab)
-    {
-        if (characterPrefab == null)
-            return;
-
-        RemoveCurrentSpeedCharacter();
-
-        GameObject replacement =
-            SpawnTeamMember(
-                characterPrefab,
-                playerParent);
-
-        characterSwitch.speedCharacter =
-            replacement.transform;
-
-        characterSwitch.TeamMembers.Insert(
-            0,
-            replacement);
-
-        playerMovement?.SetupAnimation();
-    }
-
-    private void RemoveCurrentSpeedCharacter()
-    {
-        Transform currentSpeedCharacter =
-            characterSwitch.speedCharacter;
-
-        if (currentSpeedCharacter == null)
-            return;
-
-        characterSwitch.TeamMembers.Remove(
-            currentSpeedCharacter.gameObject);
-
-        characterSwitch.speedCharacter = null;
-
-        Destroy(currentSpeedCharacter.gameObject);
-    }
-
-    private void StartSuperCountdown()
-    {
-        StopSuperCountdown();
-
-        superFormRingCountdown =
-            StartCoroutine(SuperCountdown());
-    }
-
-    private void StopSuperCountdown()
-    {
-        if (superFormRingCountdown == null)
-            return;
-
-        StopCoroutine(superFormRingCountdown);
-        superFormRingCountdown = null;
-    }
-
-    private IEnumerator SuperCountdown()
-    {
-        while (GameInstance.currentRings > 0)
-        {
-            yield return superRingDrainDelay;
+            if (characterSwitch == null ||
+                !characterSwitch.IsSuperForm)
+            {
+                break;
+            }
 
             GameInstance.currentRings =
                 Mathf.Max(
                     0,
-                    GameInstance.currentRings - 1);
+                    GameInstance.currentRings -
+                    ringsDrainedPerInterval);
 
-            UpdateRingDisplay();
+            RefreshRingDisplay();
         }
 
-        superFormRingCountdown = null;
-        RestoreSpeedCharacter();
+        ringDrainRoutine = null;
+
+        if (shuttingDown ||
+            characterSwitch == null ||
+            !characterSwitch.IsSuperForm)
+        {
+            yield break;
+        }
+
+        characterSwitch.ToggleSuperForm();
     }
 
-    private void UpdateRingDisplay()
+    private void RefreshRingDisplay()
     {
         hud?.UpdateRings();
     }
 
-    private bool ValidateSetup()
+    private void ResolveReferences()
     {
-        if (currentTeam == null)
+        if (hud == null)
+        {
+            hud =
+                UnityEngine.Object.FindAnyObjectByType<HUD>(
+                    FindObjectsInactive.Include);
+        }
+    }
+
+    private bool ValidateConfiguration()
+    {
+        bool valid = true;
+
+        valid &=
+            ValidateReference(
+                team,
+                "Team Composition");
+
+        valid &=
+            ValidateReference(
+                characterSwitch,
+                "Character Switch");
+
+        valid &=
+            ValidateReference(
+                leaderSlot,
+                "Leader Slot");
+
+        valid &=
+            ValidateReference(
+                leftFollowerSlot,
+                "Left Follower Slot");
+
+        valid &=
+            ValidateReference(
+                rightFollowerSlot,
+                "Right Follower Slot");
+
+        if (team != null)
+        {
+            valid &=
+                ValidateReference(
+                    team.SpeedCharacterPrefab,
+                    "Speed Character Prefab");
+
+            valid &=
+                ValidateReference(
+                    team.FlyingCharacterPrefab,
+                    "Flying Character Prefab");
+
+            valid &=
+                ValidateReference(
+                    team.PowerCharacterPrefab,
+                    "Power Character Prefab");
+        }
+
+        if (!IsSupportedLeader(startingLeader))
         {
             Debug.LogError(
-                "Current Team is not assigned.",
+                $"Unsupported starting leader: {startingLeader}.",
                 this);
 
-            return false;
+            valid = false;
         }
 
-        if (playerParent == null ||
-            flyingCharacterParent == null ||
-            powerCharacterParent == null)
+        if (hud == null)
         {
-            Debug.LogError(
-                "One or more Character Parents are not assigned.",
+            Debug.LogWarning(
+                "TeamSetup HUD reference is not assigned.",
                 this);
-
-            return false;
         }
 
-        if (currentTeam.SpeedCharacterPrefab == null ||
-            currentTeam.FlyingCharacterPrefab == null ||
-            currentTeam.PowerCharacterPrefab == null)
+        return valid;
+    }
+
+    private bool ValidateReference(
+        Object reference,
+        string displayName)
+    {
+        if (reference != null)
+            return true;
+
+        Debug.LogError(
+            $"TeamSetup {displayName} is not assigned.",
+            this);
+
+        return false;
+    }
+
+    private static bool IsSupportedLeader(
+        CHARACTERTYPES characterType)
+    {
+        return
+            characterType == CHARACTERTYPES.Speed ||
+            characterType == CHARACTERTYPES.Fly ||
+            characterType == CHARACTERTYPES.Power;
+    }
+
+    private static void ClearSlot(
+        Transform slot)
+    {
+        if (slot == null)
+            return;
+
+        for (int index = slot.childCount - 1;
+             index >= 0;
+             index--)
         {
-            Debug.LogError(
-                $"Team '{currentTeam.name}' is missing one or more required character prefabs.",
-                currentTeam);
-
-            return false;
+            Destroy(
+                slot.GetChild(index).gameObject);
         }
+    }
 
-        return true;
+    private static void DestroyCharacter(
+        Transform character)
+    {
+        if (character != null)
+            Destroy(character.gameObject);
+    }
+
+    private void OnValidate()
+    {
+        ringDrainInterval =
+            Mathf.Max(
+                0.1f,
+                ringDrainInterval);
+
+        ringsDrainedPerInterval =
+            Mathf.Max(
+                1,
+                ringsDrainedPerInterval);
+
+        if (!IsSupportedLeader(startingLeader))
+        {
+            startingLeader =
+                CHARACTERTYPES.Speed;
+        }
     }
 }
