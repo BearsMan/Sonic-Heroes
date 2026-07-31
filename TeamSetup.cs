@@ -1,128 +1,389 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-public class TeamSetup : MonoBehaviour
+[DisallowMultipleComponent]
+[RequireComponent(typeof(CharacterSwitch))]
+public sealed class TeamSetup : MonoBehaviour
 {
-    public TeamComposition CurrentTeam;
-    public GameObject pos1;
-    public GameObject pos2;
-    public Transform leftTeamMember;
-    public Transform rightTeamMember;
-    public Transform player;
-    public GameObject HUD;
+    private const float CharacterFacingAngle = 180f;
+    private const float SuperRingDrainInterval = 3f;
+
+    [Header("Team")]
+    [FormerlySerializedAs("CurrentTeam")]
+    [SerializeField] private TeamComposition currentTeam;
+
+    [Header("Character Parents")]
+    [FormerlySerializedAs("player")]
+    [SerializeField] private Transform playerParent;
+
+    [FormerlySerializedAs("leftTeamMember")]
+    [SerializeField] private Transform flyingCharacterParent;
+
+    [FormerlySerializedAs("rightTeamMember")]
+    [SerializeField] private Transform powerCharacterParent;
+
+    [Header("Formation Positions")]
+    [FormerlySerializedAs("pos1")]
+    [SerializeField] private GameObject positionOne;
+
+    [FormerlySerializedAs("pos2")]
+    [SerializeField] private GameObject positionTwo;
+
+    [Header("HUD")]
+    [FormerlySerializedAs("HUD")]
+    [SerializeField] private HUD hud;
+
+    public static TeamSetup Instance { get; private set; }
+
+    // Compatibility with scripts that still use TeamSetup.pc.
+    public static TeamSetup pc => Instance;
+
+    public TeamComposition CurrentTeam => currentTeam;
+
+    public PlayableTeam CurrentPlayableTeam =>
+        currentTeam != null
+            ? currentTeam.PlayableTeam
+            : default;
+
+    public GameObject PositionOne => positionOne;
+    public GameObject PositionTwo => positionTwo;
+    public Transform PlayerParent => playerParent;
+    public Transform FlyingCharacterParent => flyingCharacterParent;
+    public Transform PowerCharacterParent => powerCharacterParent;
+    public GameObject HUDObject => hud != null ? hud.gameObject : null;
+    public bool IsSuperFormActive => superFormRingCountdown != null;
+
+    private CharacterSwitch characterSwitch;
+    private UltimatePlayerMovement playerMovement;
     private Coroutine superFormRingCountdown;
+    private WaitForSeconds superRingDrainDelay;
+    private bool teamInitialized;
 
-
-
-    public static TeamSetup pc;
-
-    // Start is called before the first frame update
-    void Start()
+    private void Awake()
     {
-        pc = this;
-        //Setup Player
-        Transform body = Instantiate(CurrentTeam.SpeedCharacter, player).transform;
-        GetComponent<CharacterSwitch>().speedCharacter = body;
-        body.localPosition = Vector3.zero;
-        body.rotation = Quaternion.Euler(0,180,0);
-        CharacterSwitch switcher = GetComponent<CharacterSwitch>();
-        player.GetComponent<UltimatePlayerMovement>().SetupAnimation();
-
-        switcher.TeamMembers.Add(body.gameObject);
-
-        //Setup Left Team Member
-        GameObject ai = Instantiate(CurrentTeam.FlyingCharacter, leftTeamMember);
-        GetComponent<CharacterSwitch>().flyingCharacter = ai.transform;
-        ai.transform.localPosition = Vector3.zero;
-        ai.transform.localRotation = Quaternion.Euler(0, 180, 0); 
-        switcher.TeamMembers.Add(ai);
-        leftTeamMember.GetComponent<FollowerNavigation>().Setup();
-
-        //Setup Right Team Member
-        ai = Instantiate(CurrentTeam.PowerCharacter, rightTeamMember);
-        GetComponent<CharacterSwitch>().powerCharacter = ai.transform;
-        ai.transform.localPosition = Vector3.zero;
-        ai.transform.localRotation = Quaternion.Euler(0, 180, 0);
-        switcher.TeamMembers.Add(ai);
-        rightTeamMember.GetComponent<FollowerNavigation>().Setup();
-
-
-        player.parent = null;
-        leftTeamMember.parent = null;
-        rightTeamMember.parent = null;
-
-        HUD = Object.FindAnyObjectByType<HUD>().gameObject;
-        HUD.GetComponent<HUD>().Setup(CurrentTeam);
-        if (CurrentTeam.name == "Team Sonic")
+        if (Instance != null && Instance != this)
         {
-            GameInstance.currentTeam = 0;
+            Debug.LogError(
+                "Only one TeamSetup may exist in the scene.",
+                this);
+
+            enabled = false;
+            return;
         }
-        if (CurrentTeam.name == "Team Dark")
+
+        Instance = this;
+
+        characterSwitch = GetComponent<CharacterSwitch>();
+        superRingDrainDelay =
+            new WaitForSeconds(SuperRingDrainInterval);
+
+        ResolveReferences();
+    }
+
+    private void Start()
+    {
+        if (!ValidateSetup())
         {
-            GameInstance.currentTeam = 1;
+            enabled = false;
+            return;
         }
-        if (CurrentTeam.name == "Team Rose")
+
+        InitializeTeam();
+    }
+
+    private void OnDisable()
+    {
+        StopSuperCountdown();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
+
+    private void ResolveReferences()
+    {
+        if (playerParent != null)
         {
-            GameInstance.currentTeam = 2;
+            playerParent.TryGetComponent(
+                out playerMovement);
         }
-        if (CurrentTeam.name == "Team Chaotix")
+
+        if (hud == null)
         {
-            GameInstance.currentTeam = 3;
+            hud = Object.FindAnyObjectByType<HUD>();
         }
     }
 
-    // Update is called once per frame
-    void Update()
+    private void InitializeTeam()
     {
+        if (teamInitialized)
+            return;
 
+        teamInitialized = true;
+
+        SpawnInitialTeam();
+        InitializeFollowers();
+        InitializeHUD();
+        ApplyCurrentTeam();
+        DetachCharacterParents();
     }
+
+    private void SpawnInitialTeam()
+    {
+        GameObject speedCharacter =
+            SpawnTeamMember(
+                currentTeam.SpeedCharacterPrefab,
+                playerParent);
+
+        GameObject flyingCharacter =
+            SpawnTeamMember(
+                currentTeam.FlyingCharacterPrefab,
+                flyingCharacterParent);
+
+        GameObject powerCharacter =
+            SpawnTeamMember(
+                currentTeam.PowerCharacterPrefab,
+                powerCharacterParent);
+
+        characterSwitch.speedCharacter =
+            speedCharacter.transform;
+
+        characterSwitch.flyingCharacter =
+            flyingCharacter.transform;
+
+        characterSwitch.powerCharacter =
+            powerCharacter.transform;
+
+        characterSwitch.TeamMembers.Clear();
+        characterSwitch.TeamMembers.Add(speedCharacter);
+        characterSwitch.TeamMembers.Add(flyingCharacter);
+        characterSwitch.TeamMembers.Add(powerCharacter);
+
+        playerMovement?.SetupAnimation();
+    }
+
+    private GameObject SpawnTeamMember(
+        GameObject characterPrefab,
+        Transform parent)
+    {
+        GameObject character =
+            Instantiate(characterPrefab, parent);
+
+        character.transform.SetLocalPositionAndRotation(
+            Vector3.zero,
+            Quaternion.Euler(
+                0f,
+                CharacterFacingAngle,
+                0f));
+
+        return character;
+    }
+
+    private void InitializeFollowers()
+    {
+        InitializeFollower(flyingCharacterParent);
+        InitializeFollower(powerCharacterParent);
+    }
+
+    private void InitializeFollower(
+        Transform followerParent)
+    {
+        if (followerParent.TryGetComponent(
+            out FollowerNavigation follower))
+        {
+            follower.Setup();
+        }
+    }
+
+    private void InitializeHUD()
+    {
+        if (hud == null)
+            return;
+
+        hud.Setup(currentTeam);
+        hud.UpdateRings();
+    }
+
+    private void ApplyCurrentTeam()
+    {
+        GameInstance.currentTeam =
+            (int)currentTeam.PlayableTeam;
+    }
+
+    private void DetachCharacterParents()
+    {
+        playerParent.SetParent(null);
+        flyingCharacterParent.SetParent(null);
+        powerCharacterParent.SetParent(null);
+    }
+
     public void SwapForSuper()
     {
-        CharacterSwitch switcher = GetComponent<CharacterSwitch>();
-        Transform SpeedCharacter = GetComponent<CharacterSwitch>().speedCharacter;
-        switcher.TeamMembers.Remove(SpeedCharacter.gameObject);
-        Destroy(SpeedCharacter.gameObject);
-
-        Transform body = Instantiate(CurrentTeam.SuperCharacter, player).transform;
-        GetComponent<CharacterSwitch>().speedCharacter = body;
-        body.localPosition = Vector3.zero;
-        body.localRotation = Quaternion.Euler(0, 180, 0);
-
-        switcher.TeamMembers.Add(body.gameObject);
-        superFormRingCountdown = StartCoroutine(SuperCountDown());
-        
+        EnterSuperForm();
     }
-    public IEnumerator SuperCountDown()
+
+    public void EnterSuperForm()
     {
-        while(GameInstance.currentRings > 0)
+        if (!teamInitialized ||
+            IsSuperFormActive)
         {
-            HUD.GetComponent<HUD>().UpdateRings();
-            GameInstance.currentRings -= 1;
-            yield return new WaitForSeconds(3);
+            return;
+        }
+
+        GameObject superCharacterPrefab =
+            currentTeam.SuperCharacterPrefab;
+
+        if (superCharacterPrefab == null)
+        {
+            Debug.LogWarning(
+                $"Team '{currentTeam.name}' has no Super Character assigned.",
+                currentTeam);
+
+            return;
+        }
+
+        ReplaceSpeedCharacter(
+            superCharacterPrefab);
+
+        StartSuperCountdown();
+    }
+
+    public void SwapForSonic()
+    {
+        RestoreSpeedCharacter();
+    }
+
+    public void RestoreSpeedCharacter()
+    {
+        StopSuperCountdown();
+
+        if (!teamInitialized ||
+            currentTeam.SpeedCharacterPrefab == null)
+        {
+            return;
+        }
+
+        ReplaceSpeedCharacter(
+            currentTeam.SpeedCharacterPrefab);
+
+        UpdateRingDisplay();
+    }
+
+    private void ReplaceSpeedCharacter(
+        GameObject characterPrefab)
+    {
+        if (characterPrefab == null)
+            return;
+
+        RemoveCurrentSpeedCharacter();
+
+        GameObject replacement =
+            SpawnTeamMember(
+                characterPrefab,
+                playerParent);
+
+        characterSwitch.speedCharacter =
+            replacement.transform;
+
+        characterSwitch.TeamMembers.Insert(
+            0,
+            replacement);
+
+        playerMovement?.SetupAnimation();
+    }
+
+    private void RemoveCurrentSpeedCharacter()
+    {
+        Transform currentSpeedCharacter =
+            characterSwitch.speedCharacter;
+
+        if (currentSpeedCharacter == null)
+            return;
+
+        characterSwitch.TeamMembers.Remove(
+            currentSpeedCharacter.gameObject);
+
+        characterSwitch.speedCharacter = null;
+
+        Destroy(currentSpeedCharacter.gameObject);
+    }
+
+    private void StartSuperCountdown()
+    {
+        StopSuperCountdown();
+
+        superFormRingCountdown =
+            StartCoroutine(SuperCountdown());
+    }
+
+    private void StopSuperCountdown()
+    {
+        if (superFormRingCountdown == null)
+            return;
+
+        StopCoroutine(superFormRingCountdown);
+        superFormRingCountdown = null;
+    }
+
+    private IEnumerator SuperCountdown()
+    {
+        while (GameInstance.currentRings > 0)
+        {
+            yield return superRingDrainDelay;
+
+            GameInstance.currentRings =
+                Mathf.Max(
+                    0,
+                    GameInstance.currentRings - 1);
+
+            UpdateRingDisplay();
         }
 
         superFormRingCountdown = null;
-        SwapForSonic();
+        RestoreSpeedCharacter();
     }
-    public void SwapForSonic()
+
+    private void UpdateRingDisplay()
     {
-        if (superFormRingCountdown != null)
+        hud?.UpdateRings();
+    }
+
+    private bool ValidateSetup()
+    {
+        if (currentTeam == null)
         {
-            StopCoroutine(superFormRingCountdown);
-            superFormRingCountdown = null;
+            Debug.LogError(
+                "Current Team is not assigned.",
+                this);
+
+            return false;
         }
-        HUD.GetComponent<HUD>().UpdateRings();
-        CharacterSwitch switcher = GetComponent<CharacterSwitch>();
-        Transform SpeedCharacter = GetComponent<CharacterSwitch>().speedCharacter;
-        switcher.TeamMembers.Remove(SpeedCharacter.gameObject);
-        Destroy(SpeedCharacter.gameObject);
 
-        Transform body = Instantiate(CurrentTeam.SpeedCharacter, player).transform;
-        GetComponent<CharacterSwitch>().speedCharacter = body;
-        body.localPosition = Vector3.zero;
-        body.localRotation = Quaternion.Euler(0, 180, 0);
+        if (playerParent == null ||
+            flyingCharacterParent == null ||
+            powerCharacterParent == null)
+        {
+            Debug.LogError(
+                "One or more Character Parents are not assigned.",
+                this);
 
-        switcher.TeamMembers.Add(body.gameObject);
+            return false;
+        }
+
+        if (currentTeam.SpeedCharacterPrefab == null ||
+            currentTeam.FlyingCharacterPrefab == null ||
+            currentTeam.PowerCharacterPrefab == null)
+        {
+            Debug.LogError(
+                $"Team '{currentTeam.name}' is missing one or more required character prefabs.",
+                currentTeam);
+
+            return false;
+        }
+
+        return true;
     }
 }
