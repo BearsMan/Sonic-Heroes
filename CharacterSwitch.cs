@@ -1,159 +1,626 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-public class CharacterSwitch : MonoBehaviour
+[DisallowMultipleComponent]
+[RequireComponent(typeof(TeamSetup))]
+public sealed class CharacterSwitch : MonoBehaviour
 {
-    public CHARACTERTYPES currentCharacterType = CHARACTERTYPES.Speed;
-    public GameObject sonic;
-    public GameObject superSonic;
-    public List<GameObject> TeamMembers = new List<GameObject>();
-    public Transform player, leftSlot, rightSlot;
-    public Transform speedCharacter, powerCharacter, flyingCharacter;
+    [Header("Input")]
+    [SerializeField] private bool acceptPlayerInput = true;
+    [SerializeField] private KeyCode previousLeaderKey = KeyCode.LeftBracket;
+    [SerializeField] private KeyCode nextLeaderKey = KeyCode.RightBracket;
+    [SerializeField] private KeyCode toggleSuperFormKey = KeyCode.Home;
 
-    // Start is called before the first frame update
-    void Start()
+    [Header("Initial State")]
+    [FormerlySerializedAs("currentCharacterType")]
+    [SerializeField]
+    private CHARACTERTYPES initialLeaderType =
+        CHARACTERTYPES.Speed;
+
+    [Header("Formation Slots")]
+    [FormerlySerializedAs("player")]
+    [SerializeField] private Transform leaderSlot;
+
+    [FormerlySerializedAs("leftSlot")]
+    [SerializeField] private Transform leftFollowerSlot;
+
+    [FormerlySerializedAs("rightSlot")]
+    [SerializeField] private Transform rightFollowerSlot;
+
+    [Header("Character Instances")]
+    [FormerlySerializedAs("speedCharacter")]
+    [SerializeField] private Transform speedCharacter;
+
+    [FormerlySerializedAs("flyingCharacter")]
+    [SerializeField] private Transform flyingCharacter;
+
+    [FormerlySerializedAs("powerCharacter")]
+    [SerializeField] private Transform powerCharacter;
+
+    [Header("Speed Character Forms")]
+    [FormerlySerializedAs("sonic")]
+    [SerializeField] private GameObject normalSpeedPrefab;
+
+    [FormerlySerializedAs("superSonic")]
+    [SerializeField] private GameObject superSpeedPrefab;
+
+    [Header("Dependencies")]
+    [SerializeField] private TeamSetup teamSetup;
+    [SerializeField] private HUD hud;
+
+    [Header("Placement")]
+    [SerializeField] private Vector3 localPosition = Vector3.zero;
+    [SerializeField]
+    private Vector3 localEulerAngles =
+        new(0f, 180f, 0f);
+
+    private UltimatePlayerMovement leaderMovement;
+    private FollowerNavigation leftFollowerNavigation;
+    private FollowerNavigation rightFollowerNavigation;
+
+    private CHARACTERTYPES currentLeaderType;
+    private bool isSuperForm;
+    private bool isInitialized;
+    private bool isChangingFormation;
+
+    public event Action<CHARACTERTYPES> LeaderChanged;
+    public event Action<bool> SuperFormChanged;
+
+    public CHARACTERTYPES CurrentLeaderType =>
+        currentLeaderType;
+
+    public Transform SpeedCharacter =>
+        speedCharacter;
+
+    public Transform FlyingCharacter =>
+        flyingCharacter;
+
+    public Transform PowerCharacter =>
+        powerCharacter;
+
+    public bool IsSuperForm =>
+        isSuperForm;
+
+    public bool CanSwitch => isInitialized && !isChangingFormation;
+
+    public bool ConfigureTeam(
+    Transform speed,
+    Transform flying,
+    Transform power,
+    GameObject normalSpeed,
+    GameObject superSpeed,
+    CHARACTERTYPES initialLeader)
     {
+        if (speed == null ||
+            flying == null ||
+            power == null)
+        {
+            Debug.LogError(
+                "CharacterSwitch received an incomplete team.",
+                this);
 
+            return false;
+        }
+
+        speedCharacter = speed;
+        flyingCharacter = flying;
+        powerCharacter = power;
+
+        if (normalSpeed == null || superSpeed == null)
+        {
+            Debug.LogError(
+                "CharacterSwitch requires both Speed prefabs.",
+                this);
+
+            return false;
+        }
+
+        normalSpeedPrefab = normalSpeed;
+        superSpeedPrefab = superSpeed;
+
+        ResolveDependencies();
+        CacheControllers();
+
+        if (!ValidateConfiguration())
+        {
+            return false;
+        }
+
+        if (!IsSupportedType(initialLeader))
+        {
+            Debug.LogError(
+                $"Unsupported initial leader: {initialLeader}.",
+                this);
+
+            return false;
+        }
+
+        currentLeaderType = initialLeader;
+
+        isSuperForm = false;
+        isInitialized = true;
+
+        ApplyLeader(
+            currentLeaderType,
+            notifyListeners: false);
+
+        return true;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Awake()
     {
-        if (Input.GetKeyDown(KeyCode.LeftBracket))
+        currentLeaderType =
+            IsSupportedType(initialLeaderType)
+                ? initialLeaderType
+                : CHARACTERTYPES.Speed;
+
+        isSuperForm = false;
+        isInitialized = false;
+    }
+
+    private void Update()
+    {
+        if (!acceptPlayerInput ||
+            !CanSwitch)
         {
-            LeftCharacter();
-        }
-        if (Input.GetKeyDown(KeyCode.RightBracket))
-        {
-            RightCharacter();
+            return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Home))
+        if (Input.GetKeyDown(previousLeaderKey))
         {
-            ChangeSuper();
-            
+            SelectPreviousLeader();
+            return;
+        }
+
+        if (Input.GetKeyDown(nextLeaderKey))
+        {
+            SelectNextLeader();
+            return;
+        }
+
+        if (Input.GetKeyDown(toggleSuperFormKey))
+            ToggleSuperForm();
+    }
+
+    public void SelectPreviousLeader()
+    {
+        CHARACTERTYPES nextType =
+            currentLeaderType switch
+            {
+                CHARACTERTYPES.Speed =>
+                    CHARACTERTYPES.Fly,
+
+                CHARACTERTYPES.Fly =>
+                    CHARACTERTYPES.Power,
+
+                CHARACTERTYPES.Power =>
+                    CHARACTERTYPES.Speed,
+
+                _ =>
+                    CHARACTERTYPES.Speed
+            };
+
+        SetLeader(nextType);
+    }
+
+    public void SelectNextLeader()
+    {
+        CHARACTERTYPES nextType =
+            currentLeaderType switch
+            {
+                CHARACTERTYPES.Speed =>
+                    CHARACTERTYPES.Power,
+
+                CHARACTERTYPES.Power =>
+                    CHARACTERTYPES.Fly,
+
+                CHARACTERTYPES.Fly =>
+                    CHARACTERTYPES.Speed,
+
+                _ =>
+                    CHARACTERTYPES.Speed
+            };
+
+        SetLeader(nextType);
+    }
+
+    public bool SetLeader(
+        CHARACTERTYPES leaderType)
+    {
+        if (!isInitialized)
+            return false;
+
+        if (!IsSupportedType(leaderType))
+        {
+            Debug.LogWarning(
+                $"Unsupported leader type: {leaderType}.",
+                this);
+
+            return false;
+        }
+
+        if (isChangingFormation)
+            return false;
+
+        ApplyLeader(
+            leaderType,
+            notifyListeners: true);
+
+        return true;
+    }
+
+    public void RefreshFormation()
+    {
+        if (!isInitialized)
+            return;
+
+        ApplyLeader(
+            currentLeaderType,
+            notifyListeners: false);
+    }
+
+    public bool ToggleSuperForm()
+    {
+        if (!isInitialized || isChangingFormation)
+        {
+            return false;
+        }
+
+        GameObject replacementPrefab =
+            isSuperForm
+                ? normalSpeedPrefab
+                : superSpeedPrefab;
+
+        if (replacementPrefab == null)
+        {
+            Debug.LogWarning(
+                isSuperForm
+                    ? "Normal Speed prefab is not assigned."
+                    : "Super Speed prefab is not assigned.",
+                this);
+
+            return false;
+        }
+
+        if (speedCharacter == null)
+        {
+            Debug.LogError(
+                "The Speed character instance is missing.",
+                this);
+
+            return false;
+        }
+
+        isChangingFormation = true;
+
+        try
+        {
+            Transform previousSpeedCharacter =
+                speedCharacter;
+
+            Transform currentParent =
+                previousSpeedCharacter.parent;
+
+            int siblingIndex =
+                previousSpeedCharacter.GetSiblingIndex();
+
+            GameObject replacement =
+                Instantiate(
+                    replacementPrefab,
+                    currentParent);
+
+            Transform replacementTransform =
+                replacement.transform;
+
+            replacementTransform.SetSiblingIndex(
+                siblingIndex);
+
+            ResetLocalTransform(
+                replacementTransform);
+
+            Destroy(
+                previousSpeedCharacter.gameObject);
+
+            speedCharacter =
+                replacementTransform;
+
+            isSuperForm =
+                !isSuperForm;
+
+            ApplyLeader(
+                currentLeaderType,
+                notifyListeners: false);
+        }
+        finally
+        {
+            isChangingFormation = false;
+        }
+
+        SuperFormChanged?.Invoke(
+            isSuperForm);
+
+        return true;
+    }
+
+    public void SetInputEnabled(
+        bool enabled)
+    {
+        acceptPlayerInput =
+            enabled;
+    }
+
+    public CharacterSwitchState CaptureState()
+    {
+        return new CharacterSwitchState(
+            currentLeaderType,
+            isSuperForm);
+    }
+
+    public void RestoreState(
+    CharacterSwitchState state)
+    {
+        if (!isInitialized)
+            return;
+
+        if (state.IsSuperForm != isSuperForm)
+            ToggleSuperForm();
+
+        SetLeader(state.LeaderType);
+    }
+
+    private void ApplyLeader(
+        CHARACTERTYPES leaderType,
+        bool notifyListeners)
+    {
+        isChangingFormation = true;
+
+        currentLeaderType =
+            leaderType;
+
+        GetFormation(
+            leaderType,
+            out Transform leader,
+            out Transform leftCharacter,
+            out Transform rightCharacter);
+
+        AssignToSlot(
+            leader,
+            leaderSlot);
+
+        AssignToSlot(
+            leftCharacter,
+            leftFollowerSlot);
+
+        AssignToSlot(
+            rightCharacter,
+            rightFollowerSlot);
+
+        RefreshControllers();
+        RefreshHud();
+
+        isChangingFormation = false;
+
+        if (notifyListeners)
+        {
+            LeaderChanged?.Invoke(
+                currentLeaderType);
         }
     }
 
-    public void LeftCharacter()
+    private void GetFormation(
+        CHARACTERTYPES leaderType,
+        out Transform leader,
+        out Transform leftCharacter,
+        out Transform rightCharacter)
     {
-        switch (currentCharacterType)
+        switch (leaderType)
         {
-            case CHARACTERTYPES.Speed:
-                currentCharacterType = CHARACTERTYPES.Fly;
-                flyingCharacter.parent = player;
-                powerCharacter.parent = leftSlot;
-                speedCharacter.parent = rightSlot;
-                break;
             case CHARACTERTYPES.Fly:
-                currentCharacterType = CHARACTERTYPES.Power;
-                powerCharacter.parent = player;
-                speedCharacter.parent = leftSlot;
-                flyingCharacter.parent = rightSlot;
+                leader = flyingCharacter;
+                leftCharacter = powerCharacter;
+                rightCharacter = speedCharacter;
                 break;
-            case CHARACTERTYPES.Power:
-                currentCharacterType = CHARACTERTYPES.Speed;
-                speedCharacter.parent = player;
-                flyingCharacter.parent = leftSlot;
-                powerCharacter.parent = rightSlot;
-                break;
-        }
-        var _hud0 = Object.FindAnyObjectByType<HUD>(FindObjectsInactive.Exclude);
-        if (_hud0 != null) _hud0.SetCharacter(-1);
-        ResetCharacters();
-    }
 
-    public void RightCharacter()
-    {
-        switch (currentCharacterType)
-        {
             case CHARACTERTYPES.Power:
-                currentCharacterType = CHARACTERTYPES.Fly;
-                flyingCharacter.parent = player;
-                powerCharacter.parent = leftSlot;
-                speedCharacter.parent = rightSlot;
+                leader = powerCharacter;
+                leftCharacter = speedCharacter;
+                rightCharacter = flyingCharacter;
                 break;
+
             case CHARACTERTYPES.Speed:
-                currentCharacterType = CHARACTERTYPES.Power;
-                powerCharacter.parent = player;
-                speedCharacter.parent = leftSlot;
-                flyingCharacter.parent = rightSlot;
-                break;
-            case CHARACTERTYPES.Fly:
-                currentCharacterType = CHARACTERTYPES.Speed;
-                speedCharacter.parent = player;
-                flyingCharacter.parent = leftSlot;
-                powerCharacter.parent = rightSlot;
+            default:
+                leader = speedCharacter;
+                leftCharacter = flyingCharacter;
+                rightCharacter = powerCharacter;
                 break;
         }
-        var _hud1 = Object.FindAnyObjectByType<HUD>(FindObjectsInactive.Exclude);
-        if (_hud1 != null) _hud1.SetCharacter(1);
-        ResetCharacters();
     }
 
-    public void SetCharacter(CHARACTERTYPES newType)
+    private void AssignToSlot(
+        Transform character,
+        Transform slot)
     {
-        currentCharacterType = newType;
-        switch (currentCharacterType)
+        if (character == null ||
+            slot == null)
         {
-            case CHARACTERTYPES.Fly:
-                currentCharacterType = CHARACTERTYPES.Fly;
-                flyingCharacter.parent = player;
-                powerCharacter.parent = leftSlot;
-                speedCharacter.parent = rightSlot;
-                break;
-            case CHARACTERTYPES.Power:
-                currentCharacterType = CHARACTERTYPES.Power;
-                powerCharacter.parent = player;
-                speedCharacter.parent = leftSlot;
-                flyingCharacter.parent = rightSlot;
-                break;
-            case CHARACTERTYPES.Speed:
-                currentCharacterType = CHARACTERTYPES.Speed;
-                speedCharacter.parent = player;
-                flyingCharacter.parent = leftSlot;
-                powerCharacter.parent = rightSlot;
-                break;
+            return;
         }
-        var _hud2 = Object.FindAnyObjectByType<HUD>(FindObjectsInactive.Exclude);
-        if (_hud2 != null) _hud2.SetCharacter(currentCharacterType);
-        ResetCharacters();
+
+        character.SetParent(
+            slot,
+            worldPositionStays: false);
+
+        ResetLocalTransform(
+            character);
     }
 
-    public void ResetCharacters()
+    private void ResetLocalTransform(
+        Transform character)
     {
-        speedCharacter.localPosition = Vector3.zero;
-        speedCharacter.localRotation = Quaternion.Euler(0, 180, 0);
-        player.GetComponent<UltimatePlayerMovement>().SetupAnimation();
+        if (character == null)
+            return;
 
-        flyingCharacter.localPosition = Vector3.zero;
-        flyingCharacter.localRotation = Quaternion.Euler(0, 180, 0);
-        leftSlot.GetComponent<FollowerNavigation>().Setup();
-        
-        powerCharacter.localPosition = Vector3.zero;
-        powerCharacter.localRotation = Quaternion.Euler(0, 180, 0);
-        rightSlot.GetComponent<FollowerNavigation>().Setup();
+        character.localPosition =
+            localPosition;
 
-
+        character.localRotation =
+            Quaternion.Euler(
+                localEulerAngles);
     }
 
-    
-
-    public void ChangeSuper()
+    private void RefreshControllers()
     {
-        if (speedCharacter.name == "Sonic the Hedgehog(Clone)")
-        {
-            Destroy(speedCharacter.gameObject);
-            speedCharacter = Instantiate(superSonic, player).transform;
-            GetComponent<TeamSetup>().SwapForSuper();
-        }
+        CacheControllers();
 
-        else if (speedCharacter.name == "Super Sonic(Clone)")
+        if (leaderMovement != null)
+            leaderMovement.SetupAnimation();
+
+        if (leftFollowerNavigation != null)
+            leftFollowerNavigation.Setup();
+
+        if (rightFollowerNavigation != null)
+            rightFollowerNavigation.Setup();
+    }
+
+    private void CacheControllers()
+    {
+        leaderMovement =
+            GetComponentFromSlot<UltimatePlayerMovement>(
+                leaderSlot);
+
+        leftFollowerNavigation =
+            GetComponentFromSlot<FollowerNavigation>(
+                leftFollowerSlot);
+
+        rightFollowerNavigation =
+            GetComponentFromSlot<FollowerNavigation>(
+                rightFollowerSlot);
+    }
+
+    private static T GetComponentFromSlot<T>(
+        Transform slot)
+        where T : Component
+    {
+        if (slot == null)
+            return null;
+
+        T component =
+            slot.GetComponent<T>();
+
+        return component != null
+            ? component
+            : slot.GetComponentInChildren<T>();
+    }
+
+    private void RefreshHud()
+    {
+        if (hud == null)
+            return;
+
+        hud.SetCharacter(
+            currentLeaderType);
+    }
+
+    private void ResolveDependencies()
+    {
+        if (teamSetup == null)
+            teamSetup = GetComponent<TeamSetup>();
+
+        if (teamSetup == null)
+            teamSetup = TeamSetup.Instance;
+
+        if (hud == null)
         {
-            Destroy(speedCharacter.gameObject);
-            speedCharacter = Instantiate(sonic, player).transform;
-            GetComponent<TeamSetup>().SwapForSonic();
+            hud = UnityEngine.Object.FindAnyObjectByType<HUD>(FindObjectsInactive.Include);
         }
     }
+
+    private bool ValidateConfiguration()
+    {
+        bool isValid = true;
+
+        isValid &=
+            ValidateRequiredReference(
+                leaderSlot,
+                "Leader Slot");
+
+        isValid &=
+            ValidateRequiredReference(
+                leftFollowerSlot,
+                "Left Follower Slot");
+
+        isValid &=
+            ValidateRequiredReference(
+                rightFollowerSlot,
+                "Right Follower Slot");
+
+        if (teamSetup == null)
+        {
+            Debug.LogWarning(
+                "CharacterSwitch could not find TeamSetup.",
+                this);
+        }
+
+        if (hud == null)
+        {
+            Debug.LogWarning(
+                "CharacterSwitch could not find HUD.",
+                this);
+        }
+
+        return isValid;
+    }
+
+    private bool ValidateRequiredReference(
+        UnityEngine.Object reference,
+        string displayName)
+    {
+        if (reference != null)
+            return true;
+
+        Debug.LogError(
+            $"CharacterSwitch {displayName} is not assigned.",
+            this);
+
+        return false;
+    }
+
+    private static bool IsSupportedType(
+        CHARACTERTYPES type)
+    {
+        return
+            type == CHARACTERTYPES.Speed ||
+            type == CHARACTERTYPES.Fly ||
+            type == CHARACTERTYPES.Power;
+    }
+
+    private void OnValidate()
+    {
+        if (!IsSupportedType(
+                initialLeaderType))
+        {
+            initialLeaderType =
+                CHARACTERTYPES.Speed;
+        }
+    }
+}
+
+[Serializable]
+public readonly struct CharacterSwitchState
+{
+    public CharacterSwitchState(
+        CHARACTERTYPES leaderType,
+        bool isSuperForm)
+    {
+        LeaderType =
+            leaderType;
+
+        IsSuperForm =
+            isSuperForm;
+    }
+
+    public CHARACTERTYPES LeaderType { get; }
+
+    public bool IsSuperForm { get; }
 }
