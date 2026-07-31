@@ -38,9 +38,7 @@ public static class RankingAssetGenerator
 
         if (stageDatabase == null)
         {
-            Debug.LogError(
-                "No StageDatabase asset was found. " +
-                "Select a StageDatabase asset or create one first.");
+            Debug.LogError("No StageDatabase asset was found. Create one first.");
 
             return;
         }
@@ -114,22 +112,17 @@ public static class RankingAssetGenerator
 
     private static StageDatabase FindStageDatabase()
     {
-        StageDatabase selectedDatabase =
-            Selection.activeObject as StageDatabase;
-
-        if (selectedDatabase != null)
-            return selectedDatabase;
-
         string[] databaseGuids =
-            AssetDatabase.FindAssets(
-                "t:StageDatabase");
+            AssetDatabase.FindAssets("t:StageDatabase");
 
         if (databaseGuids.Length == 0)
             return null;
 
         if (databaseGuids.Length > 1)
         {
-            Debug.LogWarning("No StageDatabase asset was found. Create one first.");
+            Debug.LogWarning(
+                "Multiple StageDatabase assets were found. " +
+                "Using the first one found.");
         }
 
         string databasePath =
