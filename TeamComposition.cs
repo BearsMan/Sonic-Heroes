@@ -23,7 +23,7 @@ public sealed class TeamComposition : ScriptableObject
     public GameObject FlyingCharacterPrefab => flyingCharacterPrefab;
     public GameObject PowerCharacterPrefab => powerCharacterPrefab;
     public GameObject SuperCharacterPrefab => superCharacterPrefab;
-
+    public VideoClip TeamBlastVideo => teamBlast;
     public Sprite TeamIcon => teamIcon;
     public Color AccentColor => accentColor;
     public VideoClip TeamBlast => teamBlast;

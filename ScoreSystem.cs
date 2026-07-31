@@ -85,6 +85,7 @@ public sealed class ScoreSystem : MonoBehaviour
     private UltimatePlayerMovement playerMovement;
     private Ranking ranking;
     private TeamSetup teamSetup;
+    private StageSession stageSession;
     private int ringCount;
     private int ringScore;
     private int timeBonus;
@@ -126,6 +127,12 @@ public sealed class ScoreSystem : MonoBehaviour
     {
         teamSetup = TeamSetup.Instance;
         playerMovement = Object.FindAnyObjectByType<UltimatePlayerMovement>();
+        stageSession = StageSession.Instance;
+
+        if (stageSession == null)
+        {
+            stageSession = Object.FindAnyObjectByType<StageSession>();
+        }
     }
 
     private void CacheGradeSprites()
@@ -156,8 +163,7 @@ public sealed class ScoreSystem : MonoBehaviour
         ringScore =
             ringCount * pointsPerRing;
 
-        elapsedTime =
-            Mathf.Max(0f, HUD.timer);
+        elapsedTime = stageSession != null? Mathf.Max(0f, stageSession.ElapsedTime): 0f;
 
         timeBonus =
             CalculateTimeBonus(elapsedTime);
@@ -491,27 +497,29 @@ public sealed class ScoreSystem : MonoBehaviour
             isValid = false;
         }
 
+        if (stageSession == null)
+        {
+            Debug.LogError(
+                "StageSession was not found.",
+                this);
+
+            isValid = false;
+        }
+
         return isValid;
     }
 
     private void OnValidate()
     {
         maximumBonusTime =
-            Mathf.Max(
-                0f,
-                maximumBonusTime);
+            Mathf.Max(0f, maximumBonusTime);
 
         pointsPerRemainingSecond =
-            Mathf.Max(
-                0,
-                pointsPerRemainingSecond);
+            Mathf.Max(0, pointsPerRemainingSecond);
 
         pointsPerRing =
-            Mathf.Max(
-                0,
-                pointsPerRing);
+            Mathf.Max(0, pointsPerRing);
 
         CacheGradeSprites();
-        ValidateSetup();
     }
 }

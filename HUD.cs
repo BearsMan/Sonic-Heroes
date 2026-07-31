@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
-public class HUD : MonoBehaviour
+[DisallowMultipleComponent]
+public sealed class HUD : MonoBehaviour
 {
     [Header("Main HUD Text")]
     [SerializeField] private TMP_Text scoreText;
@@ -32,18 +32,13 @@ public class HUD : MonoBehaviour
     [SerializeField, Min(1)] private int maximumPower = 100;
     [SerializeField] private Color chargingColor = Color.blue;
     [SerializeField] private Color readyColor = Color.yellow;
+    [SerializeField] private TeamBlastVideos teamBlastVideos;
 
     [Header("Item Pickup")]
     [SerializeField] private Image itemPickUp;
     [SerializeField, Min(0f)] private float pickupDisplayDuration = 3f;
 
-    [Header("Legacy References")]
-    [SerializeField] private GameObject playerprefab;
-    [SerializeField] private Sprite speedSprite;
-    [SerializeField] private Sprite flySprite;
-    [SerializeField] private Sprite powerSprite;
-
-    public static float timer;
+    [SerializeField] private StageSession stageSession;
 
     private int powerUpLevel;
     private int displayedScore = int.MinValue;
@@ -68,6 +63,30 @@ public class HUD : MonoBehaviour
             itemPickUp.enabled = false;
 
         ConfigurePowerGauge();
+        if (teamBlastVideos == null)
+        {
+            teamBlastVideos = Object.FindAnyObjectByType<TeamBlastVideos>();
+        }
+
+        if (teamBlastVideos == null)
+        {
+            Debug.LogWarning("HUD TeamBlastVideos reference is not assigned.", this);
+        }
+
+        if (stageSession == null)
+        {
+            stageSession = StageSession.Instance;
+        }
+
+        if (stageSession == null)
+        {
+            stageSession = Object.FindAnyObjectByType<StageSession>();
+        }
+
+        if (stageSession == null)
+        {
+            Debug.LogWarning("HUD StageSession reference is not assigned.", this);
+        }
     }
 
     private void OnEnable()
@@ -138,9 +157,12 @@ public class HUD : MonoBehaviour
 
     private void UpdateTimer()
     {
-        timer += Time.deltaTime;
+        if (stageSession == null)
+            return;
 
-        int centiseconds = Mathf.FloorToInt(timer * 100f);
+        int centiseconds =
+            Mathf.FloorToInt(
+                stageSession.ElapsedTime * 100f);
 
         if (centiseconds == displayedTime)
             return;
@@ -151,15 +173,32 @@ public class HUD : MonoBehaviour
 
     private void RefreshTimer()
     {
-        if (timeText == null)
+        if (timeText == null ||
+            stageSession == null)
+        {
             return;
+        }
 
-        int totalCentiseconds = Mathf.FloorToInt(timer * 100f);
-        int minutes = totalCentiseconds / 6000;
-        int seconds = totalCentiseconds / 100 % 60;
-        int centiseconds = totalCentiseconds % 100;
+        float elapsedTime =
+            stageSession.ElapsedTime;
 
-        timeText.text = $"{minutes:00}:{seconds:00}:{centiseconds:00}";
+        int totalCentiseconds =
+            Mathf.FloorToInt(
+                elapsedTime * 100f);
+
+        int minutes =
+            totalCentiseconds / 6000;
+
+        int seconds =
+            totalCentiseconds / 100 % 60;
+
+        int centiseconds =
+            totalCentiseconds % 100;
+
+        timeText.text =
+            $"{minutes:00}:" +
+            $"{seconds:00}:" +
+            $"{centiseconds:00}";
     }
 
     private void RefreshChangingValues()
@@ -241,12 +280,50 @@ public class HUD : MonoBehaviour
         curTeam = currentTeam;
 
         teamSprites.Clear();
-        teamSprites.Add(curTeam.speedCharacter);
-        teamSprites.Add(curTeam.flyingCharacter);
-        teamSprites.Add(curTeam.powerCharacter);
+
+        AddCharacterFromPrefab(
+            curTeam.SpeedCharacterPrefab);
+
+        AddCharacterFromPrefab(
+            curTeam.FlyingCharacterPrefab);
+
+        AddCharacterFromPrefab(
+            curTeam.PowerCharacterPrefab);
 
         RefreshTeamDisplay();
         UpdateCharacterLevels();
+    }
+
+    private void AddCharacterFromPrefab(GameObject characterPrefab)
+    {
+        if (characterPrefab == null)
+        {
+            Debug.LogWarning(
+                "HUD received an unassigned character prefab.",
+                this);
+
+            return;
+        }
+
+        Character character =
+            characterPrefab.GetComponent<Character>();
+
+        if (character == null)
+        {
+            character =
+                characterPrefab.GetComponentInChildren<Character>();
+        }
+
+        if (character == null)
+        {
+            Debug.LogWarning(
+                $"The prefab '{characterPrefab.name}' does not contain a Character component.",
+                characterPrefab);
+
+            return;
+        }
+
+        teamSprites.Add(character);
     }
 
     public void SetCharacter(CHARACTERTYPES type)
@@ -254,24 +331,26 @@ public class HUD : MonoBehaviour
         if (!TryInitializeTeam())
             return;
 
-        switch (type)
+        int leaderIndex = type switch
         {
-            case CHARACTERTYPES.Speed:
-                ArrangeTeamWithLeader(curTeam.speedCharacter);
-                break;
+            CHARACTERTYPES.Speed => 0,
+            CHARACTERTYPES.Fly => 1,
+            CHARACTERTYPES.Power => 2,
+            _ => -1
+        };
 
-            case CHARACTERTYPES.Fly:
-                ArrangeTeamWithLeader(curTeam.flyingCharacter);
-                break;
+        if (leaderIndex < 0 ||
+            leaderIndex >= teamSprites.Count)
+        {
+            Debug.LogWarning(
+                $"HUD received unsupported character type: {type}.",
+                this);
 
-            case CHARACTERTYPES.Power:
-                ArrangeTeamWithLeader(curTeam.powerCharacter);
-                break;
-
-            default:
-                Debug.LogWarning($"HUD received unsupported character type: {type}.", this);
-                return;
+            return;
         }
+
+        ArrangeTeamWithLeader(
+            teamSprites[leaderIndex]);
 
         RefreshTeamDisplay();
     }
@@ -327,11 +406,17 @@ public class HUD : MonoBehaviour
         }
 
         teamSprites.Clear();
-        teamSprites.Add(curTeam.speedCharacter);
-        teamSprites.Add(curTeam.flyingCharacter);
-        teamSprites.Add(curTeam.powerCharacter);
 
-        return true;
+        AddCharacterFromPrefab(
+            curTeam.SpeedCharacterPrefab);
+
+        AddCharacterFromPrefab(
+            curTeam.FlyingCharacterPrefab);
+
+        AddCharacterFromPrefab(
+            curTeam.PowerCharacterPrefab);
+
+        return teamSprites.Count == 3;
     }
 
     private void RefreshTeamDisplay()
@@ -448,14 +533,10 @@ public class HUD : MonoBehaviour
         if (!teamBlastReady)
             return;
 
-        TeamBlastVideos teamBlastVideos =
-            Object.FindAnyObjectByType<TeamBlastVideos>();
-
         if (teamBlastVideos == null)
         {
-            Debug.LogWarning(
-                "HUD could not find TeamBlastVideos.",
-                this);
+            Debug.LogWarning("HUD could not find TeamBlastVideos.", this);
+
             return;
         }
 
@@ -495,11 +576,6 @@ public class HUD : MonoBehaviour
         pickupRoutine = null;
     }
 
-    public static void ResetTimer()
-    {
-        timer = 0f;
-    }
-
     private void ValidateReferences()
     {
         if (scoreText == null)
@@ -516,6 +592,18 @@ public class HUD : MonoBehaviour
 
         if (powerUpGauge == null)
             Debug.LogWarning("HUD Power Up Gauge is not assigned.", this);
+
+        if (teamBlastPrompt == null)
+        {
+            Debug.LogWarning(
+                "HUD Team Blast Prompt is not assigned.",
+                this);
+        }
+
+        if (teamBlastFill == null)
+        {
+            Debug.LogWarning("HUD Team Blast Fill is not assigned.", this);
+        }
     }
 
     private void OnValidate()
