@@ -129,10 +129,7 @@ public static class RankingAssetGenerator
 
         if (databaseGuids.Length > 1)
         {
-            Debug.LogWarning(
-                "Multiple StageDatabase assets were found. " +
-                "Select the database you want to use in the " +
-                "Project window before running the generator.");
+            Debug.LogWarning("No StageDatabase asset was found. Create one first.");
         }
 
         string databasePath =
