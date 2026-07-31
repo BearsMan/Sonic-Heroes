@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEngine.Serialization;
 
 [DisallowMultipleComponent]
-[RequireComponent(typeof(TeamSetup))]
 public sealed class CharacterSwitch : MonoBehaviour
 {
     [Header("Input")]
