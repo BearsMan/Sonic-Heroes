@@ -120,46 +120,38 @@ public class LoadingScreenHUD : MonoBehaviour
     public void LoadScene(string sceneName)
     {
         if (isLoading)
+        {
             return;
-
+        }
         if (string.IsNullOrWhiteSpace(sceneName))
         {
             Debug.LogWarning("A valid scene name is required.", this);
             return;
         }
-
         if (!Application.CanStreamedLevelBeLoaded(sceneName))
         {
-            Debug.LogError(
-                $"Scene '{sceneName}' is not available in the build.",
-                this);
-
+            Debug.LogError($"Scene '{sceneName}' is not available in the build.", this);
             return;
         }
-
         StartCoroutine(LoadSceneRoutine(sceneName));
     }
-
     public void LoadScene(int buildIndex)
     {
         if (isLoading)
-            return;
-
-        if (!Application.CanStreamedLevelBeLoaded(buildIndex))
         {
-            Debug.LogError(
-                $"Scene build index {buildIndex} is not available.",
-                this);
-
             return;
         }
-
+        if (!Application.CanStreamedLevelBeLoaded(buildIndex))
+        {
+            Debug.LogError($"Scene build index {buildIndex} is not available.", this);
+            return;
+        }
         StartCoroutine(LoadSceneRoutine(buildIndex));
     }
-
     private IEnumerator LoadSceneRoutine(string sceneName)
     {
         isLoading = true;
+        LoadingProgress = 0f;
         yield return FadeTo(1f);
 
         float shownAt = Time.unscaledTime;
@@ -171,8 +163,6 @@ public class LoadingScreenHUD : MonoBehaviour
             yield return HandleLoadingFailure();
             yield break;
         }
-
-        LoadingProgress = 0f;
 
         while (!operation.isDone)
         {
@@ -193,16 +183,13 @@ public class LoadingScreenHUD : MonoBehaviour
 
         float shownAt = Time.unscaledTime;
 
-        AsyncOperation operation =
-            SceneManager.LoadSceneAsync(buildIndex);
+        AsyncOperation operation = SceneManager.LoadSceneAsync(buildIndex);
 
         if (operation == null)
         {
             yield return HandleLoadingFailure();
             yield break;
         }
-
-        LoadingProgress = 0f;
 
         while (!operation.isDone)
         {
@@ -211,9 +198,9 @@ public class LoadingScreenHUD : MonoBehaviour
         }
 
         LoadingProgress = 1f;
-
         yield return CompleteLoading(shownAt);
     }
+
 
     private IEnumerator CompleteLoading(float shownAt)
     {
@@ -237,6 +224,7 @@ public class LoadingScreenHUD : MonoBehaviour
         ClearLoadingAssets();
 
         isLoading = false;
+        LoadingProgress = 0f;
     }
 
     private IEnumerator WaitForMinimumDisplayTime(float shownAt)
