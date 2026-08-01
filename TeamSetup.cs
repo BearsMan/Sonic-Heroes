@@ -25,10 +25,24 @@ public sealed class TeamSetup : MonoBehaviour
     [SerializeField, Min(0.1f)]
     private float ringDrainInterval = 3f;
 
+    [Header("Debugging")]
+    [SerializeField]
+    private bool preserveFailedTeamForDebugging = true;
+
     [SerializeField, Min(1)]
     private int ringsDrainedPerInterval = 1;
 
-    private CharacterSwitch characterSwitch;
+    private const string GroundCheckName = "GroundCheck";
+
+    private const string LeftFollowTargetName = "LeftPos";
+
+    private const string RightFollowTargetName = "RightPos";
+
+    private Transform groundCheck;
+    private Transform leftFollowTarget;
+    private Transform rightFollowTarget;
+
+    private CharacterSwitch shCharacterSwitch;
     private Coroutine ringDrainRoutine;
     private WaitForSeconds ringDrainWait;
 
@@ -61,7 +75,7 @@ public sealed class TeamSetup : MonoBehaviour
 
         Instance = this;
 
-        characterSwitch =
+        shCharacterSwitch =
             GetComponent<CharacterSwitch>();
 
         ringDrainWait =
@@ -83,18 +97,18 @@ public sealed class TeamSetup : MonoBehaviour
 
     private void OnEnable()
     {
-        if (characterSwitch != null)
+        if (shCharacterSwitch != null)
         {
-            characterSwitch.SuperFormChanged +=
+            shCharacterSwitch.SuperFormChanged +=
                 HandleSuperFormChanged;
         }
     }
 
     private void OnDisable()
     {
-        if (characterSwitch != null)
+        if (shCharacterSwitch != null)
         {
-            characterSwitch.SuperFormChanged -=
+            shCharacterSwitch.SuperFormChanged -=
                 HandleSuperFormChanged;
         }
 
@@ -117,9 +131,29 @@ public sealed class TeamSetup : MonoBehaviour
         if (!ValidateConfiguration())
             return false;
 
+        if (!ResolveSlotHelpers())
+        {
+            Debug.LogError(
+                "TeamSetup cannot initialize because permanent " +
+                "leader-slot helpers are missing.",
+                this);
+
+            return false;
+        }
+
         ClearSlot(leaderSlot);
         ClearSlot(leftFollowerSlot);
         ClearSlot(rightFollowerSlot);
+
+        if (!ResolveSlotHelpers())
+        {
+            Debug.LogError(
+                "TeamSetup lost one or more permanent helpers " +
+                "while clearing the slots.",
+                this);
+
+            return false;
+        }
 
         Transform speedCharacter =
             SpawnCharacter(
@@ -144,31 +178,26 @@ public sealed class TeamSetup : MonoBehaviour
                 "TeamSetup failed to spawn the complete team.",
                 this);
 
-            DestroyCharacter(speedCharacter);
-            DestroyCharacter(flyingCharacter);
-            DestroyCharacter(powerCharacter);
+            CleanupFailedTeam(speedCharacter, flyingCharacter, powerCharacter);
 
             return false;
         }
 
-        bool configured =
-            characterSwitch.ConfigureTeam(
-                speedCharacter,
-                flyingCharacter,
-                powerCharacter,
-                team.SpeedCharacterPrefab,
-                team.SuperCharacterPrefab,
-                startingLeader);
+        bool configured = 
+            shCharacterSwitch.ConfigureTeam
+            (speedCharacter, flyingCharacter, powerCharacter, 
+            team.SpeedCharacterPrefab, team.SuperCharacterPrefab, startingLeader);
 
         if (!configured)
         {
             Debug.LogError(
                 "CharacterSwitch rejected the spawned team.",
-                characterSwitch);
+                shCharacterSwitch);
 
-            DestroyCharacter(speedCharacter);
-            DestroyCharacter(flyingCharacter);
-            DestroyCharacter(powerCharacter);
+            CleanupFailedTeam(
+                speedCharacter,
+                flyingCharacter,
+                powerCharacter);
 
             return false;
         }
@@ -197,12 +226,25 @@ public sealed class TeamSetup : MonoBehaviour
     }
 
     private Transform SpawnCharacter(
-        GameObject prefab,
-        Transform slot)
+    GameObject prefab,
+    Transform slot)
     {
-        if (prefab == null ||
-            slot == null)
+        if (prefab == null)
         {
+            Debug.LogError(
+                "TeamSetup cannot spawn a null prefab.",
+                this);
+
+            return null;
+        }
+
+        if (slot == null)
+        {
+            Debug.LogError(
+                $"TeamSetup cannot spawn '{prefab.name}' " +
+                "into a null slot.",
+                this);
+
             return null;
         }
 
@@ -211,14 +253,37 @@ public sealed class TeamSetup : MonoBehaviour
                 prefab,
                 slot);
 
-        character.transform.SetLocalPositionAndRotation(
+        if (character == null)
+        {
+            Debug.LogError(
+                $"TeamSetup failed to instantiate '{prefab.name}'.",
+                this);
+
+            return null;
+        }
+
+        Transform characterTransform =
+            character.transform;
+
+        characterTransform.SetLocalPositionAndRotation(
             Vector3.zero,
             Quaternion.Euler(
                 0f,
                 180f,
                 0f));
 
-        return character.transform;
+        if (characterTransform.parent != slot)
+        {
+            Debug.LogError(
+                $"'{character.name}' was not parented to " +
+                $"'{slot.name}'.",
+                character);
+
+            Destroy(character);
+            return null;
+        }
+
+        return characterTransform;
     }
 
     private void HandleSuperFormChanged(
@@ -263,16 +328,16 @@ public sealed class TeamSetup : MonoBehaviour
     private IEnumerator DrainSuperFormRings()
     {
         while (!shuttingDown &&
-               characterSwitch != null &&
-               characterSwitch.IsSuperForm)
+               shCharacterSwitch != null &&
+               shCharacterSwitch.IsSuperForm)
         {
             if (GameInstance.currentRings <= 0)
                 break;
 
             yield return ringDrainWait;
 
-            if (characterSwitch == null ||
-                !characterSwitch.IsSuperForm)
+            if (shCharacterSwitch == null ||
+                !shCharacterSwitch.IsSuperForm)
             {
                 break;
             }
@@ -289,13 +354,13 @@ public sealed class TeamSetup : MonoBehaviour
         ringDrainRoutine = null;
 
         if (shuttingDown ||
-            characterSwitch == null ||
-            !characterSwitch.IsSuperForm)
+            shCharacterSwitch == null ||
+            !shCharacterSwitch.IsSuperForm)
         {
             yield break;
         }
 
-        characterSwitch.ToggleSuperForm();
+        shCharacterSwitch.ToggleSuperForm();
     }
 
     private void RefreshRingDisplay()
@@ -307,12 +372,118 @@ public sealed class TeamSetup : MonoBehaviour
     {
         if (hud == null)
         {
-            hud =
-                UnityEngine.Object.FindAnyObjectByType<HUD>(
-                    FindObjectsInactive.Include);
+            hud = UnityEngine.Object.FindAnyObjectByType<HUD>(
+                FindObjectsInactive.Include);
         }
     }
 
+
+    private bool ResolveSlotHelpers()
+    {
+        if (leaderSlot == null)
+        {
+            groundCheck = null;
+            leftFollowTarget = null;
+            rightFollowTarget = null;
+
+            return false;
+        }
+
+        groundCheck =
+            FindDescendantByName(
+                leaderSlot,
+                GroundCheckName);
+
+        leftFollowTarget =
+            FindDescendantByName(
+                leaderSlot,
+                LeftFollowTargetName);
+
+        rightFollowTarget =
+            FindDescendantByName(
+                leaderSlot,
+                RightFollowTargetName);
+
+        bool valid = true;
+
+        if (groundCheck == null)
+        {
+            Debug.LogError(
+                $"TeamSetup could not find '{GroundCheckName}' " +
+                $"under '{leaderSlot.name}'.",
+                this);
+
+            valid = false;
+        }
+
+        if (leftFollowTarget == null)
+        {
+            Debug.LogError(
+                $"TeamSetup could not find '{LeftFollowTargetName}' " +
+                $"under '{leaderSlot.name}'.",
+                this);
+
+            valid = false;
+        }
+
+        if (rightFollowTarget == null)
+        {
+            Debug.LogError(
+                $"TeamSetup could not find '{RightFollowTargetName}' " +
+                $"under '{leaderSlot.name}'.",
+                this);
+
+            valid = false;
+        }
+
+        return valid;
+    }
+
+    private static Transform FindDescendantByName(
+        Transform root,
+        string objectName)
+    {
+        if (root == null ||
+            string.IsNullOrWhiteSpace(objectName))
+        {
+            return null;
+        }
+
+        Transform[] descendants =
+            root.GetComponentsInChildren<Transform>(
+                includeInactive: true);
+
+        foreach (Transform descendant in descendants)
+        {
+            if (descendant != null &&
+                descendant.name == objectName)
+            {
+                return descendant;
+            }
+        }
+
+        return null;
+    }
+
+    private void CleanupFailedTeam(
+    Transform speedCharacter,
+    Transform flyingCharacter,
+    Transform powerCharacter)
+    {
+        if (preserveFailedTeamForDebugging)
+        {
+            Debug.LogWarning(
+                "The failed team was preserved in the Hierarchy " +
+                "for debugging.",
+                this);
+
+            return;
+        }
+
+        DestroyCharacter(speedCharacter);
+        DestroyCharacter(flyingCharacter);
+        DestroyCharacter(powerCharacter);
+    }
     private bool ValidateConfiguration()
     {
         bool valid = true;
@@ -324,7 +495,7 @@ public sealed class TeamSetup : MonoBehaviour
 
         valid &=
             ValidateReference(
-                characterSwitch,
+                shCharacterSwitch,
                 "Character Switch");
 
         valid &=
@@ -402,27 +573,44 @@ public sealed class TeamSetup : MonoBehaviour
             characterType == CHARACTERTYPES.Power;
     }
 
-    private static void ClearSlot(Transform slot)
+    private static void ClearSlot(
+    Transform slot)
     {
         if (slot == null)
-            return;
-
-        for (int i = slot.childCount - 1; i >= 0; i--)
         {
-            Transform child = slot.GetChild(i);
+            Debug.LogWarning(
+                "TeamSetup tried to clear a null formation slot.");
 
-            if (child == null)
-                continue;
+            return;
+        }
 
-            if (child.name == "GroundCheck" ||
-                child.name == "LeftPos" ||
-                child.name == "RightPos")
+        for (int i = slot.childCount - 1;
+             i >= 0;
+             i--)
+        {
+            Transform child =
+                slot.GetChild(i);
+
+            if (child == null ||
+                IsPermanentSlotHelper(child))
             {
                 continue;
             }
 
             Destroy(child.gameObject);
         }
+    }
+
+    private static bool IsPermanentSlotHelper(
+        Transform child)
+    {
+        if (child == null)
+            return false;
+
+        return
+            child.name == GroundCheckName ||
+            child.name == LeftFollowTargetName ||
+            child.name == RightFollowTargetName;
     }
 
     private static void DestroyCharacter(
