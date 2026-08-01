@@ -8,18 +8,16 @@ using UnityEngine.AI;
 [RequireComponent(typeof(CapsuleCollider))]
 public sealed class FollowerNavigation : MonoBehaviour
 {
-    private static readonly int SpeedHash =
-        Animator.StringToHash("Speed");
+    private static readonly int SpeedHash = Animator.StringToHash("Speed");
 
-    private static readonly int GroundedHash =
-        Animator.StringToHash("Grounded");
+    private static readonly int GroundedHash = Animator.StringToHash("Grounded");
 
     [Header("Follow Target")]
     [SerializeField] private Transform target;
 
     [Header("Movement")]
     [SerializeField, Min(0f)]
-    private float stoppingDistance = 1.5f;
+    private float stoppingDistance = 0.1f;
 
     [SerializeField, Min(0f)]
     private float rotationSpeed = 540f;
@@ -103,9 +101,16 @@ public sealed class FollowerNavigation : MonoBehaviour
         RotateTowardsMovement();
     }
 
-    public bool Initialize(
-    Transform followTarget)
+    public bool Initialize(Transform followTarget)
     {
+        if (followTarget == null)
+        {
+            Debug.LogError($"FollowerNavigation on '{name}' received no follow target.", this);
+
+            isInitialized = false;
+            return false;
+        }
+
         target = followTarget;
 
         CacheComponents();
@@ -114,21 +119,23 @@ public sealed class FollowerNavigation : MonoBehaviour
         if (!ValidateConfiguration())
         {
             isInitialized = false;
-            enabled = false;
+
+            Debug.LogError($"FollowerNavigation failed to initialize on '{name}'.",
+                this);
+
             return false;
         }
 
-        if (warpToNearestNavMeshOnSetup)
-            TryWarpToNearestNavMesh();
+        ConfigureAgent();
 
-        agent.stoppingDistance =
-            stoppingDistance;
+        if (warpToNearestNavMeshOnSetup && !TryWarpToNearestNavMesh())
+        {
+            Debug.LogWarning($"FollowerNavigation on '{name}' could not reach the NavMesh.", this);
+        }
 
         isInitialized = true;
-
         return true;
     }
-
     public void SetFollowTarget(Transform followTarget)
     {
         target = followTarget;
@@ -241,13 +248,23 @@ public sealed class FollowerNavigation : MonoBehaviour
 
         if (agent != null)
         {
-            agent.stoppingDistance =
-                stoppingDistance;
-
             agent.updateRotation = false;
         }
     }
 
+    private void ConfigureAgent()
+    {
+        if (agent == null)
+            return;
+
+        agent.stoppingDistance =
+            Mathf.Max(0f, stoppingDistance);
+
+        agent.angularSpeed =
+            Mathf.Max(0f, rotationSpeed);
+
+        agent.autoBraking = true;
+    }
     private void UpdateGroundedState()
     {
         if (capsule == null)
@@ -301,22 +318,18 @@ public sealed class FollowerNavigation : MonoBehaviour
 
         if (HasParameter(GroundedHash))
         {
-            animator.SetBool(
-                GroundedHash,
-                isGrounded);
+            animator.SetBool(GroundedHash, isGrounded);
         }
     }
 
     private void EnsureAgentState()
     {
         if (agent == null)
-            return;
-
-        if (isGrounded &&
-            !agent.enabled)
         {
-            agent.enabled = true;
+            return;
         }
+
+        EnableAgent();
 
         if (agent.enabled &&
             !agent.isOnNavMesh)
@@ -327,26 +340,23 @@ public sealed class FollowerNavigation : MonoBehaviour
 
     private void FollowTarget()
     {
-        if (target == null ||
-            agent == null ||
-            !agent.enabled ||
-            !agent.isOnNavMesh)
+        if (target == null || agent == null || !agent.enabled || !agent.isOnNavMesh)
         {
             return;
         }
 
-        agent.SetDestination(
-            target.position);
+        agent.SetDestination(target.position);
     }
+
 
     private void RotateTowardsMovement()
     {
-        if (agent == null ||
-            !agent.enabled ||
-            !agent.isOnNavMesh)
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh)
         {
             return;
         }
+
+        
 
         Vector3 direction =
             agent.velocity;
@@ -369,10 +379,7 @@ public sealed class FollowerNavigation : MonoBehaviour
             return;
         }
 
-        Quaternion targetRotation =
-            Quaternion.LookRotation(
-                direction.normalized,
-                Vector3.up);
+        Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
 
         transform.rotation =
             Quaternion.RotateTowards(

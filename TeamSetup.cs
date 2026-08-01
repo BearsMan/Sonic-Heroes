@@ -402,18 +402,26 @@ public sealed class TeamSetup : MonoBehaviour
             characterType == CHARACTERTYPES.Power;
     }
 
-    private static void ClearSlot(
-        Transform slot)
+    private static void ClearSlot(Transform slot)
     {
         if (slot == null)
             return;
 
-        for (int index = slot.childCount - 1;
-             index >= 0;
-             index--)
+        for (int i = slot.childCount - 1; i >= 0; i--)
         {
-            Destroy(
-                slot.GetChild(index).gameObject);
+            Transform child = slot.GetChild(i);
+
+            if (child == null)
+                continue;
+
+            if (child.name == "GroundCheck" ||
+                child.name == "LeftPos" ||
+                child.name == "RightPos")
+            {
+                continue;
+            }
+
+            Destroy(child.gameObject);
         }
     }
 

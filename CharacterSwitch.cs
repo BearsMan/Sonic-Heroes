@@ -37,6 +37,10 @@ public sealed class CharacterSwitch : MonoBehaviour
     [FormerlySerializedAs("powerCharacter")]
     [SerializeField] private Transform powerCharacter;
 
+    [Header("Follower Targets")]
+[SerializeField] private Transform leftFollowTarget;
+[SerializeField] private Transform rightFollowTarget;
+
     [Header("Speed Character Forms")]
     [FormerlySerializedAs("sonic")]
     [SerializeField] private GameObject normalSpeedPrefab;
@@ -119,6 +123,7 @@ public sealed class CharacterSwitch : MonoBehaviour
         superSpeedPrefab = superSpeed;
 
         ResolveDependencies();
+        ResolveFormationReferences();
         CacheControllers();
 
         if (!ValidateConfiguration())
@@ -149,10 +154,10 @@ public sealed class CharacterSwitch : MonoBehaviour
 
     private void Awake()
     {
-        currentLeaderType =
-            IsSupportedType(initialLeaderType)
-                ? initialLeaderType
-                : CHARACTERTYPES.Speed;
+        ResolveDependencies();
+        ResolveFormationReferences();
+
+        currentLeaderType = IsSupportedType(initialLeaderType)? initialLeaderType : CHARACTERTYPES.Speed;
 
         isSuperForm = false;
         isInitialized = false;
@@ -395,6 +400,15 @@ public sealed class CharacterSwitch : MonoBehaviour
             rightCharacter,
             rightFollowerSlot);
 
+        Debug.Log(
+    $"Leader={leader.name} active={leader.gameObject.activeSelf}");
+
+        Debug.Log(
+            $"Left={leftCharacter.name} active={leftCharacter.gameObject.activeSelf}");
+
+        Debug.Log(
+            $"Right={rightCharacter.name} active={rightCharacter.gameObject.activeSelf}");
+
         RefreshControllers();
         RefreshHud();
 
@@ -480,26 +494,92 @@ public sealed class CharacterSwitch : MonoBehaviour
 
     private void RefreshControllers()
     {
-        CacheControllers();
 
-        Transform leader = GetCurrentLeader();
+        ResolveFormationReferences();
+        CacheControllers();
 
         if (leaderMovement != null)
             leaderMovement.SetupAnimation();
 
         if (leftFollowerNavigation != null)
         {
-            leftFollowerNavigation.Initialize(
-                leader);
+            leftFollowerNavigation.Initialize(leftFollowTarget);
         }
 
         if (rightFollowerNavigation != null)
         {
-            rightFollowerNavigation.Initialize(
-                leader);
+            rightFollowerNavigation.Initialize(rightFollowTarget);
+            
         }
     }
 
+    private void ResolveFormationReferences()
+    {
+        Transform searchRoot =
+            teamSetup != null
+                ? teamSetup.transform
+                : transform.root;
+
+        if (leaderSlot == null)
+        {
+            leaderSlot =
+                FindDescendantByName(
+                    searchRoot,
+                    "Test Player");
+        }
+
+        if (leftFollowerSlot == null)
+        {
+            leftFollowerSlot =
+                FindDescendantByName(
+                    searchRoot,
+                    "Left Team Member");
+        }
+
+        if (rightFollowerSlot == null)
+        {
+            rightFollowerSlot =
+                FindDescendantByName(
+                    searchRoot,
+                    "Right Team Member");
+        }
+
+        if (leaderSlot != null)
+        {
+            leftFollowTarget =
+                FindDescendantByName(
+                    leaderSlot,
+                    "LeftPos");
+
+            rightFollowTarget =
+                FindDescendantByName(
+                    leaderSlot,
+                    "RightPos");
+        }
+    }
+
+    private static Transform FindDescendantByName(Transform root, string objectName)
+    {
+        if (root == null || string.IsNullOrWhiteSpace(objectName))
+        {
+            return null;
+        }
+
+        Transform[] descendants =
+            root.GetComponentsInChildren<Transform>(
+                includeInactive: true);
+
+        foreach (Transform descendant in descendants)
+        {
+            if (descendant != null &&
+                descendant.name == objectName)
+            {
+                return descendant;
+            }
+        }
+
+        return null;
+    }
     private void CacheControllers()
     {
         leaderMovement =
@@ -557,33 +637,24 @@ public sealed class CharacterSwitch : MonoBehaviour
     {
         bool isValid = true;
 
-        isValid &=
-            ValidateRequiredReference(
-                leaderSlot,
-                "Leader Slot");
+        isValid &= ValidateRequiredReference(leaderSlot,"Leader Slot");
 
-        isValid &=
-            ValidateRequiredReference(
-                leftFollowerSlot,
-                "Left Follower Slot");
+        isValid &= ValidateRequiredReference(leftFollowerSlot, "Left Follower Slot");
 
-        isValid &=
-            ValidateRequiredReference(
-                rightFollowerSlot,
-                "Right Follower Slot");
+        isValid &= ValidateRequiredReference(rightFollowerSlot, "Right Follower Slot");
+
+        isValid &= ValidateRequiredReference(leftFollowTarget,"Left Follow Target");
+
+        isValid &= ValidateRequiredReference(rightFollowTarget, "Right Follow Target");
 
         if (teamSetup == null)
         {
-            Debug.LogWarning(
-                "CharacterSwitch could not find TeamSetup.",
-                this);
+            Debug.LogWarning("CharacterSwitch could not find TeamSetup.", this);
         }
 
         if (hud == null)
         {
-            Debug.LogWarning(
-                "CharacterSwitch could not find HUD.",
-                this);
+            Debug.LogWarning("CharacterSwitch could not find HUD.", this);
         }
 
         return isValid;
