@@ -436,6 +436,16 @@ public sealed class CharacterSwitch : MonoBehaviour
         }
     }
 
+    private Transform GetCurrentLeader()
+    {
+        return currentLeaderType switch
+        {
+            CHARACTERTYPES.Speed => speedCharacter,
+            CHARACTERTYPES.Fly => flyingCharacter,
+            CHARACTERTYPES.Power => powerCharacter,
+            _ => speedCharacter
+        };
+    }
     private void AssignToSlot(
         Transform character,
         Transform slot)
@@ -472,14 +482,22 @@ public sealed class CharacterSwitch : MonoBehaviour
     {
         CacheControllers();
 
+        Transform leader = GetCurrentLeader();
+
         if (leaderMovement != null)
             leaderMovement.SetupAnimation();
 
         if (leftFollowerNavigation != null)
-            leftFollowerNavigation.Setup();
+        {
+            leftFollowerNavigation.Initialize(
+                leader);
+        }
 
         if (rightFollowerNavigation != null)
-            rightFollowerNavigation.Setup();
+        {
+            rightFollowerNavigation.Initialize(
+                leader);
+        }
     }
 
     private void CacheControllers()

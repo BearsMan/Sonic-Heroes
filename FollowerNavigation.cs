@@ -1,168 +1,590 @@
 using UnityEngine;
 using UnityEngine.AI;
+
+[DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(CapsuleCollider))]
-public class FollowerNavigation : MonoBehaviour
+public sealed class FollowerNavigation : MonoBehaviour
 {
-    private static readonly int SpeedHash = Animator.StringToHash("Speed");
-    private static readonly int GroundedHash = Animator.StringToHash("Grounded");
-    public Transform target;
-    public NavMeshAgent agent;
-    public Animator anim;
+    private static readonly int SpeedHash =
+        Animator.StringToHash("Speed");
+
+    private static readonly int GroundedHash =
+        Animator.StringToHash("Grounded");
+
+    [Header("Follow Target")]
+    [SerializeField] private Transform target;
+
+    [Header("Movement")]
+    [SerializeField, Min(0f)]
+    private float stoppingDistance = 1.5f;
+
+    [SerializeField, Min(0f)]
+    private float rotationSpeed = 540f;
+
+    [SerializeField, Min(0f)]
+    private float teleportDistance = 20f;
+
+    [Header("Ground Detection")]
+    [SerializeField] private LayerMask groundMask = ~0;
+
+    [SerializeField, Min(0.01f)]
+    private float groundCheckRadius = 0.35f;
+
+    [SerializeField, Min(0f)]
+    private float groundCheckDistance = 0.1f;
+
+    [Header("NavMesh")]
+    [SerializeField, Min(0.1f)]
+    private float navMeshSearchRadius = 5f;
+
+    [SerializeField]
+    private bool warpToNearestNavMeshOnSetup = true;
+
+    private NavMeshAgent agent;
+    private Animator animator;
+    private Rigidbody body;
     private CapsuleCollider capsule;
-    public Rigidbody body;
-    public bool grounded;
-    public LayerMask groundMask;
-    private bool isSetup;
 
-    // Start is called before the first frame update
-    void Start()
+    private bool isGrounded;
+    private bool isInitialized;
+    private bool isExternallyMoving;
+
+    public Transform Target => target;
+    public bool IsGrounded => isGrounded;
+    public bool IsInitialized => isInitialized;
+    public bool IsFollowing =>
+        isInitialized &&
+        target != null &&
+        agent != null &&
+        agent.enabled &&
+        agent.isOnNavMesh;
+
+    private void Awake()
     {
-        Setup();
-    }
-    public void Setup()
-    {
-        if (anim == null)
-        {
-            anim = GetComponentInChildren<Animator>();
-        }
-
-        if (anim != null && anim.runtimeAnimatorController != null)
-        {
-            Debug.Log($"Animator object: {anim.gameObject.name}, " + $"Controller: {anim.runtimeAnimatorController.name}");
-        }
-        else
-        {
-            Debug.LogWarning("FollowerNavigation has no valid Animator/controller.");
-        }
-
-        agent = GetComponent<NavMeshAgent>();
-        body = GetComponent<Rigidbody>();
-        capsule = GetComponent<CapsuleCollider>();
-
-        if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 20f,NavMesh.AllAreas))
-        {
-            transform.position = hit.position;
-        }
-        else
-        {
-            Debug.LogWarning("Follower could not find a NavMesh nearby.");
-        }
-
-        isSetup = true;
+        CacheComponents();
+        ConfigureComponents();
     }
 
-    private bool HasParameter(int hash)
+    private void Start()
     {
-        if (anim == null)
+        
+    }
+
+    private void Update()
+    {
+        if (!isInitialized)
+            return;
+
+        UpdateGroundedState();
+        UpdateAnimator();
+
+        if (isExternallyMoving)
+            return;
+
+        if (target == null)
+        {
+            StopAgent();
+            return;
+        }
+
+        EnsureAgentState();
+
+        if (!agent.enabled ||
+            !agent.isOnNavMesh)
+        {
+            return;
+        }
+
+        HandleTeleportIfTooFar();
+        FollowTarget();
+        RotateTowardsMovement();
+    }
+
+    public bool Initialize(
+    Transform followTarget)
+    {
+        target = followTarget;
+
+        CacheComponents();
+        ConfigureComponents();
+
+        if (!ValidateConfiguration())
+        {
+            isInitialized = false;
+            enabled = false;
+            return false;
+        }
+
+        if (warpToNearestNavMeshOnSetup)
+            TryWarpToNearestNavMesh();
+
+        agent.stoppingDistance =
+            stoppingDistance;
+
+        isInitialized = true;
+
+        return true;
+    }
+
+    public void SetFollowTarget(Transform followTarget)
+    {
+        target = followTarget;
+
+        if (target == null)
+            StopAgent();
+    }
+
+    public void ClearTarget()
+    {
+        SetFollowTarget(null);
+    }
+
+    public void BeginExternalMovement()
+    {
+        isExternallyMoving = true;
+        DisableAgent();
+    }
+
+    public void EndExternalMovement()
+    {
+        isExternallyMoving = false;
+        EnableAgent();
+    }
+
+    public void Jump(
+        Vector3 velocity)
+    {
+        BeginExternalMovement();
+
+        body.linearVelocity =
+            velocity;
+    }
+
+    public void Launch(
+        Vector3 velocity)
+    {
+        Jump(velocity);
+    }
+
+    public void EnableAgent()
+    {
+        if (agent == null)
+            return;
+
+        if (!agent.enabled)
+            agent.enabled = true;
+
+        if (agent.isOnNavMesh)
+            return;
+
+        TryWarpToNearestNavMesh();
+    }
+
+    public void DisableAgent()
+    {
+        if (agent == null)
+            return;
+
+        if (agent.enabled)
+            agent.enabled = false;
+    }
+
+    public bool CanReach(
+        Vector3 destination)
+    {
+        if (agent == null ||
+            !agent.enabled ||
+            !agent.isOnNavMesh)
+        {
+            return false;
+        }
+
+        NavMeshPath path =
+            new();
+
+        bool pathCalculated =
+            agent.CalculatePath(
+                destination,
+                path);
+
+        return
+            pathCalculated &&
+            path.status ==
+            NavMeshPathStatus.PathComplete;
+    }
+
+    private void CacheComponents()
+    {
+        agent ??=
+            GetComponent<NavMeshAgent>();
+
+        animator ??=
+            GetComponentInChildren<Animator>();
+
+        body ??=
+            GetComponent<Rigidbody>();
+
+        capsule ??=
+            GetComponent<CapsuleCollider>();
+    }
+
+    private void ConfigureComponents()
+    {
+        if (body != null)
+        {
+            body.constraints =
+                RigidbodyConstraints.FreezeRotation;
+        }
+
+        if (agent != null)
+        {
+            agent.stoppingDistance =
+                stoppingDistance;
+
+            agent.updateRotation = false;
+        }
+    }
+
+    private void UpdateGroundedState()
+    {
+        if (capsule == null)
+        {
+            isGrounded = false;
+            return;
+        }
+
+        Vector3 checkPosition =
+            capsule.bounds.center -
+            Vector3.up *
+            (capsule.bounds.extents.y -
+             groundCheckDistance);
+
+        isGrounded =
+            Physics.CheckSphere(
+                checkPosition,
+                groundCheckRadius,
+                groundMask,
+                QueryTriggerInteraction.Ignore);
+
+        if (isGrounded &&
+            isExternallyMoving &&
+            body.linearVelocity.y <= 0f)
+        {
+            isExternallyMoving = false;
+            EnableAgent();
+        }
+    }
+
+    private void UpdateAnimator()
+    {
+        if (animator == null)
+            return;
+
+        float speed =
+            agent != null &&
+            agent.enabled &&
+            agent.isOnNavMesh
+                ? agent.velocity.magnitude
+                : body != null
+                    ? body.linearVelocity.magnitude
+                    : 0f;
+
+        if (HasParameter(SpeedHash))
+        {
+            animator.SetFloat(
+                SpeedHash,
+                speed);
+        }
+
+        if (HasParameter(GroundedHash))
+        {
+            animator.SetBool(
+                GroundedHash,
+                isGrounded);
+        }
+    }
+
+    private void EnsureAgentState()
+    {
+        if (agent == null)
+            return;
+
+        if (isGrounded &&
+            !agent.enabled)
+        {
+            agent.enabled = true;
+        }
+
+        if (agent.enabled &&
+            !agent.isOnNavMesh)
+        {
+            TryWarpToNearestNavMesh();
+        }
+    }
+
+    private void FollowTarget()
+    {
+        if (target == null ||
+            agent == null ||
+            !agent.enabled ||
+            !agent.isOnNavMesh)
+        {
+            return;
+        }
+
+        agent.SetDestination(
+            target.position);
+    }
+
+    private void RotateTowardsMovement()
+    {
+        if (agent == null ||
+            !agent.enabled ||
+            !agent.isOnNavMesh)
+        {
+            return;
+        }
+
+        Vector3 direction =
+            agent.velocity;
+
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude <=
+            0.01f)
+        {
+            if (target != null)
+            {
+                transform.rotation =
+                    Quaternion.RotateTowards(
+                        transform.rotation,
+                        target.rotation,
+                        rotationSpeed *
+                        Time.deltaTime);
+            }
+
+            return;
+        }
+
+        Quaternion targetRotation =
+            Quaternion.LookRotation(
+                direction.normalized,
+                Vector3.up);
+
+        transform.rotation =
+            Quaternion.RotateTowards(
+                transform.rotation,
+                targetRotation,
+                rotationSpeed *
+                Time.deltaTime);
+    }
+
+    private void HandleTeleportIfTooFar()
+    {
+        if (target == null ||
+            teleportDistance <= 0f)
+        {
+            return;
+        }
+
+        float squaredDistance =
+            (transform.position -
+             target.position).sqrMagnitude;
+
+        float squaredTeleportDistance =
+            teleportDistance *
+            teleportDistance;
+
+        if (squaredDistance <=
+            squaredTeleportDistance)
+        {
+            return;
+        }
+
+        Vector3 destination =
+            target.position -
+            target.forward *
+            stoppingDistance;
+
+        if (NavMesh.SamplePosition(
+                destination,
+                out NavMeshHit hit,
+                navMeshSearchRadius,
+                NavMesh.AllAreas))
+        {
+            agent.Warp(
+                hit.position);
+
+            body.position =
+                hit.position;
+        }
+    }
+
+    private bool TryWarpToNearestNavMesh()
+    {
+        if (agent == null)
             return false;
 
-        foreach (AnimatorControllerParameter parameter in anim.parameters)
+        if (!NavMesh.SamplePosition(
+                transform.position,
+                out NavMeshHit hit,
+                navMeshSearchRadius,
+                NavMesh.AllAreas))
         {
-            if (parameter.nameHash == hash)
+            Debug.LogWarning(
+                $"Follower '{name}' could not find a NavMesh nearby.",
+                this);
+
+            return false;
+        }
+
+        if (!agent.enabled)
+            agent.enabled = true;
+
+        bool warped =
+            agent.Warp(
+                hit.position);
+
+        if (warped &&
+            body != null)
+        {
+            body.position =
+                hit.position;
+        }
+
+        return warped;
+    }
+
+    private void StopAgent()
+    {
+        if (agent == null ||
+            !agent.enabled ||
+            !agent.isOnNavMesh)
+        {
+            return;
+        }
+
+        agent.ResetPath();
+    }
+
+    private bool HasParameter(
+        int parameterHash)
+    {
+        if (animator == null ||
+            animator.runtimeAnimatorController == null)
+        {
+            return false;
+        }
+
+        foreach (
+            AnimatorControllerParameter parameter
+            in animator.parameters)
+        {
+            if (parameter.nameHash ==
+                parameterHash)
+            {
                 return true;
+            }
         }
 
         return false;
     }
 
-        // Update is called once per frame
-        void Update()
-        {
-
-            if (!isSetup || target == null)
-            {
-                return;
-            }
-
-            Vector3 groundCheckPosition = capsule.bounds.center - Vector3.up * (capsule.bounds.extents.y - 0.1f);
-
-            Debug.DrawRay(groundCheckPosition, Vector3.down * 0.5f, Color.red);
-
-            grounded = Physics.CheckSphere(
-                groundCheckPosition,
-                0.35f,
-                groundMask,
-                QueryTriggerInteraction.Ignore
-            );
-
-            if (agent != null && grounded && !agent.enabled)
-            {
-                agent.enabled = true;
-            }
-
-                if (anim != null)
-                {
-                    float speed = agent.enabled && agent.isOnNavMesh? agent.velocity.magnitude: body.linearVelocity.magnitude;
-
-                    if (HasParameter(SpeedHash))
-                    {
-                        anim.SetFloat(SpeedHash, speed);
-                    }
-
-                    if (HasParameter(GroundedHash))
-                    {
-                        anim.SetBool(GroundedHash, grounded);
-                    }
-
-            }
-
-            RotateToPos();
-
-            if (agent != null && agent.enabled && agent.isOnNavMesh)
-            {
-                agent.SetDestination(target.position);
-            }
-
-        }
-    public void RotateToPos()
+    private bool ValidateConfiguration()
     {
-        if (agent == null || !agent.enabled || !agent.isOnNavMesh)
+        bool valid = true;
+
+        if (agent == null)
         {
+            Debug.LogError(
+                "FollowerNavigation requires a NavMeshAgent.",
+                this);
+
+            valid = false;
+        }
+
+        if (body == null)
+        {
+            Debug.LogError(
+                "FollowerNavigation requires a Rigidbody.",
+                this);
+
+            valid = false;
+        }
+
+        if (capsule == null)
+        {
+            Debug.LogError(
+                "FollowerNavigation requires a CapsuleCollider.",
+                this);
+
+            valid = false;
+        }
+
+        if (animator == null)
+        {
+            Debug.LogWarning(
+                "FollowerNavigation could not find an Animator.",
+                this);
+        }
+
+        return valid;
+    }
+
+    private void OnValidate()
+    {
+        stoppingDistance =
+            Mathf.Max(
+                0f,
+                stoppingDistance);
+
+        rotationSpeed =
+            Mathf.Max(
+                0f,
+                rotationSpeed);
+
+        teleportDistance =
+            Mathf.Max(
+                0f,
+                teleportDistance);
+
+        groundCheckRadius =
+            Mathf.Max(
+                0.01f,
+                groundCheckRadius);
+
+        groundCheckDistance =
+            Mathf.Max(
+                0f,
+                groundCheckDistance);
+
+        navMeshSearchRadius =
+            Mathf.Max(
+                0.1f,
+                navMeshSearchRadius);
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        CapsuleCollider currentCapsule =
+            capsule != null
+                ? capsule
+                : GetComponent<CapsuleCollider>();
+
+        if (currentCapsule == null)
             return;
-        }
 
-        if (agent.velocity.magnitude < 0.5f)
-        {
-            transform.rotation = target.rotation;
-        }
-    }
+        Vector3 checkPosition =
+            currentCapsule.bounds.center -
+            Vector3.up *
+            (currentCapsule.bounds.extents.y -
+             groundCheckDistance);
 
-    public void EnableAgent()
-    {
-        if (agent != null && !agent.enabled)
-        {
-            agent.enabled = true;
-        }
-    }
-
-    public void DisableAgent()
-    {
-        if (agent != null && agent.enabled)
-        {
-            agent.enabled = false;
-        }
-    }
-    public void Jump(Vector3 velocity)
-    {
-        agent.enabled = false;
-        body.linearVelocity = velocity;
-    }
-
-    public bool PathValid(Vector3 dest)
-    {
-        float dis = Vector3.Distance(transform.position, dest);
-
-        if (dis > 10)
-        {
-            return false;
-        }
-
-        NavMeshPath path = new NavMeshPath();
-        NavMesh.CalculatePath(transform.position, dest, NavMesh.AllAreas, path);
-
-        return path.status == NavMeshPathStatus.PathComplete;
+        Gizmos.DrawWireSphere(
+            checkPosition,
+            groundCheckRadius);
     }
 }
