@@ -186,6 +186,75 @@ public sealed class ExampleController : MonoBehaviour
 
 ---
 
+### Region organization for large scripts
+
+Use `#region` and `#endregion` to separate logical systems in large scripts when doing so improves navigation.
+
+Recommended layout:
+
+```csharp
+#region Constants
+#endregion
+
+#region Inspector
+#endregion
+
+#region Runtime State
+#endregion
+
+#region Public API
+#endregion
+
+#region Unity Lifecycle
+#endregion
+
+#region Initialization
+#endregion
+
+#region Validation
+#endregion
+
+#region Cleanup
+#endregion
+
+#region Input
+#endregion
+
+#region State Machine
+#endregion
+
+#region State Updates
+#endregion
+
+#region Movement
+#endregion
+
+#region Actions
+#endregion
+
+#region Targeting
+#endregion
+
+#region Animation
+#endregion
+
+#region Utilities
+#endregion
+```
+
+Region rules:
+
+- Use regions for large or multi-system scripts, not automatically for every small script.
+- Give each region one clear responsibility.
+- Keep related fields and methods together.
+- Use the same region names and order across comparable gameplay scripts.
+- Do not use regions to hide methods that should be moved into a separate component.
+- Do not create regions containing only one trivial member unless consistency clearly improves navigation.
+- Always close every region with `#endregion`.
+- Keep methods inside each region ordered consistently.
+
+---
+
 ## 3. Naming Conventions
 
 ### Classes, structs, methods, events, and constants
@@ -963,3 +1032,4 @@ Remain easy to test
 ```
 
 Use this standard for all new scripts and future rewrites in the Sonic Heroes project.
+
