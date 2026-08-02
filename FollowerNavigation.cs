@@ -63,12 +63,18 @@ public sealed class FollowerNavigation : MonoBehaviour
     private void Awake()
     {
         CacheComponents();
+        ResolveReferences();
         ConfigureComponents();
+        ConfigureAgent();
     }
 
     private void Start()
     {
-        
+        if (!ValidateConfiguration())
+        {
+            enabled = false;
+            return;
+        }
     }
 
     private void Update()
@@ -101,6 +107,21 @@ public sealed class FollowerNavigation : MonoBehaviour
         RotateTowardsMovement();
     }
 
+    private void OnEnable()
+    {
+       
+    }
+
+    private void OnDisable()
+    {
+        
+    }
+
+    private void OnDestroy()
+    {
+
+    }
+
     public bool Initialize(Transform followTarget)
     {
         if (followTarget == null)
@@ -126,8 +147,6 @@ public sealed class FollowerNavigation : MonoBehaviour
             return false;
         }
 
-        ConfigureAgent();
-
         if (warpToNearestNavMeshOnSetup && !TryWarpToNearestNavMesh())
         {
             Debug.LogWarning($"FollowerNavigation on '{name}' could not reach the NavMesh.", this);
@@ -136,6 +155,12 @@ public sealed class FollowerNavigation : MonoBehaviour
         isInitialized = true;
         return true;
     }
+
+    private void ResolveReferences()
+    {
+        // Reserved for future automatic reference resolution.
+    }
+
     public void SetFollowTarget(Transform followTarget)
     {
         target = followTarget;
@@ -340,7 +365,10 @@ public sealed class FollowerNavigation : MonoBehaviour
 
     private void FollowTarget()
     {
-        if (target == null || agent == null || !agent.enabled || !agent.isOnNavMesh)
+        if (target == null ||
+        agent == null ||
+        !agent.enabled ||
+        !agent.isOnNavMesh)
         {
             return;
         }
@@ -351,12 +379,14 @@ public sealed class FollowerNavigation : MonoBehaviour
 
     private void RotateTowardsMovement()
     {
-        if (agent == null || !agent.enabled || !agent.isOnNavMesh)
+        if (agent == null ||
+        !agent.enabled ||
+        !agent.isOnNavMesh)
         {
             return;
         }
 
-        
+
 
         Vector3 direction =
             agent.velocity;
@@ -500,36 +530,35 @@ public sealed class FollowerNavigation : MonoBehaviour
         return false;
     }
 
+    private bool ValidateReference(
+        Object reference,
+        string displayName)
+    {
+        if (reference != null)
+            return true;
+
+        Debug.LogError(
+            $"FollowerNavigation requires {displayName}.",
+            this);
+
+        return false;
+    }
+
     private bool ValidateConfiguration()
     {
         bool valid = true;
 
-        if (agent == null)
-        {
-            Debug.LogError(
-                "FollowerNavigation requires a NavMeshAgent.",
-                this);
+        valid &= ValidateReference(
+            agent,
+            nameof(NavMeshAgent));
 
-            valid = false;
-        }
+        valid &= ValidateReference(
+            body,
+            nameof(Rigidbody));
 
-        if (body == null)
-        {
-            Debug.LogError(
-                "FollowerNavigation requires a Rigidbody.",
-                this);
-
-            valid = false;
-        }
-
-        if (capsule == null)
-        {
-            Debug.LogError(
-                "FollowerNavigation requires a CapsuleCollider.",
-                this);
-
-            valid = false;
-        }
+        valid &= ValidateReference(
+            capsule,
+            nameof(CapsuleCollider));
 
         if (animator == null)
         {
