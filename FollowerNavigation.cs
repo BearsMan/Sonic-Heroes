@@ -109,17 +109,39 @@ public sealed class FollowerNavigation : MonoBehaviour
 
     private void OnEnable()
     {
-       
+        CacheComponents();
+
+        if (isInitialized)
+        {
+            EnableAgent();
+        }
+    }
+
+    private void CleanupRuntimeState()
+    {
+        StopAgent();
+
+        isExternallyMoving = false;
+    }
+
+    private void CleanupDestroyedState()
+    {
+        CleanupRuntimeState();
+
+        DisableAgent();
+
+        isInitialized = false;
+        target = null;
     }
 
     private void OnDisable()
     {
-        
+        CleanupRuntimeState();
     }
 
     private void OnDestroy()
     {
-
+        CleanupDestroyedState();
     }
 
     public bool Initialize(Transform followTarget)
@@ -290,6 +312,7 @@ public sealed class FollowerNavigation : MonoBehaviour
 
         agent.autoBraking = true;
     }
+
     private void UpdateGroundedState()
     {
         if (capsule == null)
@@ -366,9 +389,9 @@ public sealed class FollowerNavigation : MonoBehaviour
     private void FollowTarget()
     {
         if (target == null ||
-        agent == null ||
-        !agent.enabled ||
-        !agent.isOnNavMesh)
+            agent == null ||
+            !agent.enabled ||
+            !agent.isOnNavMesh)
         {
             return;
         }
@@ -380,21 +403,18 @@ public sealed class FollowerNavigation : MonoBehaviour
     private void RotateTowardsMovement()
     {
         if (agent == null ||
-        !agent.enabled ||
-        !agent.isOnNavMesh)
+    !agent.enabled ||
+    !agent.isOnNavMesh)
         {
             return;
         }
-
-
 
         Vector3 direction =
             agent.velocity;
 
         direction.y = 0f;
 
-        if (direction.sqrMagnitude <=
-            0.01f)
+        if (direction.sqrMagnitude <= 0.01f)
         {
             if (target != null)
             {
@@ -402,21 +422,22 @@ public sealed class FollowerNavigation : MonoBehaviour
                     Quaternion.RotateTowards(
                         transform.rotation,
                         target.rotation,
-                        rotationSpeed *
-                        Time.deltaTime);
+                        rotationSpeed * Time.deltaTime);
             }
 
             return;
         }
 
-        Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+        Quaternion targetRotation =
+    Quaternion.LookRotation(
+        direction.normalized,
+        Vector3.up);
 
         transform.rotation =
             Quaternion.RotateTowards(
                 transform.rotation,
                 targetRotation,
-                rotationSpeed *
-                Time.deltaTime);
+                rotationSpeed * Time.deltaTime);
     }
 
     private void HandleTeleportIfTooFar()
@@ -498,8 +519,8 @@ public sealed class FollowerNavigation : MonoBehaviour
     private void StopAgent()
     {
         if (agent == null ||
-            !agent.enabled ||
-            !agent.isOnNavMesh)
+    !agent.enabled ||
+    !agent.isOnNavMesh)
         {
             return;
         }
