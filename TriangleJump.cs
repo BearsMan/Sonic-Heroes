@@ -1,189 +1,439 @@
 using System.Collections;
 using UnityEngine;
 
-public class TriangleJump : MonoBehaviour
+[DisallowMultipleComponent]
+public sealed class TriangleJump : MonoBehaviour
 {
-    [Header("Triangle Jump Settings")]
-    public float launchForce = 18f;        // Upward force on jump
-    public float launchAngle = 60f;        // Angle of launch relative to wall normal
-    public float stickDuration = 0.25f;    // How long the character sticks before input is accepted
-    public float gravityRestoreDelay = 0.1f;
+    #region Animator Hashes
+
+    private static readonly int TriangleJumpHash =
+        Animator.StringToHash("Triangle Jump");
+
+    private static readonly int JumpHash =
+        Animator.StringToHash("Jump");
+
+    #endregion
+
+    #region Inspector
+
+    [Header("Triangle Jump")]
+    [SerializeField, Min(0f)] private float launchForce = 18f;
+    [SerializeField, Range(0f, 90f)] private float launchAngle = 60f;
+    [SerializeField, Min(0f)] private float stickDuration = 0.25f;
+    [SerializeField, Min(0.1f)] private float inputTimeout = 3f;
+    [SerializeField] private CharacterSwitch characterSwitch;
+    [SerializeField] private TeamActionController actionController;
+
+    [Header("Input")]
+    [SerializeField] private string jumpButton = "Jump";
+
+    [Header("Debug")]
+    [SerializeField] private bool logStateChanges;
+
+    #endregion
+
+    #region Runtime State
+
+    private GameObject stuckCharacter;
     private UltimatePlayerMovement movement;
-    [Header("State")]
-    public bool triangleJumpReady = false; // True while stuck, waiting for jump input
-    public bool isJumping = false;
+    private Rigidbody stuckRigidbody;
+    private Animator stuckAnimator;
+    private Coroutine stickRoutine;
 
-    private GameObject stuckCharacter = null;
-    private Coroutine stickCoroutine = null;
+    private Vector3 wallNormal;
 
-    // The wall's outward normal, used to calculate launch direction
-    private Vector3 wallNormal = Vector3.zero;
+    private bool triangleJumpReady;
+    private bool isJumping;
+    private bool isInitialized;
+    private bool isShuttingDown;
 
-    // -----------------------------------------------------------------------
-    // Called by OnTriggerEnter when a HomingAttack hits this bumper
-    // -----------------------------------------------------------------------
-    public void Stick(GameObject speedCharacter, Vector3 contactNormal)
+    #endregion
+
+    #region Public API
+
+    public bool TriangleJumpReady => triangleJumpReady;
+    public bool IsJumping => isJumping;
+    public bool IsInitialized => isInitialized;
+    public GameObject StuckCharacter => stuckCharacter;
+
+    public bool Stick(
+        GameObject speedCharacter,
+        Vector3 contactNormal)
     {
-        if (stickCoroutine != null)
-            StopCoroutine(stickCoroutine);
+        if (!CanUseTriangleJump() ||
+            !isInitialized ||
+            speedCharacter == null ||
+            stuckCharacter != null)
+        {
+            return false;
+        }
+
+        if (!ResolveCharacterReferences(speedCharacter))
+            return false;
+
+        CancelStickRoutine();
 
         stuckCharacter = speedCharacter;
-        wallNormal = contactNormal;
+        wallNormal =
+            contactNormal.sqrMagnitude > 0.001f
+                ? contactNormal.normalized
+                : -transform.forward;
 
-        stickCoroutine = StartCoroutine(StickRoutine(speedCharacter));
+        stickRoutine =
+            StartCoroutine(StickRoutine());
+
+        return true;
     }
 
-    // -----------------------------------------------------------------------
-    // Stick coroutine: freeze the character briefly, then wait for Jump input
-    // -----------------------------------------------------------------------
-    private IEnumerator StickRoutine(GameObject speedCharacter)
+    public void CancelTriangleJump()
     {
-        // ---- Freeze character ----
-        movement = speedCharacter.GetComponent<UltimatePlayerMovement>();
+        if (stuckCharacter != null)
+            DetachCharacter();
+    }
 
-        if (movement == null)
+    #endregion
+
+    #region Unity Lifecycle
+
+    private void Awake()
+    {
+        ResolveSceneReferences();
+        isInitialized = true;
+    }
+
+    private void OnDisable()
+    {
+        CleanupRuntimeState();
+    }
+
+    private void OnDestroy()
+    {
+        isShuttingDown = true;
+        CleanupDestroyedState();
+    }
+
+    private void OnValidate()
+    {
+        launchForce = Mathf.Max(0f, launchForce);
+        launchAngle = Mathf.Clamp(launchAngle, 0f, 90f);
+        stickDuration = Mathf.Max(0f, stickDuration);
+        inputTimeout = Mathf.Max(0.1f, inputTimeout);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (!isInitialized ||
+            stuckCharacter != null ||
+            other == null)
         {
-            movement = speedCharacter.GetComponentInParent<UltimatePlayerMovement>();
+            return;
         }
 
-        if (movement != null)
+        HomingAttack homingAttack =
+            other.GetComponent<HomingAttack>();
+
+        homingAttack ??=
+            other.GetComponentInParent<HomingAttack>();
+
+        if (homingAttack == null ||
+            !homingAttack.HomingAttackUsed)
         {
-            movement.DisableMovement();
+            return;
         }
 
-        Rigidbody rb = speedCharacter.GetComponent<Rigidbody>();
-        rb.useGravity = false;
-        rb.linearVelocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
+        Vector3 contactNormal =
+            (other.transform.position -
+             transform.position)
+            .normalized;
 
-        // Play the Triangle Jump animation (idle on wall)
-        Animator anim = speedCharacter.GetComponent<Animator>();
-        if (anim != null)
-            anim.Play("Triangle Jump");
+        Stick(other.gameObject, contactNormal);
+    }
 
-        // Brief mandatory stick window (matches Heroes' short freeze)
+    private void OnTriggerExit(Collider other)
+    {
+        if (other == null ||
+            stuckCharacter != other.gameObject ||
+            !triangleJumpReady)
+        {
+            return;
+        }
+
+        DetachCharacter();
+    }
+
+    #endregion
+
+    #region Triangle Jump State
+
+    private bool CanUseTriangleJump()
+    {
+        return
+            TeamSetup.Instance != null &&
+            TeamSetup.Instance.PlayableTeam == PlayableTeam.TeamSonic &&
+            characterSwitch != null &&
+            characterSwitch.CurrentLeaderType == CHARACTERTYPES.Speed &&
+            actionController != null &&
+            actionController.CurrentFormation ==
+                TeamActionController.TeamFormation.Speed;
+    }
+
+    private IEnumerator StickRoutine()
+    {
+        FreezeCharacter();
+        PlayAnimation(TriangleJumpHash);
+
         triangleJumpReady = false;
-        yield return new WaitForSeconds(stickDuration);
+
+        if (stickDuration > 0f)
+            yield return new WaitForSeconds(stickDuration);
+
         triangleJumpReady = true;
 
-        // ---- Wait for jump input ----
-        float inputTimeout = 3f; // safety: release if player never presses
         float elapsed = 0f;
 
         while (elapsed < inputTimeout)
         {
-            // In Sonic Heroes the jump button triggers the wall launch
-            if (Input.GetButtonDown("Jump"))
+            if (Input.GetButtonDown(jumpButton))
             {
-                Launch(speedCharacter);
+                LaunchCharacter();
                 yield break;
             }
+
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        // Timed out — detach without launching
-        Detach(speedCharacter);
+        DetachCharacter();
     }
 
-    // -----------------------------------------------------------------------
-    // Launch: fire the character upward along the wall normal
-    // -----------------------------------------------------------------------
-    private void Launch(GameObject speedCharacter)
+    private void ResolveSceneReferences()
     {
+        characterSwitch ??= GetComponentInParent<CharacterSwitch>();
+
+        actionController ??=
+            GetComponentInParent<TeamActionController>();
+    }
+
+    private void FreezeCharacter()
+    {
+        movement?.DisableMovement();
+
+        if (stuckRigidbody == null)
+            return;
+
+        stuckRigidbody.useGravity = false;
+        stuckRigidbody.linearVelocity = Vector3.zero;
+        stuckRigidbody.angularVelocity = Vector3.zero;
+    }
+
+    private void LaunchCharacter()
+    {
+        if (stuckCharacter == null ||
+            stuckRigidbody == null)
+        {
+            DetachCharacter();
+            return;
+        }
+
         triangleJumpReady = false;
         isJumping = true;
 
-        Rigidbody rb = speedCharacter.GetComponent<Rigidbody>();
+        Vector3 outward =
+            Vector3.ProjectOnPlane(
+                wallNormal,
+                Vector3.up)
+            .normalized;
 
-        // Build launch direction: blend wall normal outward with world up,
-        // producing a diagonal arc like the original game
-        Vector3 outward = Vector3.ProjectOnPlane(wallNormal, Vector3.up).normalized;
-        float rad = launchAngle * Mathf.Deg2Rad;
-        Vector3 launchDir = (outward * Mathf.Cos(rad) + Vector3.up * Mathf.Sin(rad)).normalized;
+        if (outward.sqrMagnitude <= 0.001f)
+            outward = -transform.forward;
 
-        // Re-enable physics, apply launch impulse
-        rb.useGravity = true;
-        rb.linearVelocity = Vector3.zero;
-        rb.AddForce(launchDir * launchForce, ForceMode.VelocityChange);
+        float radians =
+            launchAngle * Mathf.Deg2Rad;
 
-        // Play launch animation
-        Animator anim = speedCharacter.GetComponent<Animator>();
-        if (anim != null)
-            anim.Play("Jump");
+        Vector3 launchDirection =
+            (outward * Mathf.Cos(radians) +
+             Vector3.up * Mathf.Sin(radians))
+            .normalized;
 
-        // Give control back to the player
-        if (movement != null)
-        {
-            movement.EnableMovement();
-        }
+        stuckRigidbody.useGravity = true;
+        stuckRigidbody.linearVelocity = Vector3.zero;
+        stuckRigidbody.angularVelocity = Vector3.zero;
 
-        stuckCharacter = null;
-        stickCoroutine = null;
+        stuckRigidbody.AddForce(
+            launchDirection * launchForce,
+            ForceMode.VelocityChange);
 
-        // Reset isJumping after the character is airborne
+        PlayAnimation(JumpHash);
+        movement?.EnableMovement();
+
+        LogStateChange("Triangle Jump launched.");
+
+        ClearCharacterReferences();
         StartCoroutine(ResetJumpFlag());
     }
 
-    // -----------------------------------------------------------------------
-    // Detach: release without launching (timeout or external cancel)
-    // -----------------------------------------------------------------------
-    private void Detach(GameObject speedCharacter)
+    private void DetachCharacter()
     {
+        CancelStickRoutine();
+
         triangleJumpReady = false;
         isJumping = false;
 
-        Rigidbody rb = speedCharacter.GetComponent<Rigidbody>();
-        rb.useGravity = true;
+        if (stuckRigidbody != null)
+            stuckRigidbody.useGravity = true;
 
-        if (movement != null)
-        {
-            movement.EnableMovement();
-        }
+        movement?.EnableMovement();
 
-        stuckCharacter = null;
-        stickCoroutine = null;
+        LogStateChange("Triangle Jump detached.");
+        ClearCharacterReferences();
     }
 
-    // -----------------------------------------------------------------------
-    // Small helper: wait one fixed frame then clear the jumping flag
-    // -----------------------------------------------------------------------
     private IEnumerator ResetJumpFlag()
     {
         yield return new WaitForFixedUpdate();
         isJumping = false;
     }
 
-    // -----------------------------------------------------------------------
-    // Collision detection
-    // -----------------------------------------------------------------------
-    public void OnTriggerEnter(Collider other)
+    #endregion
+
+    #region Reference Resolution
+
+    private bool ResolveCharacterReferences(GameObject character)
     {
-        HomingAttack ha = other.GetComponent<HomingAttack>();
-        if (ha == null || !ha.homingAttackUsed)
-            return;
+        movement =
+            character.GetComponent<UltimatePlayerMovement>();
 
-        // Already has a character stuck — ignore additional hits
-        if (stuckCharacter != null)
-            return;
+        movement ??=
+            character.GetComponentInParent<UltimatePlayerMovement>();
 
-        // Compute the contact normal: direction from bumper center to character
-        Vector3 contactNormal = (other.transform.position - transform.position).normalized;
+        stuckRigidbody =
+            character.GetComponent<Rigidbody>();
 
-        Stick(other.gameObject, contactNormal);
-    }
+        stuckRigidbody ??=
+            character.GetComponentInParent<Rigidbody>();
 
-    // -----------------------------------------------------------------------
-    // If the stuck character leaves the trigger early (edge case), clean up
-    // -----------------------------------------------------------------------
-    public void OnTriggerExit(Collider other)
-    {
-        if (stuckCharacter == other.gameObject && triangleJumpReady)
+        stuckAnimator =
+            character.GetComponent<Animator>();
+
+        stuckAnimator ??=
+            character.GetComponentInChildren<Animator>(includeInactive: true);
+
+        bool valid = true;
+
+        valid &=
+            ValidateReference(
+                movement,
+                nameof(UltimatePlayerMovement));
+
+        valid &=
+            ValidateReference(
+                stuckRigidbody,
+                nameof(Rigidbody));
+
+        valid &=
+            ValidateReference(
+                characterSwitch,
+                nameof(CharacterSwitch));
+
+        valid &=
+            ValidateReference(
+                actionController,
+                nameof(TeamActionController));
+
+        if (stuckAnimator == null)
         {
-            if (stickCoroutine != null)
-                StopCoroutine(stickCoroutine);
-
-            Detach(other.gameObject);
+            Debug.LogWarning(
+                "TriangleJump could not find an Animator.",
+                this);
         }
+
+        return valid;
     }
+
+    #endregion
+
+    #region Animation
+
+    private void PlayAnimation(int animationHash)
+    {
+        if (stuckAnimator != null)
+            stuckAnimator.Play(animationHash);
+    }
+
+    #endregion
+
+    #region Validation
+
+    private bool ValidateReference(
+        Object reference,
+        string displayName)
+    {
+        if (reference != null)
+            return true;
+
+        Debug.LogError(
+            $"TriangleJump requires {displayName} on the incoming character.",
+            this);
+
+        return false;
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    private void CleanupRuntimeState()
+    {
+        if (stuckCharacter != null)
+            DetachCharacter();
+        else
+            CancelStickRoutine();
+    }
+
+    private void CleanupDestroyedState()
+    {
+        CleanupRuntimeState();
+
+        isInitialized = false;
+
+        stuckCharacter = null;
+        movement = null;
+        stuckRigidbody = null;
+        stuckAnimator = null;
+        characterSwitch = null;
+        actionController = null;
+    }
+
+    private void CancelStickRoutine()
+    {
+        if (stickRoutine == null)
+            return;
+
+        StopCoroutine(stickRoutine);
+        stickRoutine = null;
+    }
+
+    private void ClearCharacterReferences()
+    {
+        stuckCharacter = null;
+        movement = null;
+        stuckRigidbody = null;
+        stuckAnimator = null;
+        stickRoutine = null;
+        wallNormal = Vector3.zero;
+    }
+
+    #endregion
+
+    #region Debug
+
+    private void LogStateChange(string message)
+    {
+        if (!logStateChanges)
+            return;
+
+        Debug.Log(message, this);
+    }
+
+    #endregion
 }
