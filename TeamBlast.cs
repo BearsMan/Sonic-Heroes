@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -56,7 +55,11 @@ public sealed class TeamBlast : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private Transform blastOrigin;
-    [SerializeField] private ChaosControl chaosControl;
+    [SerializeField] private SonicOverdrive sonicOverdrive;
+    [SerializeField] private ChaosInferno chaosInferno;
+    [SerializeField] private FlowerFestival flowerFestival;
+    [SerializeField] private ChaotixRecital chaotixRecital;
+    [SerializeField] private SuperSonicPower superSonicPower;
 
     [Header("Team Blast")]
     [SerializeField]
@@ -74,34 +77,11 @@ public sealed class TeamBlast : MonoBehaviour
     [SerializeField] private bool consumeGaugeOnUse = true;
 
     [Header("Shared Blast")]
-    [SerializeField, Min(0.1f)] private float blastRadius = 15f;
-    [SerializeField, Min(0f)] private float baseDamage = 100f;
-    [SerializeField, Min(0f)] private float knockbackForce = 20f;
-    [SerializeField, Min(MinimumDuration)] private float actionDuration = 0.75f;
-    [SerializeField, Min(0f)] private float invincibilityDuration = 5f;
-    [SerializeField] private LayerMask enemyLayers = ~0;
+    [SerializeField, Min(MinimumDuration)]
+    private float actionDuration = 0.75f;
 
-    [Header("Sonic Overdrive")]
-    [SerializeField, Min(0f)] private float sonicDamageMultiplier = 1.25f;
-    [SerializeField, Min(0f)] private float sonicKnockbackMultiplier = 1.25f;
-
-    [Header("Chaos Inferno")]
-    [SerializeField, Min(0f)] private float chaosDamageMultiplier = 1f;
-    [SerializeField, Min(0f)] private float chaosControlDuration = 5f;
-
-    [Header("Flower Festival")]
-    [SerializeField, Min(0f)] private float flowerDamageMultiplier = 0.75f;
-    [SerializeField, Min(0f)] private float flowerHealingAmount = 50f;
-    [SerializeField, Min(0f)] private float flowerShieldDuration = 8f;
-
-    [Header("Chaotix Recital")]
-    [SerializeField, Min(0f)] private float chaotixDamageMultiplier = 1f;
-    [SerializeField, Min(0f)] private float chaotixGaugeReward = 20f;
-    [SerializeField, Min(0)] private int chaotixRingReward = 10;
-
-    [Header("Super Sonic Power")]
-    [SerializeField, Min(0f)] private float superSonicDamageMultiplier = 2f;
-    [SerializeField] private bool damageMetalOverlord = true;
+    [SerializeField, Min(0f)]
+    private float invincibilityDuration = 5f;
 
     [Header("Effects")]
     [SerializeField] private GameObject sonicOverdriveEffect;
@@ -119,15 +99,11 @@ public sealed class TeamBlast : MonoBehaviour
     [SerializeField] private AudioClip superSonicPowerSound;
 
     [Header("Debug")]
-    [SerializeField] private bool drawBlastRadius = true;
     [SerializeField] private bool logStateChanges;
 
     #endregion
 
     #region Runtime State
-
-    private readonly HashSet<GameObject> affectedTargets =
-        new();
 
     private Coroutine blastRoutine;
     private Coroutine invincibilityRoutine;
@@ -188,6 +164,54 @@ public sealed class TeamBlast : MonoBehaviour
 
         BeginTeamBlast();
         return true;
+    }
+
+    private bool ValidateSelectedTeamBlast()
+    {
+        return currentTeamBlast switch
+        {
+            TeamBlastType.SonicOverdrive =>
+                ValidateOptionalBlastReference(
+                    sonicOverdrive,
+                    nameof(SonicOverdrive)),
+
+            TeamBlastType.ChaosInferno =>
+                ValidateOptionalBlastReference(
+                    chaosInferno,
+                    nameof(ChaosInferno)),
+
+            TeamBlastType.FlowerFestival =>
+                ValidateOptionalBlastReference(
+                    flowerFestival,
+                    nameof(FlowerFestival)),
+
+            TeamBlastType.ChaotixRecital =>
+                ValidateOptionalBlastReference(
+                    chaotixRecital,
+                    nameof(ChaotixRecital)),
+
+            TeamBlastType.SuperSonicPower =>
+                ValidateOptionalBlastReference(
+                    superSonicPower,
+                    nameof(SuperSonicPower)),
+
+            _ =>
+                false
+        };
+    }
+
+    private bool ValidateOptionalBlastReference(
+        Object reference,
+        string displayName)
+    {
+        if (reference != null)
+            return true;
+
+        Debug.LogWarning(
+            $"TeamBlast could not find {displayName}.",
+            this);
+
+        return false;
     }
 
     public void CancelTeamBlast()
@@ -315,21 +339,6 @@ public sealed class TeamBlast : MonoBehaviour
                 MinimumGaugeValue,
                 maxGauge);
 
-        blastRadius =
-            Mathf.Max(
-                0.1f,
-                blastRadius);
-
-        baseDamage =
-            Mathf.Max(
-                0f,
-                baseDamage);
-
-        knockbackForce =
-            Mathf.Max(
-                0f,
-                knockbackForce);
-
         actionDuration =
             Mathf.Max(
                 MinimumDuration,
@@ -340,45 +349,10 @@ public sealed class TeamBlast : MonoBehaviour
                 0f,
                 invincibilityDuration);
 
-        chaosControlDuration =
-            Mathf.Max(
-                0f,
-                chaosControlDuration);
-
-        flowerHealingAmount =
-            Mathf.Max(
-                0f,
-                flowerHealingAmount);
-
-        flowerShieldDuration =
-            Mathf.Max(
-                0f,
-                flowerShieldDuration);
-
-        chaotixGaugeReward =
-            Mathf.Max(
-                0f,
-                chaotixGaugeReward);
-
-        chaotixRingReward =
-            Mathf.Max(
-                0,
-                chaotixRingReward);
-
         effectLifetime =
             Mathf.Max(
                 0f,
                 effectLifetime);
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        if (!drawBlastRadius)
-            return;
-
-        Gizmos.DrawWireSphere(
-            GetBlastPosition(),
-            blastRadius);
     }
 
     #endregion
@@ -427,6 +401,21 @@ public sealed class TeamBlast : MonoBehaviour
 
     private void CacheComponents()
     {
+        sonicOverdrive ??=
+            GetComponentInParent<SonicOverdrive>();
+
+        chaosInferno ??=
+            GetComponentInParent<ChaosInferno>();
+
+        flowerFestival ??=
+            GetComponentInParent<FlowerFestival>();
+
+        chaotixRecital ??=
+            GetComponentInParent<ChaotixRecital>();
+
+        superSonicPower ??=
+            GetComponentInParent<SuperSonicPower>();
+
         actionController ??=
             GetComponentInParent<TeamActionController>();
 
@@ -438,9 +427,6 @@ public sealed class TeamBlast : MonoBehaviour
 
         audioSource ??=
             GetComponentInParent<AudioSource>();
-
-        chaosControl ??=
-            GetComponentInParent<ChaosControl>();
     }
 
     private void ResolveReferences()
@@ -481,7 +467,6 @@ public sealed class TeamBlast : MonoBehaviour
     private void BeginTeamBlast()
     {
         isPerformingTeamBlast = true;
-        affectedTargets.Clear();
 
         if (consumeGaugeOnUse)
         {
@@ -528,7 +513,11 @@ public sealed class TeamBlast : MonoBehaviour
             blastRoutine = null;
         }
 
-        chaosControl?.CancelChaosControl();
+        sonicOverdrive?.Cancel();
+        chaosInferno?.Cancel();
+        flowerFestival?.Cancel();
+        chaotixRecital?.Cancel();
+        superSonicPower?.Cancel();
 
         if (actionController != null &&
             actionController.CurrentAction ==
@@ -537,8 +526,6 @@ public sealed class TeamBlast : MonoBehaviour
             actionController.EndAction(
                 restoreMovementControl: true);
         }
-
-        affectedTargets.Clear();
 
         LogStateChange(
             $"{GetTeamBlastName()} finished.");
@@ -550,7 +537,6 @@ public sealed class TeamBlast : MonoBehaviour
         isInvincible = false;
         blastRoutine = null;
         invincibilityRoutine = null;
-        affectedTargets.Clear();
     }
 
     #endregion
@@ -579,6 +565,12 @@ public sealed class TeamBlast : MonoBehaviour
 
             case TeamBlastType.SuperSonicPower:
                 ApplySuperSonicPower();
+                break;
+
+            default:
+                Debug.LogError(
+                    $"Unsupported Team Blast: {currentTeamBlast}.",
+                    this);
                 break;
         }
     }
@@ -610,234 +602,84 @@ public sealed class TeamBlast : MonoBehaviour
 
     #endregion
 
-    #region Sonic Overdrive
 
+    #region Sonic Overdrive
     private void ApplySonicOverdrive()
     {
-        DamageNearbyEnemies(
-            baseDamage *
-            sonicDamageMultiplier,
-            knockbackForce *
-            sonicKnockbackMultiplier,
-            destroyImmediately: true);
-    }
+        if (sonicOverdrive != null)
+        {
+            sonicOverdrive.TryActivate();
+            return;
+        }
 
+        Debug.LogWarning(
+            "TeamBlast could not activate SonicOverdrive.",
+            this);
+    }
     #endregion
 
     #region Chaos Inferno
-
     private void ApplyChaosInferno()
     {
-        DamageNearbyEnemies(
-            baseDamage *
-            chaosDamageMultiplier,
-            knockbackForce,
-            destroyImmediately: false);
-
-        if (chaosControl != null)
+        if (chaosInferno != null)
         {
-            chaosControl.TryStartChaosControl();
+            chaosInferno.TryActivate();
+            return;
         }
 
-        BroadcastToNearbyEnemies(
-            "ApplyChaosControl",
-            chaosControlDuration);
+        Debug.LogWarning(
+            "TeamBlast could not activate ChaosInferno.",
+            this);
     }
-
     #endregion
 
     #region Flower Festival
-
     private void ApplyFlowerFestival()
     {
-        DamageNearbyEnemies(
-            baseDamage *
-            flowerDamageMultiplier,
-            knockbackForce,
-            destroyImmediately: false);
+        if (flowerFestival != null)
+        {
+            flowerFestival.TryActivate();
+            return;
+        }
 
-        BroadcastToTeam(
-            "Heal",
-            flowerHealingAmount);
-
-        BroadcastToTeam(
-            "ApplyShield",
-            flowerShieldDuration);
+        Debug.LogWarning(
+            "TeamBlast could not activate FlowerFestival.",
+            this);
     }
-
     #endregion
 
     #region Chaotix Recital
-
     private void ApplyChaotixRecital()
     {
-        int defeatedCount =
-            DamageNearbyEnemies(
-                baseDamage *
-                chaotixDamageMultiplier,
-                knockbackForce,
-                destroyImmediately: true);
-
-        AddGauge(
-            chaotixGaugeReward *
-            defeatedCount);
-
-        GameObject gameInstanceObject =
-            GameObject.Find("GameInstance");
-
-        if (gameInstanceObject != null)
+        if (chaotixRecital != null)
         {
-            gameInstanceObject.SendMessage(
-                "AddRings",
-                chaotixRingReward *
-                defeatedCount,
-                SendMessageOptions.DontRequireReceiver);
+            chaotixRecital.TryActivate();
+            return;
         }
-    }
 
+        Debug.LogWarning(
+            "TeamBlast could not activate ChaotixRecital.",
+            this);
+    }
     #endregion
 
     #region Super Sonic Power
-
     private void ApplySuperSonicPower()
     {
-        DamageNearbyEnemies(
-            baseDamage *
-            superSonicDamageMultiplier,
-            knockbackForce,
-            destroyImmediately: true);
-
-        if (!damageMetalOverlord)
+        if (superSonicPower != null)
+        {
+            superSonicPower.TryActivate();
             return;
+        }
 
-        MetalOverlord boss =
-            FindAnyObjectByType<MetalOverlord>();
-
-        boss?.OnTeamBlastHit();
+        Debug.LogWarning(
+            "TeamBlast could not activate SuperSonicPower.",
+            this);
     }
 
     #endregion
 
-    #region Damage
-
-    private int DamageNearbyEnemies(
-        float damage,
-        float knockback,
-        bool destroyImmediately)
-    {
-        Collider[] enemies =
-            Physics.OverlapSphere(
-                GetBlastPosition(),
-                blastRadius,
-                enemyLayers,
-                QueryTriggerInteraction.Collide);
-
-        int affectedCount = 0;
-
-        foreach (Collider enemy in enemies)
-        {
-            if (enemy == null)
-                continue;
-
-            GameObject target =
-                enemy.attachedRigidbody != null
-                    ? enemy.attachedRigidbody.gameObject
-                    : enemy.gameObject;
-
-            if (!affectedTargets.Add(target) ||
-                IsTeamCharacter(target))
-            {
-                continue;
-            }
-
-            affectedCount++;
-
-            target.SendMessage(
-                "TakeDamage",
-                damage,
-                SendMessageOptions.DontRequireReceiver);
-
-            ApplyKnockback(
-                target,
-                enemy.attachedRigidbody,
-                knockback);
-
-            if (destroyImmediately)
-            {
-                target.SendMessage(
-                    "Break",
-                    SendMessageOptions.DontRequireReceiver);
-            }
-        }
-
-        return affectedCount;
-    }
-
-    private void ApplyKnockback(
-        GameObject target,
-        Rigidbody targetRigidbody,
-        float force)
-    {
-        if (target == null ||
-            targetRigidbody == null ||
-            force <= 0f)
-        {
-            return;
-        }
-
-        Vector3 direction =
-            target.transform.position -
-            GetBlastPosition();
-
-        direction.y =
-            Mathf.Max(
-                direction.y,
-                0.2f);
-
-        if (direction.sqrMagnitude <=
-            Mathf.Epsilon)
-        {
-            direction =
-                transform.forward;
-        }
-
-        targetRigidbody.AddForce(
-            direction.normalized *
-            force,
-            ForceMode.VelocityChange);
-    }
-
-    private void BroadcastToNearbyEnemies(
-        string methodName,
-        float value)
-    {
-        Collider[] enemies =
-            Physics.OverlapSphere(
-                GetBlastPosition(),
-                blastRadius,
-                enemyLayers,
-                QueryTriggerInteraction.Collide);
-
-        foreach (Collider enemy in enemies)
-        {
-            if (enemy == null)
-                continue;
-
-            GameObject target =
-                enemy.attachedRigidbody != null
-                    ? enemy.attachedRigidbody.gameObject
-                    : enemy.gameObject;
-
-            if (IsTeamCharacter(target))
-                continue;
-
-            target.SendMessage(
-                methodName,
-                value,
-                SendMessageOptions.DontRequireReceiver);
-        }
-    }
-
+    #region Helpers
     private void BroadcastToTeam(
         string methodName,
         float value)
@@ -874,38 +716,6 @@ public sealed class TeamBlast : MonoBehaviour
             value,
             SendMessageOptions.DontRequireReceiver);
     }
-
-    private bool IsTeamCharacter(
-        GameObject target)
-    {
-        if (target == null ||
-            actionController == null)
-        {
-            return false;
-        }
-
-        return
-            MatchesCharacter(
-                target,
-                actionController.SpeedCharacter) ||
-            MatchesCharacter(
-                target,
-                actionController.FlyCharacter) ||
-            MatchesCharacter(
-                target,
-                actionController.PowerCharacter);
-    }
-
-    private static bool MatchesCharacter(
-        GameObject target,
-        Transform character)
-    {
-        return
-            character != null &&
-            (target == character.gameObject ||
-             target.transform.IsChildOf(character));
-    }
-
     #endregion
 
     #region Invincibility
@@ -1115,6 +925,9 @@ public sealed class TeamBlast : MonoBehaviour
         bool valid = true;
 
         valid &=
+            ValidateSelectedTeamBlast();
+
+        valid &=
             ValidateReference(
                 actionController,
                 nameof(TeamActionController));
@@ -1163,34 +976,25 @@ public sealed class TeamBlast : MonoBehaviour
     {
         if (blastRoutine != null)
         {
-            StopCoroutine(
-                blastRoutine);
-
+            StopCoroutine(blastRoutine);
             blastRoutine = null;
         }
 
         if (invincibilityRoutine != null)
         {
-            StopCoroutine(
-                invincibilityRoutine);
-
+            StopCoroutine(invincibilityRoutine);
             invincibilityRoutine = null;
-        }
-
-        if (isInvincible)
-        {
-            isInvincible = false;
-
-            BroadcastToTeam(
-                "SetInvincible",
-                0f);
         }
 
         if (isPerformingTeamBlast)
         {
             isPerformingTeamBlast = false;
 
-            chaosControl?.CancelChaosControl();
+            sonicOverdrive?.Cancel();
+            chaosInferno?.Cancel();
+            flowerFestival?.Cancel();
+            chaotixRecital?.Cancel();
+            superSonicPower?.Cancel();
 
             if (actionController != null &&
                 actionController.CurrentAction ==
@@ -1200,8 +1004,6 @@ public sealed class TeamBlast : MonoBehaviour
                     restoreMovementControl: true);
             }
         }
-
-        affectedTargets.Clear();
     }
 
     private void CleanupDestroyedState()
@@ -1215,7 +1017,12 @@ public sealed class TeamBlast : MonoBehaviour
         animator = null;
         audioSource = null;
         blastOrigin = null;
-        chaosControl = null;
+
+        sonicOverdrive = null;
+        chaosInferno = null;
+        flowerFestival = null;
+        chaotixRecital = null;
+        superSonicPower = null;
 
         sonicOverdriveEffect = null;
         chaosInfernoEffect = null;
@@ -1238,6 +1045,5 @@ public sealed class TeamBlast : MonoBehaviour
             message,
             this);
     }
-
     #endregion
 }
