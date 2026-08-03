@@ -1,52 +1,82 @@
 using System;
 using UnityEngine;
 
+[DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(UltimatePlayerMovement))]
-[RequireComponent (typeof(AudioSource))]
-public class RailGrinding : MonoBehaviour
+[RequireComponent(typeof(AudioSource))]
+public sealed class RailGrinding : MonoBehaviour
 {
+    #region Types
+
+    public enum TeamType
+    {
+        Speed,
+        Fly,
+        Power
+    }
+
+    #endregion
+
+    #region Animator Hashes
+
+    private static readonly int IsGrindingHash =
+        Animator.StringToHash("IsGrinding");
+
+    private static readonly int IsCrouchingHash =
+        Animator.StringToHash("IsCrouching");
+
+    private static readonly int GrindSpeedHash =
+        Animator.StringToHash("GrindSpeed");
+
+    #endregion
+
     #region Inspector
 
-    [Header("Grind Speed")]
-    [SerializeField] private float baseGrindSpeed = 18f;
-    [SerializeField] private float maxGrindSpeed = 40f;
-    [SerializeField] private float minGrindSpeed = 2f;
-    [SerializeField] private float slopeAcceleration = 12f;
-    [SerializeField] private float crouchSpeedMultiplier = 1.25f;
-
-    [Header("Team Type Speed Modifiers")]
-    [SerializeField] private float speedTeamModifier = 1f;
-    [SerializeField] private float flyTeamModifier = 0.85f;
-    [SerializeField] private float powerTeamModifier = 0.75f;
-
-    [Header("Team Formation")]
+    [Header("References")]
+    [SerializeField] private UltimatePlayerMovement playerMovement;
+    [SerializeField] private Animator railAnimator;
     [SerializeField] private Transform member2;
     [SerializeField] private Transform member3;
-    [SerializeField] private float memberSpacing = 1.2f;
-    [SerializeField] private float memberSnapSpeed = 14f;
+
+    [Header("Grind Speed")]
+    [SerializeField, Min(0f)] private float baseGrindSpeed = 18f;
+    [SerializeField, Min(0f)] private float maxGrindSpeed = 40f;
+    [SerializeField, Min(0f)] private float minGrindSpeed = 2f;
+    [SerializeField, Min(0f)] private float slopeAcceleration = 12f;
+    [SerializeField, Min(0f)] private float crouchSpeedMultiplier = 1.25f;
+
+    [Header("Team Speed Modifiers")]
+    [SerializeField, Min(0f)] private float speedTeamModifier = 1f;
+    [SerializeField, Min(0f)] private float flyTeamModifier = 0.85f;
+    [SerializeField, Min(0f)] private float powerTeamModifier = 0.75f;
+
+    [Header("Team Formation")]
+    [SerializeField, Min(0f)] private float memberSpacing = 1.2f;
+    [SerializeField, Min(0f)] private float memberSnapSpeed = 14f;
 
     [Header("Rail Detection")]
     [SerializeField] private LayerMask railLayerMask;
-    [SerializeField] private float grindSnapRadius = 1.2f;
-    [SerializeField] private float railDetectionRadius = 1.2f;
-    [SerializeField] private float railRayDistance = 1.75f;
+    [SerializeField, Min(0f)] private float grindSnapRadius = 1.2f;
+    [SerializeField, Min(0f)] private float railDetectionRadius = 1.2f;
+    [SerializeField, Min(0f)] private float railRayDistance = 1.75f;
     [SerializeField]
-    private Vector3 railDetectionOffset = new Vector3(0f, -0.25f, 0f);
+    private Vector3 railDetectionOffset =
+        new(0f, -0.25f, 0f);
 
     [Header("Rail Movement")]
-    [SerializeField] private float snapSpeed = 20f;
+    [SerializeField, Min(0f)] private float snapSpeed = 20f;
 
     [Header("Rail Switching")]
-    [SerializeField] private float switchScanRadius = 4f;
-    [SerializeField] private float switchMaxAngle = 45f;
-    [SerializeField] private float switchCooldown = 0.4f;
-    [SerializeField] private float switchInputThreshold = 0.5f;
+    [SerializeField, Min(0f)] private float switchScanRadius = 4f;
+    [SerializeField, Range(0f, 180f)] private float switchMaxAngle = 45f;
+    [SerializeField, Min(0f)] private float switchCooldown = 0.4f;
+    [SerializeField, Range(0f, 1f)] private float switchInputThreshold = 0.5f;
 
     [Header("Jump Off Rail")]
     [SerializeField] private KeyCode railJumpKey = KeyCode.Space;
-    [SerializeField] private float railJumpForce = 12f;
-    [SerializeField] private float railJumpForwardForce = 6f;
+    [SerializeField, Min(0f)] private float railJumpForce = 12f;
+    [SerializeField, Min(0f)] private float railJumpForwardForce = 6f;
 
     [Header("Crouching")]
     [SerializeField] private KeyCode crouchKey = KeyCode.LeftControl;
@@ -62,23 +92,8 @@ public class RailGrinding : MonoBehaviour
     [SerializeField] private ParticleSystem member2SparksFX;
     [SerializeField] private ParticleSystem member3SparksFX;
 
-    [Header("Animation")]
-    [SerializeField] private Animator railAnimator;
-
-    #endregion
-    
-    #region Player Movements
-    [SerializeField] private UltimatePlayerMovement playerMovement;
-    #endregion
-
-    #region Types
-
-    public enum TeamType
-    {
-        Speed,
-        Fly,
-        Power
-    }
+    [Header("Debug")]
+    [SerializeField] private bool logStateChanges;
 
     #endregion
 
@@ -95,16 +110,69 @@ public class RailGrinding : MonoBehaviour
     private AudioSource audioSource;
 
     private float grindDirectionSign = 1f;
-    private float lastSwitchTime = -999f;
+    private float lastSwitchTime = float.NegativeInfinity;
+
+    private bool isInitialized;
+    private bool isShuttingDown;
 
     #endregion
 
-    #region Properties
+    #region Public API
 
+    public TeamType CurrentTeam => currentTeam;
     public bool IsGrinding => isGrinding;
     public bool IsCrouching => isCrouching;
     public float CurrentGrindSpeed => currentGrindSpeed;
+    public float SplineT => splineT;
     public RailSpline CurrentRail => currentRail;
+    public bool IsInitialized => isInitialized;
+
+    public void SetTeamType(
+        TeamType teamType)
+    {
+        currentTeam = teamType;
+    }
+
+    public bool TrySnapToRail(
+        RailSpline rail,
+        float contactT)
+    {
+        if (!isInitialized ||
+            isGrinding ||
+            rail == null)
+        {
+            return false;
+        }
+
+        float clampedT =
+            Mathf.Clamp01(contactT);
+
+        Vector3 railPoint =
+            rail.GetPoint(clampedT);
+
+        if (Vector3.Distance(
+                playerRigidbody.position,
+                railPoint) >
+            grindSnapRadius)
+        {
+            return false;
+        }
+
+        currentRail = rail;
+        splineT = clampedT;
+
+        DetermineGrindingDirection();
+        CalculateStartingSpeed();
+        StartGrinding();
+
+        return true;
+    }
+
+    public void ForceStopGrinding()
+    {
+        StopGrinding(
+            jumped: false);
+    }
 
     #endregion
 
@@ -112,28 +180,36 @@ public class RailGrinding : MonoBehaviour
 
     private void Awake()
     {
-        playerRigidbody = GetComponent<Rigidbody>();
-        audioSource = GetComponent<AudioSource>();
-
-        if (railAnimator == null)
-        {
-            railAnimator = GetComponentInChildren<Animator>();
-        }
-
-        if (playerMovement == null)
-        {
-            playerMovement = GetComponent<UltimatePlayerMovement>();
-        }
+        CacheComponents();
+        ResolveReferences();
     }
 
     private void Start()
     {
-        StopAllSparksFX();
+        if (!InitializeRailGrinding())
+        {
+            enabled = false;
+        }
+    }
+
+    private void OnEnable()
+    {
+        if (isShuttingDown)
+            return;
+
+        CacheComponents();
+        ResolveReferences();
+
+        if (!isInitialized)
+            return;
+
+        RestoreRuntimeState();
     }
 
     private void Update()
     {
-        if (!isGrinding)
+        if (!isInitialized ||
+            !isGrinding)
         {
             return;
         }
@@ -144,6 +220,9 @@ public class RailGrinding : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (!isInitialized)
+            return;
+
         if (!isGrinding)
         {
             CheckForNearbyRail();
@@ -155,142 +234,272 @@ public class RailGrinding : MonoBehaviour
         PositionTeammates();
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnDisable()
     {
-        if (isGrinding)
-        {
-            return;
-        }
+        CleanupRuntimeState();
+    }
 
+    private void OnDestroy()
+    {
+        isShuttingDown = true;
+        CleanupDestroyedState();
+    }
+
+    private void OnTriggerEnter(
+        Collider other)
+    {
         TryAttachFromCollider(other);
     }
 
-    private void OnTriggerStay(Collider other)
+    private void OnTriggerStay(
+        Collider other)
     {
-        if (isGrinding)
-        {
-            return;
-        }
-
         TryAttachFromCollider(other);
+    }
+
+    private void OnValidate()
+    {
+        baseGrindSpeed = Mathf.Max(0f, baseGrindSpeed);
+        maxGrindSpeed = Mathf.Max(0f, maxGrindSpeed);
+        minGrindSpeed = Mathf.Max(0f, minGrindSpeed);
+
+        if (maxGrindSpeed < minGrindSpeed)
+            maxGrindSpeed = minGrindSpeed;
+
+        baseGrindSpeed =
+            Mathf.Clamp(
+                baseGrindSpeed,
+                minGrindSpeed,
+                maxGrindSpeed);
+
+        slopeAcceleration = Mathf.Max(0f, slopeAcceleration);
+        crouchSpeedMultiplier = Mathf.Max(0f, crouchSpeedMultiplier);
+
+        speedTeamModifier = Mathf.Max(0f, speedTeamModifier);
+        flyTeamModifier = Mathf.Max(0f, flyTeamModifier);
+        powerTeamModifier = Mathf.Max(0f, powerTeamModifier);
+
+        memberSpacing = Mathf.Max(0f, memberSpacing);
+        memberSnapSpeed = Mathf.Max(0f, memberSnapSpeed);
+
+        grindSnapRadius = Mathf.Max(0f, grindSnapRadius);
+        railDetectionRadius = Mathf.Max(0f, railDetectionRadius);
+        railRayDistance = Mathf.Max(0f, railRayDistance);
+        snapSpeed = Mathf.Max(0f, snapSpeed);
+
+        switchScanRadius = Mathf.Max(0f, switchScanRadius);
+        switchMaxAngle = Mathf.Clamp(switchMaxAngle, 0f, 180f);
+        switchCooldown = Mathf.Max(0f, switchCooldown);
+        switchInputThreshold = Mathf.Clamp01(switchInputThreshold);
+
+        railJumpForce = Mathf.Max(0f, railJumpForce);
+        railJumpForwardForce = Mathf.Max(0f, railJumpForwardForce);
+
+        splineT = Mathf.Clamp01(splineT);
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Vector3 detectionOrigin =
+            transform.position +
+            railDetectionOffset;
+
+        Gizmos.DrawWireSphere(
+            detectionOrigin,
+            railDetectionRadius);
+
+        Gizmos.DrawLine(
+            detectionOrigin,
+            detectionOrigin +
+            Vector3.down *
+            railRayDistance);
+
+        Gizmos.DrawWireSphere(
+            transform.position,
+            switchScanRadius);
     }
 
     #endregion
 
-    #region Public API
+    #region Initialization
 
-    public void SetTeamType(TeamType teamType)
+    public bool InitializeRailGrinding()
     {
-        currentTeam = teamType;
-    }
+        if (isInitialized)
+            return true;
 
-    public bool TrySnapToRail(RailSpline rail, float contactT)
-    {
-        if (isGrinding || rail == null)
+        CacheComponents();
+        ResolveReferences();
+
+        if (!ValidateConfiguration())
         {
+            Debug.LogError(
+                $"RailGrinding failed to initialize on '{name}'.",
+                this);
+
+            isInitialized = false;
             return false;
         }
 
-        Vector3 railPoint = rail.GetPoint(contactT);
+        ResetRuntimeState();
+        StopAllSparksFX();
+        UpdateAnimatorState();
 
-        if (Vector3.Distance(transform.position, railPoint) >
-            grindSnapRadius)
-        {
-            return false;
-        }
-
-        currentRail = rail;
-        splineT = Mathf.Clamp01(contactT);
-
-        DetermineGrindingDirection();
-        CalculateStartingSpeed();
-        StartGrinding();
-
+        isInitialized = true;
         return true;
     }
 
-    public void ForceStopGrinding()
+    private void CacheComponents()
     {
-        StopGrinding(false);
+        playerRigidbody ??=
+            GetComponent<Rigidbody>();
+
+        audioSource ??=
+            GetComponent<AudioSource>();
+
+        playerMovement ??=
+            GetComponent<UltimatePlayerMovement>();
+    }
+
+    private void ResolveReferences()
+    {
+        railAnimator ??=
+            GetComponentInChildren<Animator>(
+                includeInactive: true);
+    }
+
+    private void RestoreRuntimeState()
+    {
+        if (!isGrinding)
+        {
+            StopGrindLoop();
+            StopAllSparksFX();
+        }
+
+        UpdateAnimatorState();
     }
 
     #endregion
 
-    #region Detection
+    #region Rail Detection
 
     private void CheckForNearbyRail()
     {
-        Vector3 detectionOrigin =
-            playerRigidbody.position + railDetectionOffset;
-
-        // Detection method 1: downward raycast.
-        if (Physics.Raycast(
-            detectionOrigin,
-            Vector3.down,
-            out RaycastHit hit,
-            railRayDistance,
-            railLayerMask,
-            QueryTriggerInteraction.Collide))
+        if (playerRigidbody == null ||
+            railLayerMask.value == 0)
         {
-            RailSpline raycastRail =
-                hit.collider.GetComponentInParent<RailSpline>();
-
-            if (TryAttachToRail(raycastRail))
-            {
-                return;
-            }
+            return;
         }
 
-        // Detection method 2: overlap sphere fallback.
-        Collider[] nearbyColliders = Physics.OverlapSphere(
-            detectionOrigin,
-            railDetectionRadius,
-            railLayerMask,
-            QueryTriggerInteraction.Collide);
+        Vector3 detectionOrigin =
+            playerRigidbody.position +
+            railDetectionOffset;
+
+        if (TryAttachFromRaycast(
+                detectionOrigin))
+        {
+            return;
+        }
+
+        TryAttachFromOverlap(
+            detectionOrigin);
+    }
+
+    private bool TryAttachFromRaycast(
+        Vector3 detectionOrigin)
+    {
+        if (!Physics.Raycast(
+                detectionOrigin,
+                Vector3.down,
+                out RaycastHit hit,
+                railRayDistance,
+                railLayerMask,
+                QueryTriggerInteraction.Collide))
+        {
+            return false;
+        }
+
+        RailSpline rail =
+            hit.collider.GetComponentInParent<RailSpline>();
+
+        return TryAttachToRail(rail);
+    }
+
+    private void TryAttachFromOverlap(
+        Vector3 detectionOrigin)
+    {
+        Collider[] nearbyColliders =
+            Physics.OverlapSphere(
+                detectionOrigin,
+                railDetectionRadius,
+                railLayerMask,
+                QueryTriggerInteraction.Collide);
 
         RailSpline closestRail = null;
         float closestT = 0f;
-        float closestDistance = float.MaxValue;
+        float closestDistanceSqr = float.MaxValue;
 
         foreach (Collider nearbyCollider in nearbyColliders)
         {
+            if (nearbyCollider == null)
+                continue;
+
             RailSpline candidate =
                 nearbyCollider.GetComponentInParent<RailSpline>();
 
             if (candidate == null)
-            {
                 continue;
-            }
 
             float candidateT =
-                candidate.GetClosestT(playerRigidbody.position);
+                candidate.GetClosestT(
+                    playerRigidbody.position);
 
             Vector3 candidatePoint =
-                candidate.GetPoint(candidateT);
+                candidate.GetPoint(
+                    candidateT);
 
-            float distance = Vector3.SqrMagnitude(
-                candidatePoint - playerRigidbody.position);
+            float distanceSqr =
+                (candidatePoint -
+                 playerRigidbody.position)
+                .sqrMagnitude;
 
-            if (distance >= closestDistance)
-            {
+            if (distanceSqr >= closestDistanceSqr)
                 continue;
-            }
 
-            closestDistance = distance;
+            closestDistanceSqr = distanceSqr;
             closestRail = candidate;
             closestT = candidateT;
         }
 
-        if (closestRail != null &&
-            closestDistance <= grindSnapRadius * grindSnapRadius)
+        if (closestRail == null ||
+            closestDistanceSqr >
+            grindSnapRadius *
+            grindSnapRadius)
         {
-            TrySnapToRail(closestRail, closestT);
+            return;
         }
+
+        TrySnapToRail(
+            closestRail,
+            closestT);
     }
 
-    private void TryAttachFromCollider(Collider other)
+    private void TryAttachFromCollider(
+        Collider other)
     {
-        if (!IsLayerInMask(other.gameObject.layer, railLayerMask) &&
+        if (!isInitialized ||
+            isGrinding ||
+            other == null)
+        {
+            return;
+        }
+
+        bool validLayer =
+            IsLayerInMask(
+                other.gameObject.layer,
+                railLayerMask);
+
+        if (!validLayer &&
             !other.CompareTag("Rail"))
         {
             return;
@@ -302,39 +511,48 @@ public class RailGrinding : MonoBehaviour
         TryAttachToRail(rail);
     }
 
-    private bool TryAttachToRail(RailSpline rail)
+    private bool TryAttachToRail(
+        RailSpline rail)
     {
-        if (rail == null)
+        if (rail == null ||
+            playerRigidbody == null)
         {
             return false;
         }
 
         float closestT =
-            rail.GetClosestT(playerRigidbody.position);
+            rail.GetClosestT(
+                playerRigidbody.position);
 
-        return TrySnapToRail(rail, closestT);
+        return TrySnapToRail(
+            rail,
+            closestT);
     }
 
     private static bool IsLayerInMask(
         int layer,
         LayerMask layerMask)
     {
-        return (layerMask.value & (1 << layer)) != 0;
+        return
+            (layerMask.value &
+             (1 << layer)) != 0;
     }
 
     #endregion
 
-    #region Start And Stop
+    #region Grinding State
 
     private void StartGrinding()
     {
-        if (currentRail == null)
+        if (currentRail == null ||
+            playerRigidbody == null)
         {
             return;
         }
 
         isGrinding = true;
         isCrouching = false;
+
         playerMovement?.EnterGrindingState();
 
         playerRigidbody.useGravity = false;
@@ -345,34 +563,47 @@ public class RailGrinding : MonoBehaviour
         StartGrindLoop();
         PlayAllSparksFX();
         UpdateAnimatorState();
+
+        LogStateChange(
+            $"Started grinding on '{currentRail.name}'.");
     }
 
-    private void StopGrinding(bool jumped)
+    private void StopGrinding(
+        bool jumped)
     {
         if (!isGrinding)
-        {
             return;
-        }
 
-        Vector3 exitDirection = GetTravelDirection();
+        Vector3 exitDirection =
+            GetTravelDirection();
 
         isGrinding = false;
         isCrouching = false;
 
-        playerRigidbody.useGravity = true;
-        playerRigidbody.WakeUp();
+        if (playerRigidbody != null)
+        {
+            playerRigidbody.useGravity = true;
+            playerRigidbody.WakeUp();
 
-        if (jumped)
-        {
-            playerRigidbody.linearVelocity =
+            float forwardSpeed =
+                jumped
+                    ? currentGrindSpeed +
+                      railJumpForwardForce
+                    : currentGrindSpeed;
+
+            Vector3 exitVelocity =
                 exitDirection *
-                (currentGrindSpeed + railJumpForwardForce)
-                + Vector3.up * railJumpForce;
-        }
-        else
-        {
+                forwardSpeed;
+
+            if (jumped)
+            {
+                exitVelocity +=
+                    Vector3.up *
+                    railJumpForce;
+            }
+
             playerRigidbody.linearVelocity =
-                exitDirection * currentGrindSpeed;
+                exitVelocity;
         }
 
         playerMovement?.ExitGrindingState();
@@ -382,8 +613,23 @@ public class RailGrinding : MonoBehaviour
         StopGrindLoop();
         PlayOneShot(grindEndSFX);
         StopAllSparksFX();
-
         UpdateAnimatorState();
+
+        LogStateChange(
+            jumped
+                ? "Jumped off rail."
+                : "Stopped grinding.");
+    }
+
+    private void ResetRuntimeState()
+    {
+        isGrinding = false;
+        isCrouching = false;
+        currentRail = null;
+        currentGrindSpeed = 0f;
+        splineT = 0f;
+        grindDirectionSign = 1f;
+        lastSwitchTime = float.NegativeInfinity;
     }
 
     #endregion
@@ -392,97 +638,152 @@ public class RailGrinding : MonoBehaviour
 
     private void DetermineGrindingDirection()
     {
-        Vector3 railTangent = currentRail.GetTangent(splineT).normalized;
-
-        float velocityDot = Vector3.Dot(playerRigidbody.linearVelocity, railTangent);
-
-        if (Mathf.Abs(velocityDot) > 0.1f)
+        if (currentRail == null ||
+            playerRigidbody == null)
         {
-            grindDirectionSign = Mathf.Sign(velocityDot);
+            grindDirectionSign = 1f;
             return;
         }
 
-        float facingDot = Vector3.Dot(transform.forward, railTangent);
+        Vector3 railTangent =
+            currentRail
+                .GetTangent(splineT)
+                .normalized;
+
+        float velocityDot =
+            Vector3.Dot(
+                playerRigidbody.linearVelocity,
+                railTangent);
+
+        if (Mathf.Abs(velocityDot) > 0.1f)
+        {
+            grindDirectionSign =
+                Mathf.Sign(velocityDot);
+
+            return;
+        }
+
+        float facingDot =
+            Vector3.Dot(
+                transform.forward,
+                railTangent);
 
         grindDirectionSign =
-            facingDot >= 0f ? 1f : -1f;
+            facingDot >= 0f
+                ? 1f
+                : -1f;
     }
 
     private void CalculateStartingSpeed()
     {
-        Vector3 travelDirection = GetTravelDirection();
+        if (playerRigidbody == null)
+        {
+            currentGrindSpeed =
+                Mathf.Clamp(
+                    baseGrindSpeed *
+                    GetTeamModifier(),
+                    minGrindSpeed,
+                    maxGrindSpeed);
 
-        float inheritedSpeed = Mathf.Abs(Vector3.Dot(playerRigidbody.linearVelocity, travelDirection));
+            return;
+        }
 
-        float teamBaseSpeed = baseGrindSpeed * GetTeamModifier();
+        Vector3 travelDirection =
+            GetTravelDirection();
 
-        currentGrindSpeed = Mathf.Clamp(
-            Mathf.Max(teamBaseSpeed, inheritedSpeed),
-            minGrindSpeed,
-            maxGrindSpeed);
+        float inheritedSpeed =
+            Mathf.Abs(
+                Vector3.Dot(
+                    playerRigidbody.linearVelocity,
+                    travelDirection));
+
+        float teamBaseSpeed =
+            baseGrindSpeed *
+            GetTeamModifier();
+
+        currentGrindSpeed =
+            Mathf.Clamp(
+                Mathf.Max(
+                    teamBaseSpeed,
+                    inheritedSpeed),
+                minGrindSpeed,
+                maxGrindSpeed);
     }
 
     private void AdvanceAlongRail()
     {
         if (currentRail == null)
         {
-            StopGrinding(false);
+            StopGrinding(
+                jumped: false);
+
             return;
         }
 
-        Vector3 travelDirection = GetTravelDirection();
+        Vector3 travelDirection =
+            GetTravelDirection();
 
-        float slopeAmount = Vector3.Dot(
-            travelDirection,
-            Vector3.down);
+        float slopeAmount =
+            Vector3.Dot(
+                travelDirection,
+                Vector3.down);
 
         currentGrindSpeed +=
             slopeAmount *
             slopeAcceleration *
             Time.fixedDeltaTime;
 
-        currentGrindSpeed = Mathf.Clamp(
-            currentGrindSpeed,
-            minGrindSpeed,
-            maxGrindSpeed);
+        currentGrindSpeed =
+            Mathf.Clamp(
+                currentGrindSpeed,
+                minGrindSpeed,
+                maxGrindSpeed);
 
-        float effectiveSpeed = isCrouching
-            ? currentGrindSpeed * crouchSpeedMultiplier
-            : currentGrindSpeed;
+        float effectiveSpeed =
+            isCrouching
+                ? currentGrindSpeed *
+                  crouchSpeedMultiplier
+                : currentGrindSpeed;
 
-        effectiveSpeed = Mathf.Min(
-            effectiveSpeed,
-            maxGrindSpeed);
+        effectiveSpeed =
+            Mathf.Min(
+                effectiveSpeed,
+                maxGrindSpeed);
 
         float railLength =
             currentRail.ApproximateLength();
 
-        if (railLength <= 0f)
+        if (railLength <= Mathf.Epsilon)
         {
-            StopGrinding(false);
+            StopGrinding(
+                jumped: false);
+
             return;
         }
 
         splineT +=
             grindDirectionSign *
-            (effectiveSpeed * Time.fixedDeltaTime) /
+            effectiveSpeed *
+            Time.fixedDeltaTime /
             railLength;
 
-        bool reachedEnd =
-            splineT >= 1f || splineT <= 0f;
-
-        if (!reachedEnd)
+        if (splineT > 0f &&
+            splineT < 1f)
         {
             return;
         }
 
-        splineT = Mathf.Clamp01(splineT);
-        StopGrinding(false);
+        splineT =
+            Mathf.Clamp01(splineT);
+
+        StopGrinding(
+            jumped: false);
     }
 
     private void AlignLeaderToRail()
     {
-        if (currentRail == null)
+        if (currentRail == null ||
+            playerRigidbody == null)
         {
             return;
         }
@@ -490,17 +791,21 @@ public class RailGrinding : MonoBehaviour
         Vector3 targetPosition =
             currentRail.GetPoint(splineT);
 
+        Vector3 snappedPosition =
+            Vector3.Lerp(
+                playerRigidbody.position,
+                targetPosition,
+                snapSpeed *
+                Time.fixedDeltaTime);
+
+        playerRigidbody.MovePosition(
+            snappedPosition);
+
         Vector3 travelDirection =
             GetTravelDirection();
 
-        Vector3 snappedPosition = Vector3.Lerp(
-            playerRigidbody.position,
-            targetPosition,
-            snapSpeed * Time.fixedDeltaTime);
-
-        playerRigidbody.MovePosition(snappedPosition);
-
-        if (travelDirection.sqrMagnitude <= 0.001f)
+        if (travelDirection.sqrMagnitude <=
+            0.001f)
         {
             return;
         }
@@ -510,29 +815,32 @@ public class RailGrinding : MonoBehaviour
                 travelDirection,
                 Vector3.up);
 
-        playerRigidbody.MoveRotation(
+        Quaternion smoothedRotation =
             Quaternion.Slerp(
                 playerRigidbody.rotation,
                 targetRotation,
-                snapSpeed * Time.fixedDeltaTime));
+                snapSpeed *
+                Time.fixedDeltaTime);
+
+        playerRigidbody.MoveRotation(
+            smoothedRotation);
     }
 
     private Vector3 GetTravelDirection()
     {
         if (currentRail == null)
-        {
             return transform.forward;
-        }
 
         Vector3 tangent =
-            currentRail.GetTangent(splineT);
+            currentRail.GetTangent(
+                splineT);
 
         if (tangent.sqrMagnitude <= 0.001f)
-        {
             return transform.forward;
-        }
 
-        return tangent.normalized * grindDirectionSign;
+        return
+            tangent.normalized *
+            grindDirectionSign;
     }
 
     #endregion
@@ -543,20 +851,26 @@ public class RailGrinding : MonoBehaviour
     {
         if (Input.GetKeyDown(railJumpKey))
         {
-            StopGrinding(true);
+            StopGrinding(
+                jumped: true);
+
             return;
         }
 
-        isCrouching = Input.GetKey(crouchKey);
+        isCrouching =
+            Input.GetKey(crouchKey);
 
         float horizontalInput =
             Input.GetAxisRaw("Horizontal");
 
-        if (Mathf.Abs(horizontalInput) >=
+        if (Mathf.Abs(horizontalInput) <
             switchInputThreshold)
         {
-            TrySwitchRail(horizontalInput);
+            return;
         }
+
+        TrySwitchRail(
+            horizontalInput);
     }
 
     #endregion
@@ -566,9 +880,7 @@ public class RailGrinding : MonoBehaviour
     private void PositionTeammates()
     {
         if (currentRail == null)
-        {
             return;
-        }
 
         PlaceMemberAtOffset(
             member2,
@@ -586,7 +898,8 @@ public class RailGrinding : MonoBehaviour
         float worldOffset,
         ParticleSystem sparks)
     {
-        if (member == null || currentRail == null)
+        if (member == null ||
+            currentRail == null)
         {
             return;
         }
@@ -594,17 +907,18 @@ public class RailGrinding : MonoBehaviour
         float railLength =
             currentRail.ApproximateLength();
 
-        if (railLength <= 0f)
-        {
+        if (railLength <= Mathf.Epsilon)
             return;
-        }
 
         float offsetT =
-            worldOffset / railLength;
+            worldOffset /
+            railLength;
 
-        float memberT = Mathf.Clamp01(
-            splineT -
-            grindDirectionSign * offsetT);
+        float memberT =
+            Mathf.Clamp01(
+                splineT -
+                grindDirectionSign *
+                offsetT);
 
         Vector3 targetPosition =
             currentRail.GetPoint(memberT);
@@ -613,23 +927,27 @@ public class RailGrinding : MonoBehaviour
             currentRail.GetTangent(memberT) *
             grindDirectionSign;
 
-        member.position = Vector3.Lerp(
-            member.position,
-            targetPosition,
-            memberSnapSpeed * Time.fixedDeltaTime);
+        member.position =
+            Vector3.Lerp(
+                member.position,
+                targetPosition,
+                memberSnapSpeed *
+                Time.fixedDeltaTime);
 
         if (tangent.sqrMagnitude > 0.001f)
         {
-            member.rotation = Quaternion.Slerp(
-                member.rotation,
-                Quaternion.LookRotation(
-                    tangent,
-                    Vector3.up),
-                memberSnapSpeed *
-                Time.fixedDeltaTime);
+            member.rotation =
+                Quaternion.Slerp(
+                    member.rotation,
+                    Quaternion.LookRotation(
+                        tangent,
+                        Vector3.up),
+                    memberSnapSpeed *
+                    Time.fixedDeltaTime);
         }
 
-        if (sparks != null && !sparks.isPlaying)
+        if (sparks != null &&
+            !sparks.isPlaying)
         {
             sparks.Play();
         }
@@ -639,18 +957,11 @@ public class RailGrinding : MonoBehaviour
 
     #region Rail Switching
 
-    private void TrySwitchRail(float lateralInput)
+    private void TrySwitchRail(
+        float lateralInput)
     {
-        if (currentRail == null)
-        {
+        if (!CanAttemptRailSwitch())
             return;
-        }
-
-        if (Time.time - lastSwitchTime <
-            switchCooldown)
-        {
-            return;
-        }
 
         Vector3 playerPosition =
             playerRigidbody.position;
@@ -658,13 +969,56 @@ public class RailGrinding : MonoBehaviour
         Vector3 travelDirection =
             GetTravelDirection();
 
+        Vector3 preferredDirection =
+            GetPreferredSwitchDirection(
+                travelDirection,
+                lateralInput);
+
+        if (!TryFindBestRailSwitch(
+                playerPosition,
+                travelDirection,
+                preferredDirection,
+                out RailSwitchCandidate candidate))
+        {
+            return;
+        }
+
+        ApplyRailSwitch(candidate);
+    }
+
+    private bool CanAttemptRailSwitch()
+    {
+        return
+            currentRail != null &&
+            playerRigidbody != null &&
+            Time.time -
+            lastSwitchTime >=
+            switchCooldown;
+    }
+
+    private static Vector3 GetPreferredSwitchDirection(
+        Vector3 travelDirection,
+        float lateralInput)
+    {
         Vector3 rightDirection =
             Vector3.Cross(
                 Vector3.up,
                 travelDirection).normalized;
 
-        Vector3 preferredDirection =
-            rightDirection * Mathf.Sign(lateralInput);
+        return
+            rightDirection *
+            Mathf.Sign(lateralInput);
+    }
+
+    private bool TryFindBestRailSwitch(
+        Vector3 playerPosition,
+        Vector3 travelDirection,
+        Vector3 preferredDirection,
+        out RailSwitchCandidate bestCandidate)
+    {
+        bestCandidate = default;
+        bool foundCandidate = false;
+        float bestScore = float.MaxValue;
 
         Collider[] nearbyRails =
             Physics.OverlapSphere(
@@ -673,103 +1027,133 @@ public class RailGrinding : MonoBehaviour
                 railLayerMask,
                 QueryTriggerInteraction.Collide);
 
-        RailSpline bestRail = null;
-        float bestRailT = 0f;
-        float bestScore = float.MaxValue;
-        float bestDirectionSign = 1f;
-
         foreach (Collider nearbyCollider in nearbyRails)
         {
-            RailSpline candidate =
-                nearbyCollider.GetComponentInParent<RailSpline>();
-
-            if (candidate == null ||
-                candidate == currentRail)
+            if (!TryEvaluateRailCandidate(
+                    nearbyCollider,
+                    playerPosition,
+                    travelDirection,
+                    preferredDirection,
+                    out RailSwitchCandidate candidate))
             {
                 continue;
             }
 
-            float candidateT =
-                candidate.GetClosestT(playerPosition);
-
-            Vector3 candidatePoint =
-                candidate.GetPoint(candidateT);
-
-            Vector3 toCandidate =
-                candidatePoint - playerPosition;
-
-            float distance =
-                toCandidate.magnitude;
-
-            if (distance > switchScanRadius ||
-                distance <= 0.001f)
-            {
+            if (candidate.Score >= bestScore)
                 continue;
-            }
 
-            float sideAmount = Vector3.Dot(
-                toCandidate.normalized,
+            bestScore = candidate.Score;
+            bestCandidate = candidate;
+            foundCandidate = true;
+        }
+
+        return foundCandidate;
+    }
+
+    private bool TryEvaluateRailCandidate(
+        Collider nearbyCollider,
+        Vector3 playerPosition,
+        Vector3 travelDirection,
+        Vector3 preferredDirection,
+        out RailSwitchCandidate candidate)
+    {
+        candidate = default;
+
+        if (nearbyCollider == null)
+            return false;
+
+        RailSpline rail =
+            nearbyCollider.GetComponentInParent<RailSpline>();
+
+        if (rail == null ||
+            rail == currentRail)
+        {
+            return false;
+        }
+
+        float railT =
+            rail.GetClosestT(
+                playerPosition);
+
+        Vector3 railPoint =
+            rail.GetPoint(railT);
+
+        Vector3 toRail =
+            railPoint -
+            playerPosition;
+
+        float distance =
+            toRail.magnitude;
+
+        if (distance <= 0.001f ||
+            distance > switchScanRadius)
+        {
+            return false;
+        }
+
+        float sideAmount =
+            Vector3.Dot(
+                toRail.normalized,
                 preferredDirection);
 
-            if (sideAmount <= 0f)
-            {
-                continue;
-            }
+        if (sideAmount <= 0f)
+            return false;
 
-            Vector3 candidateTangent =
-                candidate.GetTangent(candidateT).normalized;
+        Vector3 railTangent =
+            rail.GetTangent(railT).normalized;
 
-            float forwardAngle =
-                Vector3.Angle(
-                    travelDirection,
-                    candidateTangent);
+        float forwardAngle =
+            Vector3.Angle(
+                travelDirection,
+                railTangent);
 
-            float reverseAngle =
-                Vector3.Angle(
-                    travelDirection,
-                    -candidateTangent);
+        float reverseAngle =
+            Vector3.Angle(
+                travelDirection,
+                -railTangent);
 
-            float candidateAngle =
-                Mathf.Min(
-                    forwardAngle,
-                    reverseAngle);
+        float bestAngle =
+            Mathf.Min(
+                forwardAngle,
+                reverseAngle);
 
-            if (candidateAngle > switchMaxAngle)
-            {
-                continue;
-            }
+        if (bestAngle > switchMaxAngle)
+            return false;
 
-            float candidateSign =
-                forwardAngle <= reverseAngle
-                    ? 1f
-                    : -1f;
+        float directionSign =
+            forwardAngle <= reverseAngle
+                ? 1f
+                : -1f;
 
-            float score =
-                distance -
-                sideAmount * switchScanRadius;
+        float score =
+            distance -
+            sideAmount *
+            switchScanRadius;
 
-            if (score >= bestScore)
-            {
-                continue;
-            }
+        candidate =
+            new RailSwitchCandidate(
+                rail,
+                railT,
+                directionSign,
+                score);
 
-            bestScore = score;
-            bestRail = candidate;
-            bestRailT = candidateT;
-            bestDirectionSign = candidateSign;
-        }
+        return true;
+    }
 
-        if (bestRail == null)
-        {
-            return;
-        }
-
-        currentRail = bestRail;
-        splineT = bestRailT;
-        grindDirectionSign = bestDirectionSign;
+    private void ApplyRailSwitch(
+        RailSwitchCandidate candidate)
+    {
+        currentRail = candidate.Rail;
+        splineT = candidate.SplineT;
+        grindDirectionSign =
+            candidate.DirectionSign;
         lastSwitchTime = Time.time;
 
-        PlayOneShot(railSwitchSFX);
+        PlayOneShot(
+            railSwitchSFX);
+
+        LogStateChange(
+            $"Switched to rail '{currentRail.name}'.");
     }
 
     #endregion
@@ -780,10 +1164,17 @@ public class RailGrinding : MonoBehaviour
     {
         return currentTeam switch
         {
-            TeamType.Speed => speedTeamModifier,
-            TeamType.Fly => flyTeamModifier,
-            TeamType.Power => powerTeamModifier,
-            _ => 1f
+            TeamType.Speed =>
+                speedTeamModifier,
+
+            TeamType.Fly =>
+                flyTeamModifier,
+
+            TeamType.Power =>
+                powerTeamModifier,
+
+            _ =>
+                1f
         };
     }
 
@@ -794,20 +1185,18 @@ public class RailGrinding : MonoBehaviour
     private void UpdateAnimatorState()
     {
         if (railAnimator == null)
-        {
             return;
-        }
 
         railAnimator.SetBool(
-            "IsGrinding",
+            IsGrindingHash,
             isGrinding);
 
         railAnimator.SetBool(
-            "IsCrouching",
+            IsCrouchingHash,
             isCrouching);
 
         railAnimator.SetFloat(
-            "GrindSpeed",
+            GrindSpeedHash,
             currentGrindSpeed);
     }
 
@@ -815,9 +1204,11 @@ public class RailGrinding : MonoBehaviour
 
     #region Audio
 
-    private void PlayOneShot(AudioClip clip)
+    private void PlayOneShot(
+        AudioClip clip)
     {
-        if (audioSource == null || clip == null)
+        if (audioSource == null ||
+            clip == null)
         {
             return;
         }
@@ -841,9 +1232,7 @@ public class RailGrinding : MonoBehaviour
     private void StopGrindLoop()
     {
         if (audioSource == null)
-        {
             return;
-        }
 
         audioSource.loop = false;
         audioSource.Stop();
@@ -870,25 +1259,133 @@ public class RailGrinding : MonoBehaviour
 
     #endregion
 
-    #region Gizmos
+    #region Validation
 
-    private void OnDrawGizmosSelected()
+    private bool ValidateConfiguration()
     {
-        Vector3 detectionOrigin =
-            transform.position + railDetectionOffset;
+        bool valid = true;
 
-        Gizmos.DrawWireSphere(
-            detectionOrigin,
-            railDetectionRadius);
+        valid &=
+            ValidateReference(
+                playerRigidbody,
+                nameof(Rigidbody));
 
-        Gizmos.DrawLine(
-            detectionOrigin,
-            detectionOrigin +
-            Vector3.down * railRayDistance);
+        valid &=
+            ValidateReference(
+                playerMovement,
+                nameof(UltimatePlayerMovement));
 
-        Gizmos.DrawWireSphere(
-            transform.position,
-            switchScanRadius);
+        valid &=
+            ValidateReference(
+                audioSource,
+                nameof(AudioSource));
+
+        if (railLayerMask.value == 0)
+        {
+            Debug.LogWarning(
+                "RailGrinding rail layer mask is empty.",
+                this);
+        }
+
+        if (railAnimator == null)
+        {
+            Debug.LogWarning(
+                "RailGrinding could not find an Animator.",
+                this);
+        }
+
+        return valid;
+    }
+
+    private bool ValidateReference(
+        UnityEngine.Object reference,
+        string displayName)
+    {
+        if (reference != null)
+            return true;
+
+        Debug.LogError(
+            $"RailGrinding requires {displayName}.",
+            this);
+
+        return false;
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    private void CleanupRuntimeState()
+    {
+        if (isGrinding)
+        {
+            StopGrinding(
+                jumped: false);
+        }
+
+        StopGrindLoop();
+        StopAllSparksFX();
+        isCrouching = false;
+        UpdateAnimatorState();
+    }
+
+    private void CleanupDestroyedState()
+    {
+        CleanupRuntimeState();
+
+        isInitialized = false;
+
+        currentRail = null;
+        playerRigidbody = null;
+        playerMovement = null;
+        audioSource = null;
+        railAnimator = null;
+
+        member2 = null;
+        member3 = null;
+
+        leaderSparksFX = null;
+        member2SparksFX = null;
+        member3SparksFX = null;
+    }
+
+    #endregion
+
+    #region Debug
+
+    private void LogStateChange(
+        string message)
+    {
+        if (!logStateChanges)
+            return;
+
+        Debug.Log(
+            message,
+            this);
+    }
+
+    #endregion
+
+    #region Internal Types
+
+    private readonly struct RailSwitchCandidate
+    {
+        public RailSwitchCandidate(
+            RailSpline rail,
+            float splineT,
+            float directionSign,
+            float score)
+        {
+            Rail = rail;
+            SplineT = splineT;
+            DirectionSign = directionSign;
+            Score = score;
+        }
+
+        public RailSpline Rail { get; }
+        public float SplineT { get; }
+        public float DirectionSign { get; }
+        public float Score { get; }
     }
 
     #endregion
