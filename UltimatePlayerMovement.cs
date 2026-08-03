@@ -258,33 +258,26 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     private void OnValidate()
     {
+        acceleration =
+            Mathf.Max(
+                0f,
+                acceleration);
+
+        deceleration =
+            Mathf.Max(
+                0f,
+                deceleration);
+
+        groundCheckRadius =
+            Mathf.Max(
+                0f,
+                groundCheckRadius);
+
         runSpeed = Mathf.Max(0f, runSpeed);
         airSpeed = Mathf.Max(0f, airSpeed);
         turnSpeed = Mathf.Max(0f, turnSpeed);
         jumpForce = Mathf.Max(0f, jumpForce);
         airControl = Mathf.Max(0f, airControl);
-
-        rollingSpeed = Mathf.Max(0f, rollingSpeed);
-        rollingTurnSpeed = Mathf.Max(0f, rollingTurnSpeed);
-
-        homingAttackSpeed = Mathf.Max(0f, homingAttackSpeed);
-        homingAttackDuration = Mathf.Max(0f, homingAttackDuration);
-        homingRange = Mathf.Max(0f, homingRange);
-
-        flyingSpeed = Mathf.Max(0f, flyingSpeed);
-        flyingVerticalSpeed = Mathf.Max(0f, flyingVerticalSpeed);
-
-        defaultHurtDuration =
-            Mathf.Max(
-                0f,
-                defaultHurtDuration);
-
-        if (!Enum.IsDefined(
-                typeof(PlayerState),
-                currentState))
-        {
-            currentState = PlayerState.Ground;
-        }
     }
 
     private void OnDrawGizmosSelected()
@@ -985,25 +978,48 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
         movementInput.y = 0f;
 
-        Vector3 velocity =
+        Vector3 currentVelocity =
             playerRigidbody.linearVelocity;
 
-        if (velocity.y < 0f)
-        {
-            velocity.y = 0f;
+        Vector3 currentHorizontalVelocity =
+            currentVelocity;
 
-            playerRigidbody.linearVelocity =
-                velocity;
+        currentHorizontalVelocity.y = 0f;
+
+        Vector3 targetHorizontalVelocity =
+            movementInput *
+            runSpeed;
+
+        bool hasMovementInput =
+            movementInput.sqrMagnitude >
+            0.001f;
+
+        float movementRate =
+            hasMovementInput
+                ? acceleration
+                : deceleration;
+
+        Vector3 newHorizontalVelocity =
+            Vector3.MoveTowards(
+                currentHorizontalVelocity,
+                targetHorizontalVelocity,
+                movementRate *
+                Time.fixedDeltaTime);
+
+        float verticalVelocity =
+            currentVelocity.y;
+
+        if (isGrounded &&
+            verticalVelocity < 0f)
+        {
+            verticalVelocity = 0f;
         }
 
-        Vector3 targetPosition =
-            playerRigidbody.position +
-            movementInput *
-            runSpeed *
-            Time.fixedDeltaTime;
-
-        playerRigidbody.MovePosition(
-            targetPosition);
+        playerRigidbody.linearVelocity =
+            new Vector3(
+                newHorizontalVelocity.x,
+                verticalVelocity,
+                newHorizontalVelocity.z);
     }
 
     private void AirMovement(
