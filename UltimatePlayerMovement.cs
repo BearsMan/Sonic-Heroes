@@ -11,11 +11,11 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 {
     #region Constants
 
-    // Kept public and lowercase for compatibility with existing project code.
-    public const float acceleration = 5f;
-    public const float deceleration = 3f;
+    [Header("Movement")]
+    [SerializeField, Min(0f)] private float acceleration = 5f;
+    [SerializeField, Min(0f)] private float deceleration = 3f;
 
-    private const float GroundCheckRadius = 0.3f;
+    [SerializeField, Min(0f)] private float groundCheckRadius = 0.3f;
     private const string GroundCheckName = "GroundCheck";
 
     private static readonly int StateHash =
@@ -295,8 +295,8 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         Gizmos.color = Color.red;
 
         Gizmos.DrawWireSphere(
-            groundCheck.position,
-            GroundCheckRadius);
+        groundCheck.position,
+        groundCheckRadius);
     }
 
     #endregion
@@ -1150,7 +1150,7 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         return
             Physics.CheckSphere(
                 groundCheck.position,
-                GroundCheckRadius,
+                groundCheckRadius,
                 groundMask,
                 QueryTriggerInteraction.Ignore);
     }
