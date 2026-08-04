@@ -302,13 +302,43 @@ public sealed class HomingAttack : MonoBehaviour
 
     private void CacheComponents()
     {
-        movement ??= GetComponentInParent<UltimatePlayerMovement>();
+        if (movement == null)
+        {
+            movement =
+                GetComponent<UltimatePlayerMovement>();
+        }
 
-        actionController ??= GetComponentInParent<TeamActionController>();
+        if (movement == null)
+        {
+            movement =
+                GetComponentInParent<UltimatePlayerMovement>();
+        }
 
-        playerRigidbody ??= GetComponentInParent<Rigidbody>();
+        if (movement == null)
+        {
+            movement =
+                GetComponentInChildren<UltimatePlayerMovement>(
+                    includeInactive: true);
+        }
 
-        characterSwitch ??= GetComponentInParent<CharacterSwitch>();
+        if (playerRigidbody == null)
+        {
+            playerRigidbody =
+                GetComponent<Rigidbody>();
+        }
+
+        if (playerRigidbody == null)
+        {
+            playerRigidbody =
+                GetComponentInParent<Rigidbody>();
+        }
+
+        if (playerRigidbody == null)
+        {
+            playerRigidbody =
+                GetComponentInChildren<Rigidbody>(
+                    includeInactive: true);
+        }
     }
 
     private void ResolveReferences()

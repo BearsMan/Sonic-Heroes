@@ -299,13 +299,13 @@ public sealed class TeamSetup : MonoBehaviour
     #region Character Spawning
 
     private Transform SpawnCharacter(
-        GameObject prefab,
-        Transform slot)
+    GameObject prefab,
+    Transform slot)
     {
         if (prefab == null)
         {
             Debug.LogError(
-                "TeamSetup cannot spawn a null prefab.",
+                "TeamSetup cannot spawn a null character prefab.",
                 this);
 
             return null;
@@ -314,28 +314,20 @@ public sealed class TeamSetup : MonoBehaviour
         if (slot == null)
         {
             Debug.LogError(
-                $"TeamSetup cannot spawn '{prefab.name}' into a null slot.",
+                $"TeamSetup cannot spawn '{prefab.name}' because its formation slot is missing.",
                 this);
 
             return null;
         }
 
-        GameObject character =
-            Instantiate(
-                prefab,
-                slot);
-
-        if (character == null)
-        {
-            Debug.LogError(
-                $"TeamSetup failed to instantiate '{prefab.name}'.",
-                this);
-
-            return null;
-        }
+        GameObject characterObject =
+        Instantiate(
+            prefab,
+            slot,
+            false);
 
         Transform characterTransform =
-            character.transform;
+            characterObject.transform;
 
         characterTransform.SetLocalPositionAndRotation(
             Vector3.zero,
@@ -344,16 +336,62 @@ public sealed class TeamSetup : MonoBehaviour
                 180f,
                 0f));
 
-        if (characterTransform.parent == slot)
-            return characterTransform;
+        characterTransform.localScale =
+            prefab.transform.localScale;
 
-        Debug.LogError(
-            $"'{character.name}' was not parented to '{slot.name}'.",
-            character);
+        UltimatePlayerMovement movement =
+            characterTransform.GetComponent<UltimatePlayerMovement>();
 
-        Destroy(character);
+        if (movement == null)
+        {
+            movement =
+                characterTransform.GetComponentInChildren<UltimatePlayerMovement>(
+                    includeInactive: true);
+        }
 
-        return null;
+        if (movement == null)
+        {
+            Debug.LogError(
+                $"UltimatePlayerMovement is missing from '{characterTransform.name}'.",
+                characterTransform);
+
+            Destroy(
+               characterObject);
+
+            return null;
+        }
+
+        if (!movement.InitializeMovement())
+        {
+            Debug.LogError(
+                $"Failed to initialize '{characterTransform.name}'.",
+                characterTransform);
+
+            Destroy(
+                characterObject);
+
+            return null;
+        }
+
+        HomingAttack homingAttack =
+            characterTransform.GetComponent<HomingAttack>();
+
+        if (homingAttack == null)
+        {
+            homingAttack =
+                characterTransform.GetComponentInChildren<HomingAttack>(
+                    includeInactive: true);
+        }
+
+        if (homingAttack != null &&
+    !homingAttack.InitializeHomingAttack())
+        {
+            Debug.LogWarning(
+                $"Failed to initialize HomingAttack on '{characterTransform.name}'.",
+                characterTransform);
+        }
+
+        return characterTransform;
     }
 
     private bool ValidateSpawnedCharacters(
