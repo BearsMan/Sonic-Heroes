@@ -218,6 +218,19 @@ public sealed class TeamSetup : MonoBehaviour
             return false;
         }
 
+        if (!ValidateSpawnedCharacters(
+        speedCharacter,
+        flyingCharacter,
+        powerCharacter))
+        {
+            CleanupFailedTeam(
+                speedCharacter,
+                flyingCharacter,
+                powerCharacter);
+
+            return false;
+        }
+
         bool configured =
             characterSwitch.ConfigureTeam(
                 speedCharacter,
@@ -341,6 +354,58 @@ public sealed class TeamSetup : MonoBehaviour
         Destroy(character);
 
         return null;
+    }
+
+    private bool ValidateSpawnedCharacters(
+    Transform speedCharacter,
+    Transform flyingCharacter,
+    Transform powerCharacter)
+    {
+        bool valid = true;
+
+        valid &=
+            ValidateCharacterMovement(
+                speedCharacter,
+                "Speed Character");
+
+        valid &=
+            ValidateCharacterMovement(
+                flyingCharacter,
+                "Flying Character");
+
+        valid &=
+            ValidateCharacterMovement(
+                powerCharacter,
+                "Power Character");
+
+        return valid;
+    }
+
+    private bool ValidateCharacterMovement(
+        Transform character,
+        string displayName)
+    {
+        if (character == null)
+        {
+            Debug.LogError(
+                $"TeamSetup cannot validate a null {displayName}.",
+                this);
+
+            return false;
+        }
+
+        UltimatePlayerMovement movement =
+            character.GetComponentInChildren<UltimatePlayerMovement>(
+                includeInactive: true);
+
+        if (movement != null)
+            return true;
+
+        Debug.LogError(
+            $"TeamSetup could not find UltimatePlayerMovement on the spawned {displayName} '{character.name}'.",
+            character);
+
+        return false;
     }
 
     private void ClearFormationSlots()

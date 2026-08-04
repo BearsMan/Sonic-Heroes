@@ -19,7 +19,6 @@ public sealed class RailGrinding : MonoBehaviour
     #endregion
 
     #region Animator Hashes
-
     private static readonly int IsGrindingHash =
         Animator.StringToHash("IsGrinding");
 
@@ -29,6 +28,7 @@ public sealed class RailGrinding : MonoBehaviour
     private static readonly int GrindSpeedHash =
         Animator.StringToHash("GrindSpeed");
 
+    private const int RailSwitchBufferSize = 16;
     #endregion
 
     #region Inspector
@@ -103,9 +103,13 @@ public sealed class RailGrinding : MonoBehaviour
     [SerializeField] private bool isGrinding;
     [SerializeField] private bool isCrouching;
     [SerializeField] private float currentGrindSpeed;
+    private readonly Collider[] railSwitchBuffer =
+    new Collider[RailSwitchBufferSize];
     [SerializeField, Range(0f, 1f)] private float splineT;
 
     private RailSpline currentRail;
+    private float currentRailLength;
+    private float currentTeamModifier = 1f;
     private Rigidbody playerRigidbody;
     private AudioSource audioSource;
 
@@ -128,9 +132,12 @@ public sealed class RailGrinding : MonoBehaviour
     public bool IsInitialized => isInitialized;
 
     public void SetTeamType(
-        TeamType teamType)
+    TeamType teamType)
     {
         currentTeam = teamType;
+
+        currentTeamModifier =
+            GetTeamModifier();
     }
 
     public bool TrySnapToRail(
@@ -160,6 +167,16 @@ public sealed class RailGrinding : MonoBehaviour
 
         currentRail = rail;
         splineT = clampedT;
+
+        currentRailLength =
+            currentRail.ApproximateLength();
+
+        if (currentRailLength <= Mathf.Epsilon)
+        {
+            currentRail = null;
+            currentRailLength = 0f;
+            return false;
+        }
 
         DetermineGrindingDirection();
         CalculateStartingSpeed();
@@ -342,6 +359,7 @@ public sealed class RailGrinding : MonoBehaviour
         }
 
         ResetRuntimeState();
+        currentTeamModifier = GetTeamModifier();
         StopAllSparksFX();
         UpdateAnimatorState();
 
@@ -609,6 +627,7 @@ public sealed class RailGrinding : MonoBehaviour
         playerMovement?.ExitGrindingState();
 
         currentRail = null;
+        currentRailLength = 0f;
 
         StopGrindLoop();
         PlayOneShot(grindEndSFX);
@@ -626,6 +645,7 @@ public sealed class RailGrinding : MonoBehaviour
         isGrinding = false;
         isCrouching = false;
         currentRail = null;
+        currentRailLength = 0f;
         currentGrindSpeed = 0f;
         splineT = 0f;
         grindDirectionSign = 1f;
@@ -681,7 +701,7 @@ public sealed class RailGrinding : MonoBehaviour
             currentGrindSpeed =
                 Mathf.Clamp(
                     baseGrindSpeed *
-                    GetTeamModifier(),
+                    currentTeamModifier,
                     minGrindSpeed,
                     maxGrindSpeed);
 
@@ -699,7 +719,7 @@ public sealed class RailGrinding : MonoBehaviour
 
         float teamBaseSpeed =
             baseGrindSpeed *
-            GetTeamModifier();
+            currentTeamModifier;
 
         currentGrindSpeed =
             Mathf.Clamp(
@@ -750,10 +770,7 @@ public sealed class RailGrinding : MonoBehaviour
                 effectiveSpeed,
                 maxGrindSpeed);
 
-        float railLength =
-            currentRail.ApproximateLength();
-
-        if (railLength <= Mathf.Epsilon)
+        if (currentRailLength <= Mathf.Epsilon)
         {
             StopGrinding(
                 jumped: false);
@@ -762,10 +779,10 @@ public sealed class RailGrinding : MonoBehaviour
         }
 
         splineT +=
-            grindDirectionSign *
-            effectiveSpeed *
-            Time.fixedDeltaTime /
-            railLength;
+    grindDirectionSign *
+    effectiveSpeed *
+    Time.fixedDeltaTime /
+    currentRailLength;
 
         if (splineT > 0f &&
             splineT < 1f)
@@ -904,15 +921,12 @@ public sealed class RailGrinding : MonoBehaviour
             return;
         }
 
-        float railLength =
-            currentRail.ApproximateLength();
-
-        if (railLength <= Mathf.Epsilon)
+        if (currentRailLength <= Mathf.Epsilon)
             return;
 
         float offsetT =
             worldOffset /
-            railLength;
+            currentRailLength;
 
         float memberT =
             Mathf.Clamp01(
@@ -1011,24 +1025,31 @@ public sealed class RailGrinding : MonoBehaviour
     }
 
     private bool TryFindBestRailSwitch(
-        Vector3 playerPosition,
-        Vector3 travelDirection,
-        Vector3 preferredDirection,
-        out RailSwitchCandidate bestCandidate)
+    Vector3 playerPosition,
+    Vector3 travelDirection,
+    Vector3 preferredDirection,
+    out RailSwitchCandidate bestCandidate)
     {
         bestCandidate = default;
+
         bool foundCandidate = false;
         float bestScore = float.MaxValue;
 
-        Collider[] nearbyRails =
-            Physics.OverlapSphere(
+        int railCount =
+            Physics.OverlapSphereNonAlloc(
                 playerPosition,
                 switchScanRadius,
+                railSwitchBuffer,
                 railLayerMask,
                 QueryTriggerInteraction.Collide);
 
-        foreach (Collider nearbyCollider in nearbyRails)
+        for (int index = 0;
+             index < railCount;
+             index++)
         {
+            Collider nearbyCollider =
+                railSwitchBuffer[index];
+
             if (!TryEvaluateRailCandidate(
                     nearbyCollider,
                     playerPosition,
@@ -1336,6 +1357,7 @@ public sealed class RailGrinding : MonoBehaviour
         isInitialized = false;
 
         currentRail = null;
+        currentRailLength = 0f;
         playerRigidbody = null;
         playerMovement = null;
         audioSource = null;
