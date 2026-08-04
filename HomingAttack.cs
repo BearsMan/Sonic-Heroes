@@ -354,6 +354,31 @@ public sealed class HomingAttack : MonoBehaviour
                 movement.GetComponentInChildren<Animator>(
                     includeInactive: true);
         }
+
+        actionController ??=
+            GetComponent<TeamActionController>();
+
+        actionController ??=
+            GetComponentInParent<TeamActionController>();
+
+        actionController ??=
+            FindAnyObjectByType<TeamActionController>(
+                FindObjectsInactive.Include);
+
+        characterSwitch ??=
+            GetComponent<CharacterSwitch>();
+
+        characterSwitch ??=
+            GetComponentInParent<CharacterSwitch>();
+
+        characterSwitch ??=
+            TeamSetup.Instance != null
+                ? TeamSetup.Instance.GetComponent<CharacterSwitch>()
+                : null;
+
+        characterSwitch ??=
+            FindAnyObjectByType<CharacterSwitch>(
+                FindObjectsInactive.Include);
     }
 
     private void RestoreRuntimeState()

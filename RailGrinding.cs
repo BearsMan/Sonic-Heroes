@@ -1266,16 +1266,44 @@ public sealed class RailGrinding : MonoBehaviour
 
     private void PlayAllSparksFX()
     {
-        leaderSparksFX?.Play();
-        member2SparksFX?.Play();
-        member3SparksFX?.Play();
+        if (leaderSparksFX)
+        {
+            leaderSparksFX.Play();
+        }
+
+        if (member2SparksFX)
+        {
+            member2SparksFX.Play();
+        }
+
+        if (member3SparksFX)
+        {
+            member3SparksFX.Play();
+        }
     }
 
     private void StopAllSparksFX()
     {
-        leaderSparksFX?.Stop();
-        member2SparksFX?.Stop();
-        member3SparksFX?.Stop();
+        if (leaderSparksFX)
+        {
+            leaderSparksFX.Stop(
+                true,
+                ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        if (member2SparksFX)
+        {
+            member2SparksFX.Stop(
+                true,
+                ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        if (member3SparksFX)
+        {
+            member3SparksFX.Stop(
+                true,
+                ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
     }
 
     #endregion

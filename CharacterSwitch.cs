@@ -192,12 +192,12 @@ public sealed class CharacterSwitch : MonoBehaviour
     #region Initialization
 
     public bool ConfigureTeam(
-        Transform speed,
-        Transform flying,
-        Transform power,
-        GameObject normalSpeed,
-        GameObject superSpeed,
-        CHARACTERTYPES initialLeader)
+    Transform speed,
+    Transform flying,
+    Transform power,
+    GameObject normalSpeed,
+    GameObject superSpeed,
+    CHARACTERTYPES initialLeader)
     {
         if (!ValidateTeamArguments(
                 speed,
@@ -216,6 +216,33 @@ public sealed class CharacterSwitch : MonoBehaviour
 
         normalSpeedPrefab = normalSpeed;
         superSpeedPrefab = superSpeed;
+
+        UltimatePlayerMovement speedMovement =
+            speedCharacter.GetComponentInChildren<UltimatePlayerMovement>(
+                includeInactive: true);
+
+        UltimatePlayerMovement flyingMovement =
+            flyingCharacter.GetComponentInChildren<UltimatePlayerMovement>(
+                includeInactive: true);
+
+        UltimatePlayerMovement powerMovement =
+            powerCharacter.GetComponentInChildren<UltimatePlayerMovement>(
+                includeInactive: true);
+
+        speedDefinition =
+            speedMovement != null
+                ? speedMovement.CharacterDefinition
+                : null;
+
+        flyingDefinition =
+            flyingMovement != null
+                ? flyingMovement.CharacterDefinition
+                : null;
+
+        powerDefinition =
+            powerMovement != null
+                ? powerMovement.CharacterDefinition
+                : null;
 
         currentLeaderType = initialLeader;
         isSuperForm = false;

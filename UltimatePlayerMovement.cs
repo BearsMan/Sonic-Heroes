@@ -28,6 +28,11 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     private const string GroundProbeName = "GroundCheck";
     private const int HomingTargetCapacity = 32;
 
+    private const RigidbodyConstraints DefaultConstraints =
+    RigidbodyConstraints.FreezeRotationX |
+    RigidbodyConstraints.FreezeRotationY |
+    RigidbodyConstraints.FreezeRotationZ;
+
     private static readonly int StateHash =
         Animator.StringToHash("State");
 
@@ -517,6 +522,14 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             startingState =
                 MovementState.Ground;
         }
+
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            ResolveDependencies();
+            ApplyPhysicsSettings();
+        }
+#endif
     }
 
     private void OnDrawGizmosSelected()
@@ -594,25 +607,7 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     private void ResolveDependencies()
     {
-        if (playerRigidbody == null)
-        {
-            playerRigidbody =
-                GetComponent<Rigidbody>();
-        }
-
-        if (playerRigidbody == null)
-        {
-            playerRigidbody =
-                GetComponentInParent<Rigidbody>();
-        }
-
-        if (playerRigidbody == null)
-        {
-            playerRigidbody =
-                GetComponentInChildren<Rigidbody>(
-                    includeInactive: true);
-        }
-
+        ResolveRigidbody();
         ResolveAnimator();
         ResolveCamera();
         ResolveGroundProbe();
@@ -662,6 +657,7 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
                 camera.transform;
         }
     }
+
     private void ResolveGroundProbe()
     {
         if (groundProbe != null)
@@ -704,14 +700,65 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     private void ConfigureRigidbody()
     {
+        ResolveRigidbody();
+
+        if (playerRigidbody == null)
+        {
+            Debug.LogError(
+                $"{nameof(UltimatePlayerMovement)} could not configure Rigidbody because none was found.",
+                this);
+
+            return;
+        }
+
+        ApplyPhysicsSettings();
+    }
+
+    private void ApplyPhysicsSettings()
+    {
         if (playerRigidbody == null)
             return;
 
-        playerRigidbody.constraints =
-            RigidbodyConstraints.FreezeRotation;
+        playerRigidbody.useGravity = true;
+        playerRigidbody.isKinematic = false;
 
         playerRigidbody.interpolation =
             RigidbodyInterpolation.Interpolate;
+
+        playerRigidbody.collisionDetectionMode =
+            CollisionDetectionMode.ContinuousDynamic;
+
+        playerRigidbody.constraints =
+            DefaultConstraints;
+
+        playerRigidbody.WakeUp();
+    }
+
+    private void ResolveRigidbody()
+    {
+        if (playerRigidbody != null)
+            return;
+
+        playerRigidbody = GetComponent<Rigidbody>();
+
+        if (playerRigidbody == null)
+        {
+            playerRigidbody = GetComponentInParent<Rigidbody>();
+
+            if (playerRigidbody == null)
+            {
+                playerRigidbody =
+                    GetComponentInChildren<Rigidbody>(
+                        includeInactive: true);
+            }
+        }
+
+        if (playerRigidbody == null)
+        {
+            Debug.LogError(
+                $"{nameof(UltimatePlayerMovement)} requires a Rigidbody.",
+                this);
+        }
     }
 
     private void ResetRuntimeState()
