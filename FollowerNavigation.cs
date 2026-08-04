@@ -41,11 +41,14 @@ public sealed class FollowerNavigation : MonoBehaviour
     private Animator animator;
     private Rigidbody body;
     private CapsuleCollider capsule;
+    private Vector3 lastDestination;
 
     private bool isGrounded;
     private bool isInitialized;
     private bool isExternallyMoving;
     private bool isShuttingDown;
+    private bool hasSpeedParameter;
+    private bool hasGroundedParameter;
 
     #endregion
 
@@ -73,6 +76,7 @@ public sealed class FollowerNavigation : MonoBehaviour
         CacheComponents();
         ConfigureComponents();
         ConfigureAgent();
+        CacheAnimatorParameters();
     }
 
     private void Start()
@@ -97,6 +101,8 @@ public sealed class FollowerNavigation : MonoBehaviour
         CacheComponents();
         ConfigureComponents();
         ConfigureAgent();
+        CacheAnimatorParameters();
+
 
         if (isInitialized && !isExternallyMoving)
         {
@@ -195,11 +201,19 @@ public sealed class FollowerNavigation : MonoBehaviour
             return false;
         }
 
+
         target = followTarget;
+
+        lastDestination =
+                new Vector3(
+                    float.PositiveInfinity,
+                    float.PositiveInfinity,
+                    float.PositiveInfinity);
 
         CacheComponents();
         ConfigureComponents();
         ConfigureAgent();
+        CacheAnimatorParameters();
 
         if (!ValidateConfiguration())
         {
@@ -251,6 +265,15 @@ public sealed class FollowerNavigation : MonoBehaviour
         agent.autoBraking = true;
     }
 
+    private void CacheAnimatorParameters()
+    {
+        hasSpeedParameter =
+            HasParameter(SpeedHash);
+
+        hasGroundedParameter =
+            HasParameter(GroundedHash);
+    }
+
     #endregion
 
     #region Target Management
@@ -264,6 +287,12 @@ public sealed class FollowerNavigation : MonoBehaviour
         }
 
         target = followTarget;
+
+        lastDestination =
+        new Vector3(
+        float.PositiveInfinity,
+        float.PositiveInfinity,
+        float.PositiveInfinity);
 
         if (!isInitialized)
         {
@@ -417,7 +446,14 @@ public sealed class FollowerNavigation : MonoBehaviour
             return;
         }
 
-        agent.SetDestination(target.position);
+        Vector3 destination =
+        target.position;
+
+        if ((destination - lastDestination).sqrMagnitude > 0.04f)
+        {
+            agent.SetDestination(destination);
+            lastDestination = destination;
+        }
     }
 
     private void RotateTowardsMovement()
@@ -492,6 +528,7 @@ public sealed class FollowerNavigation : MonoBehaviour
             agent.enabled)
         {
             agent.Warp(hit.position);
+            lastDestination = Vector3.positiveInfinity;
         }
 
         if (body != null)
@@ -577,12 +614,12 @@ public sealed class FollowerNavigation : MonoBehaviour
                     ? body.linearVelocity.magnitude
                     : 0f;
 
-        if (HasParameter(SpeedHash))
+        if (hasSpeedParameter)
         {
             animator.SetFloat(SpeedHash, speed);
         }
 
-        if (HasParameter(GroundedHash))
+        if (hasGroundedParameter)
         {
             animator.SetBool(GroundedHash, isGrounded);
         }
@@ -657,6 +694,10 @@ public sealed class FollowerNavigation : MonoBehaviour
         animator = null;
         body = null;
         capsule = null;
+
+        hasSpeedParameter = false;
+        hasGroundedParameter = false;
+        lastDestination = Vector3.zero;
     }
 
     #endregion

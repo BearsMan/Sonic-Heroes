@@ -18,6 +18,9 @@ public sealed class TeamActionController : MonoBehaviour
     {
         None,
         HomingAttack,
+        ChaosControl,
+        ShadowChaosAttack,
+        AmyHammerAttack,
         TornadoJump,
         TriangleDive,
         TriangleJump,
@@ -46,6 +49,7 @@ public sealed class TeamActionController : MonoBehaviour
     [SerializeField] private Transform powerCharacter;
     [SerializeField] private UltimatePlayerMovement movement;
     [SerializeField] private RailGrinding railGrinding;
+    [SerializeField] private CharacterSwitch characterSwitch;
 
     [Header("Optional Formation Input")]
     [SerializeField] private bool readFormationInput = true;
@@ -113,6 +117,8 @@ public sealed class TeamActionController : MonoBehaviour
         CacheComponents();
         ResolveReferences();
 
+        SubscribeToCharacterSwitch();
+
         if (!isInitialized)
             return;
 
@@ -141,12 +147,14 @@ public sealed class TeamActionController : MonoBehaviour
 
     private void OnDisable()
     {
+        UnsubscribeFromCharacterSwitch();
         CleanupRuntimeState();
     }
 
     private void OnDestroy()
     {
         isShuttingDown = true;
+        UnsubscribeFromCharacterSwitch();
         CleanupDestroyedState();
     }
 
@@ -203,6 +211,55 @@ public sealed class TeamActionController : MonoBehaviour
 
         railGrinding ??=
             GetComponentInParent<RailGrinding>();
+
+        characterSwitch ??=
+    GetComponent<CharacterSwitch>();
+
+        characterSwitch ??=
+            GetComponentInParent<CharacterSwitch>();
+    }
+
+    private void HandleLeaderChanged(
+    CHARACTERTYPES leaderType)
+    {
+        TeamFormation newFormation =
+            leaderType switch
+            {
+                CHARACTERTYPES.Speed =>
+                    TeamFormation.Speed,
+
+                CHARACTERTYPES.Fly =>
+                    TeamFormation.Fly,
+
+                CHARACTERTYPES.Power =>
+                    TeamFormation.Power,
+
+                _ =>
+                    TeamFormation.Speed
+            };
+
+        SetFormation(newFormation);
+    }
+
+    private void SubscribeToCharacterSwitch()
+    {
+        if (characterSwitch == null)
+            return;
+
+        characterSwitch.LeaderChanged -=
+            HandleLeaderChanged;
+
+        characterSwitch.LeaderChanged +=
+            HandleLeaderChanged;
+    }
+
+    private void UnsubscribeFromCharacterSwitch()
+    {
+        if (characterSwitch == null)
+            return;
+
+        characterSwitch.LeaderChanged -=
+            HandleLeaderChanged;
     }
 
     private void ResolveReferences()

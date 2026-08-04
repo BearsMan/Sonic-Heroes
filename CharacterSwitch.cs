@@ -41,6 +41,11 @@ public sealed class CharacterSwitch : MonoBehaviour
     [FormerlySerializedAs("powerCharacter")]
     [SerializeField] private Transform powerCharacter;
 
+    [Header("Character Definitions")]
+    [SerializeField] private CharacterDefinition speedDefinition;
+    [SerializeField] private CharacterDefinition flyingDefinition;
+    [SerializeField] private CharacterDefinition powerDefinition;
+
     [Header("Speed Character Forms")]
     [FormerlySerializedAs("sonic")]
     [SerializeField] private GameObject normalSpeedPrefab;
@@ -502,6 +507,25 @@ public sealed class CharacterSwitch : MonoBehaviour
         };
     }
 
+    private CharacterDefinition GetCharacterDefinition(
+    CHARACTERTYPES characterType)
+    {
+        return characterType switch
+        {
+            CHARACTERTYPES.Speed =>
+                speedDefinition,
+
+            CHARACTERTYPES.Fly =>
+                flyingDefinition,
+
+            CHARACTERTYPES.Power =>
+                powerDefinition,
+
+            _ =>
+                null
+        };
+    }
+
     #endregion
 
     #region Super Form
@@ -687,7 +711,31 @@ public sealed class CharacterSwitch : MonoBehaviour
         }
         else
         {
-            leaderMovement.SetupAnimation();
+            CharacterDefinition definition =
+                GetCharacterDefinition(
+                    currentLeaderType);
+
+            if (definition == null)
+            {
+                Debug.LogError(
+                    $"CharacterSwitch has no CharacterDefinition assigned for {currentLeaderType}.",
+                    this);
+
+                valid = false;
+            }
+            else if (!leaderMovement.SetCharacterDefinition(
+                         definition))
+            {
+                Debug.LogError(
+                    $"CharacterSwitch failed to apply the CharacterDefinition for {currentLeaderType}.",
+                    this);
+
+                valid = false;
+            }
+            else
+            {
+                leaderMovement.SetupAnimation();
+            }
         }
 
         if (leftFollowerNavigation == null)
@@ -953,6 +1001,21 @@ public sealed class CharacterSwitch : MonoBehaviour
                 rightFollowTarget,
                 "Right Follow Target");
 
+        valid &=
+    ValidateRequiredReference(
+        speedDefinition,
+        "Speed Character Definition");
+
+        valid &=
+            ValidateRequiredReference(
+                flyingDefinition,
+                "Flying Character Definition");
+
+        valid &=
+            ValidateRequiredReference(
+                powerDefinition,
+                "Power Character Definition");
+
         if (teamSetup == null)
         {
             Debug.LogWarning(
@@ -1076,6 +1139,10 @@ public sealed class CharacterSwitch : MonoBehaviour
         speedCharacter = null;
         flyingCharacter = null;
         powerCharacter = null;
+
+        speedDefinition = null;
+        flyingDefinition = null;
+        powerDefinition = null;
 
         normalSpeedPrefab = null;
         superSpeedPrefab = null;
