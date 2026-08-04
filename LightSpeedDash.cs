@@ -2,653 +2,1206 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Speed Formation dash attack.
-/// Locks onto nearby ring trails when available or performs a straight dash.
-/// Damages enemies along both dash paths.
-/// </summary>
-public class LightSpeedDash : MonoBehaviour
+[DisallowMultipleComponent]
+[RequireComponent(typeof(Rigidbody))]
+public sealed class LightSpeedDash : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField] private TeamActionController actionController;
-    [SerializeField] private UltimatePlayerMovement movement;
+    #region Types
+
+    private enum DashState
+    {
+        Ready,
+        Straight,
+        RingChain,
+        Cooldown
+    }
+
+    #endregion
+
+    #region Constants
+
+    private const int RingQueryCapacity = 32;
+    private const int CollisionQueryCapacity = 24;
+    private const int DamageQueryCapacity = 48;
+
+    #endregion
+
+    #region Inspector
+
+    [Header("Dependencies")]
+    [SerializeField] private UltimatePlayerMovement playerMovement;
+    [SerializeField] private TeamActionController teamActions;
     [SerializeField] private Rigidbody playerRigidbody;
-    [SerializeField] private Animator playerAnimator;
     [SerializeField] private AudioSource audioSource;
 
     [Header("Input")]
+    [SerializeField] private bool acceptInput = true;
     [SerializeField] private KeyCode dashKey = KeyCode.B;
 
+    [Header("Dash Selection")]
+    [SerializeField] private bool useRingTrails = true;
+    [SerializeField] private LayerMask ringMask;
+    [SerializeField, Min(0.1f)] private float ringAcquisitionRadius = 8f;
+
     [Header("Straight Dash")]
-    [SerializeField, Min(0.1f)] private float dashSpeed = 80f;
-    [SerializeField, Min(0.1f)] private float maximumDashDistance = 20f;
-    [SerializeField, Min(0.05f)] private float maximumDashTime = 0.4f;
-    [SerializeField] private bool preserveVerticalDirection;
-    [SerializeField] private bool stopOnObstacle = true;
+    [SerializeField, Min(0.1f)] private float straightSpeed = 70f;
+    [SerializeField, Min(0.1f)] private float straightDistance = 18f;
+    [SerializeField, Min(0.05f)] private float straightDuration = 0.35f;
 
-    [Header("Ring Trail")]
-    [SerializeField] private LayerMask ringLayers;
-    [SerializeField, Min(0.1f)] private float ringSearchRadius = 8f;
-    [SerializeField, Min(0.1f)] private float ringChainRadius = 5f;
-    [SerializeField, Min(0.1f)] private float ringDashSpeed = 60f;
-    [SerializeField, Min(0f)] private float ringArrivalDistance = 0.1f;
-    [SerializeField, Min(0f)] private float ringRotationSpeed = 1080f;
-    [SerializeField, Min(0.1f)] private float maximumRingDashTime = 4f;
-    [SerializeField, Range(-1f, 1f)] private float minimumRingDirectionDot = -0.25f;
-    [SerializeField] private bool prioritizeRingTrails = true;
+    [Header("Ring Dash")]
+    [SerializeField, Min(0.1f)] private float ringSpeed = 55f;
+    [SerializeField, Min(0.1f)] private float ringLinkRadius = 5f;
+    [SerializeField, Min(0f)] private float ringArrivalRadius = 0.15f;
+    [SerializeField, Min(0.1f)] private float ringChainDuration = 4f;
+    [SerializeField, Range(-1f, 1f)] private float minimumDirectionAlignment = -0.2f;
 
-    [Header("Exit")]
-    [SerializeField, Min(0f)] private float exitSpeed = 15f;
+    [Header("Motion")]
+    [SerializeField, Min(0f)] private float rotationSpeed = 1080f;
+    [SerializeField, Min(0f)] private float exitSpeed = 14f;
+    [SerializeField] private bool flattenStraightDirection = true;
 
     [Header("Collision")]
-    [SerializeField, Min(0.05f)] private float dashRadius = 0.75f;
-    [SerializeField] private LayerMask obstacleLayers = ~0;
-    [SerializeField] private LayerMask damageLayers = ~0;
+    [SerializeField, Min(0.05f)] private float bodyRadius = 0.65f;
+    [SerializeField, Min(0f)] private float collisionPadding = 0.05f;
+    [SerializeField] private LayerMask obstacleMask = ~0;
 
     [Header("Damage")]
     [SerializeField, Min(0f)] private float damage = 25f;
-    [SerializeField] private bool breakObjects = true;
+    [SerializeField] private LayerMask damageMask = ~0;
+    [SerializeField] private bool breakDamageableObjects = true;
 
     [Header("Cooldown")]
-    [SerializeField, Min(0f)] private float dashCoolDown = 0.5f;
+    [SerializeField, Min(0f)] private float cooldown = 0.5f;
 
-    [Header("Animation")]
-    [SerializeField] private string dashAnimation = "Light Speed Dash";
-    [SerializeField] private string exitAnimation = "Run";
-
-    [Header("Effects")]
+    [Header("Presentation")]
     [SerializeField] private GameObject dashEffect;
     [SerializeField] private TrailRenderer dashTrail;
-
-    [Header("Audio")]
-    [SerializeField] private AudioClip dashStartSound;
-    [SerializeField] private AudioClip dashHitSound;
-    [SerializeField] private AudioClip ringLockSound;
-    [SerializeField] private AudioClip dashEndSound;
+    [SerializeField] private AudioClip beginSound;
+    [SerializeField] private AudioClip ringSound;
+    [SerializeField] private AudioClip hitSound;
+    [SerializeField] private AudioClip endSound;
 
     [Header("Debug")]
-    [SerializeField] private bool drawDashPath = true;
-    [SerializeField] private bool drawRingSearch = true;
     [SerializeField] private bool logStateChanges;
-    private LightSpeedDashRing currentRing;
-    private readonly HashSet<GameObject> damagedObjects = new();
-    private readonly HashSet<LightSpeedDashRing> visitedRings = new();
-    private Coroutine dashCoroutine;
-    
-    private Vector3 dashDirection;
-    private bool isDashing;
-    private bool isFollowingRings;
-    private bool previousGravityState;
-    private bool previousKinematicState;
-    private bool movementDisabledDirectly;
-    private float nextDashTime;
 
-    public bool IsDashing => isDashing;
-    public bool IsFollowingRings => isFollowingRings;
-    public bool CanDash => !isDashing && Time.time >= nextDashTime;
+    #endregion
+
+    #region Runtime State
+
+    private readonly Collider[] ringQuery =
+        new Collider[RingQueryCapacity];
+
+    private readonly RaycastHit[] collisionQuery =
+        new RaycastHit[CollisionQueryCapacity];
+
+    private readonly Collider[] damageQuery =
+        new Collider[DamageQueryCapacity];
+
+    private readonly HashSet<LightSpeedDashRing> usedRings =
+        new();
+
+    private readonly HashSet<GameObject> damagedObjects =
+        new();
+
+    private Coroutine dashRoutine;
+    private LightSpeedDashRing targetRing;
+
+    private DashState state =
+        DashState.Ready;
+
+    private Vector3 dashDirection;
+
+    private float cooldownEndTime;
+
+    private bool savedGravity;
+    private bool savedKinematic;
+    private bool ownsDirectMovementLock;
+    private bool initialized;
+    private bool shuttingDown;
+
+    #endregion
+
+    #region Public API
+
+    public bool IsDashing =>
+        state == DashState.Straight ||
+        state == DashState.RingChain;
+
+    public bool IsFollowingRings =>
+        state == DashState.RingChain;
+
+    public bool IsInitialized =>
+        initialized;
+
+    public bool CanStart =>
+        initialized &&
+        state == DashState.Ready &&
+        Time.time >= cooldownEndTime;
+
+    public void SetInputEnabled(
+        bool enabled)
+    {
+        acceptInput = enabled;
+    }
+
+    public bool StartDash()
+    {
+        if (!CanStart)
+            return false;
+
+        ResolveDependencies();
+
+        if (!ValidateRuntimeReferences())
+            return false;
+
+        if (!IsSpeedFormationActive())
+            return false;
+
+        LightSpeedDashRing firstRing =
+            useRingTrails
+                ? FindNextRing(
+                    playerRigidbody.position,
+                    ringAcquisitionRadius,
+                    null)
+                : null;
+
+        if (!TakeControl())
+            return false;
+
+        BeginDash(firstRing);
+        return true;
+    }
+
+    public void CancelDash()
+    {
+        EndDash(
+            preserveMomentum: false,
+            stopCoroutine: true);
+    }
+
+    #endregion
+
+    #region Unity Lifecycle
 
     private void Awake()
     {
-        ResolveReferences();
-        SetPresentation(false);
+        ResolveDependencies();
+        HidePresentation();
+    }
+
+    private void Start()
+    {
+        initialized =
+            ValidateConfiguration();
+
+        if (!initialized)
+        {
+            Debug.LogError(
+                $"LightSpeedDash could not initialize on '{name}'.",
+                this);
+
+            enabled = false;
+        }
+    }
+
+    private void OnEnable()
+    {
+        if (shuttingDown)
+            return;
+
+        ResolveDependencies();
+
+        if (!IsDashing)
+        {
+            HidePresentation();
+        }
     }
 
     private void Update()
     {
+        UpdateCooldownState();
+
+        if (!acceptInput ||
+            !CanStart)
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(dashKey))
-            TryStartDash();
-    }
-
-    private void ResolveReferences()
-    {
-        if (actionController == null)
-            actionController = GetComponent<TeamActionController>();
-        if (actionController == null)
-            actionController = GetComponentInParent<TeamActionController>();
-        if (movement == null)
-            movement = GetComponent<UltimatePlayerMovement>();
-        if (movement == null)
-            movement = GetComponentInParent<UltimatePlayerMovement>();
-        if (playerRigidbody == null)
-            playerRigidbody = GetComponent<Rigidbody>();
-        if (playerRigidbody == null && movement != null)
-            playerRigidbody = movement.GetComponent<Rigidbody>();
-        if (playerAnimator == null)
-            playerAnimator = GetComponentInChildren<Animator>();
-        if (audioSource == null)
-            audioSource = GetComponent<AudioSource>();
-    }
-
-    public bool TryStartDash()
-    {
-        if (!CanDash)
-            return false;
-        ResolveReferences();
-        if (playerRigidbody == null)
         {
-            Debug.LogWarning("LightSpeedDash could not find a Rigidbody.", this);
-            return false;
+            StartDash();
         }
-        LightSpeedDashRing nearbyRing = prioritizeRingTrails
-    ? FindClosestRing(playerRigidbody.position, ringSearchRadius, null)
-    : null;
-        if (!BeginTeamAction())
+    }
+
+    private void OnDisable()
+    {
+        CancelDash();
+        HidePresentation();
+    }
+
+    private void OnDestroy()
+    {
+        shuttingDown = true;
+
+        CancelDash();
+
+        playerMovement = null;
+        teamActions = null;
+        playerRigidbody = null;
+        audioSource = null;
+
+        dashEffect = null;
+        dashTrail = null;
+    }
+
+    private void OnValidate()
+    {
+        ringAcquisitionRadius =
+            Mathf.Max(
+                0.1f,
+                ringAcquisitionRadius);
+
+        straightSpeed =
+            Mathf.Max(
+                0.1f,
+                straightSpeed);
+
+        straightDistance =
+            Mathf.Max(
+                0.1f,
+                straightDistance);
+
+        straightDuration =
+            Mathf.Max(
+                0.05f,
+                straightDuration);
+
+        ringSpeed =
+            Mathf.Max(
+                0.1f,
+                ringSpeed);
+
+        ringLinkRadius =
+            Mathf.Max(
+                0.1f,
+                ringLinkRadius);
+
+        ringArrivalRadius =
+            Mathf.Max(
+                0f,
+                ringArrivalRadius);
+
+        ringChainDuration =
+            Mathf.Max(
+                0.1f,
+                ringChainDuration);
+
+        minimumDirectionAlignment =
+            Mathf.Clamp(
+                minimumDirectionAlignment,
+                -1f,
+                1f);
+
+        rotationSpeed =
+            Mathf.Max(
+                0f,
+                rotationSpeed);
+
+        exitSpeed =
+            Mathf.Max(
+                0f,
+                exitSpeed);
+
+        bodyRadius =
+            Mathf.Max(
+                0.05f,
+                bodyRadius);
+
+        collisionPadding =
+            Mathf.Max(
+                0f,
+                collisionPadding);
+
+        damage =
+            Mathf.Max(
+                0f,
+                damage);
+
+        cooldown =
+            Mathf.Max(
+                0f,
+                cooldown);
+    }
+
+    #endregion
+
+    #region Dependency Resolution
+
+    private void ResolveDependencies()
+    {
+        playerMovement ??=
+            GetComponent<UltimatePlayerMovement>();
+
+        playerMovement ??=
+            GetComponentInParent<UltimatePlayerMovement>();
+
+        teamActions ??=
+            GetComponent<TeamActionController>();
+
+        teamActions ??=
+            GetComponentInParent<TeamActionController>();
+
+        playerRigidbody ??=
+            GetComponent<Rigidbody>();
+
+        if (playerRigidbody == null &&
+            playerMovement != null)
+        {
+            playerRigidbody =
+                playerMovement.GetComponent<Rigidbody>();
+        }
+
+        audioSource ??=
+            GetComponent<AudioSource>();
+
+        audioSource ??=
+            GetComponentInParent<AudioSource>();
+    }
+
+    #endregion
+
+    #region Activation
+
+    private bool IsSpeedFormationActive()
+    {
+        if (teamActions == null)
             return false;
-        BeginDash(nearbyRing);
+
+        return
+            teamActions.CurrentFormation ==
+            TeamActionController.TeamFormation.Speed;
+    }
+
+    private bool TakeControl()
+    {
+        ownsDirectMovementLock = false;
+
+        if (teamActions != null)
+        {
+            return
+                teamActions.TryBeginAction(
+                    TeamActionController.TeamAction.LightDash,
+                    TeamActionController.TeamFormation.Speed,
+                    mustBeGrounded: false,
+                    mustBeAirborne: false,
+                    surrenderMovementControl: true);
+        }
+
+        if (playerMovement == null)
+            return false;
+
+        playerMovement.DisableMovement();
+        ownsDirectMovementLock = true;
+
         return true;
     }
 
-    private bool BeginTeamAction()
+    private void ReleaseControl()
     {
-        movementDisabledDirectly = false;
-        if (actionController != null)
+        if (teamActions != null &&
+            teamActions.CurrentAction ==
+            TeamActionController.TeamAction.LightDash)
         {
-            bool accepted = actionController.TryBeginAction(
-                TeamActionController.TeamAction.LightDash,
-                TeamActionController.TeamFormation.Speed,
-                mustBeGrounded: false,
-                mustBeAirborne: false,
-                surrenderMovementControl: true);
-            if (!accepted)
-                return false;
+            teamActions.EndAction(
+                restoreMovementControl: true);
         }
-        else if (movement != null)
+        else if (ownsDirectMovementLock &&
+                 playerMovement != null)
         {
-            movement.DisableMovement();
-            movementDisabledDirectly = true;
+            playerMovement.EnableMovement();
         }
-        return true;
+
+        ownsDirectMovementLock = false;
     }
 
-    private void BeginDash(LightSpeedDashRing startingRing)
+    private void BeginDash(
+        LightSpeedDashRing firstRing)
     {
-        isDashing = true;
-        isFollowingRings = startingRing != null;
-        currentRing = startingRing;
+        targetRing = firstRing;
+
+        state =
+            firstRing != null
+                ? DashState.RingChain
+                : DashState.Straight;
+
+        usedRings.Clear();
         damagedObjects.Clear();
-        visitedRings.Clear();
-        dashDirection = GetDashDirection();
-        previousGravityState = playerRigidbody.useGravity;
-        previousKinematicState = playerRigidbody.isKinematic;
-        playerRigidbody.linearVelocity = Vector3.zero;
-        playerRigidbody.angularVelocity = Vector3.zero;
-        playerRigidbody.useGravity = false;
-        playerRigidbody.isKinematic = true;
-        PlayAnimation(dashAnimation);
-        PlaySound(dashStartSound);
-        if (isFollowingRings)
-            PlaySound(ringLockSound);
-        SetPresentation(true);
-        dashCoroutine = StartCoroutine(
-            isFollowingRings
-                ? RingDashRoutine()
-                : StraightDashRoutine());
-        if (logStateChanges)
+
+        dashDirection =
+            BuildInitialDirection();
+
+        SaveAndOverridePhysics();
+
+        ShowPresentation();
+        PlaySound(beginSound);
+
+        if (state == DashState.RingChain)
         {
-            string dashType = isFollowingRings
-                ? "ring trail"
-                : "straight";
-            Debug.Log($"Light Speed Dash started: {dashType}.", this);
+            PlaySound(ringSound);
         }
+
+        dashRoutine =
+            StartCoroutine(
+                state == DashState.RingChain
+                    ? RunRingChain()
+                    : RunStraightDash());
+
+        Log(
+            state == DashState.RingChain
+                ? "Started ring-chain dash."
+                : "Started straight dash.");
     }
 
-    private Vector3 GetDashDirection()
+    private void EndDash(
+        bool preserveMomentum,
+        bool stopCoroutine)
     {
-        Vector3 direction = transform.forward;
-        if (!preserveVerticalDirection)
+        if (!IsDashing)
+            return;
+
+        if (stopCoroutine &&
+            dashRoutine != null)
+        {
+            StopCoroutine(
+                dashRoutine);
+        }
+
+        dashRoutine = null;
+        targetRing = null;
+
+        RestorePhysics(
+            preserveMomentum);
+
+        HidePresentation();
+        PlaySound(endSound);
+        ReleaseControl();
+
+        usedRings.Clear();
+        damagedObjects.Clear();
+
+        cooldownEndTime =
+            Time.time +
+            cooldown;
+
+        state =
+            cooldown > 0f
+                ? DashState.Cooldown
+                : DashState.Ready;
+
+        Log("Light Speed Dash ended.");
+    }
+
+    private void UpdateCooldownState()
+    {
+        if (state != DashState.Cooldown)
+            return;
+
+        if (Time.time <
+            cooldownEndTime)
+        {
+            return;
+        }
+
+        state =
+            DashState.Ready;
+    }
+
+    #endregion
+
+    #region Straight Dash
+
+    private IEnumerator RunStraightDash()
+    {
+        float elapsed = 0f;
+        float travelled = 0f;
+
+        WaitForFixedUpdate wait =
+            new();
+
+        while (state == DashState.Straight &&
+               elapsed < straightDuration &&
+               travelled < straightDistance)
+        {
+            float requestedDistance =
+                Mathf.Min(
+                    straightSpeed *
+                    Time.fixedDeltaTime,
+                    straightDistance -
+                    travelled);
+
+            Vector3 startPosition =
+                playerRigidbody.position;
+
+            float allowedDistance =
+                CalculateSafeDistance(
+                    startPosition,
+                    dashDirection,
+                    requestedDistance);
+
+            Vector3 endPosition =
+                startPosition +
+                dashDirection *
+                allowedDistance;
+
+            MovePlayer(
+                startPosition,
+                endPosition);
+
+            travelled +=
+                allowedDistance;
+
+            elapsed +=
+                Time.fixedDeltaTime;
+
+            if (allowedDistance <
+                requestedDistance)
+            {
+                EndDash(
+                    preserveMomentum: false,
+                    stopCoroutine: false);
+
+                yield break;
+            }
+
+            yield return wait;
+        }
+
+        EndDash(
+            preserveMomentum: true,
+            stopCoroutine: false);
+    }
+
+    #endregion
+
+    #region Ring Chain
+
+    private IEnumerator RunRingChain()
+    {
+        float elapsed = 0f;
+
+        WaitForFixedUpdate wait =
+            new();
+
+        while (state == DashState.RingChain &&
+               elapsed < ringChainDuration)
+        {
+            if (!CanUseRing(targetRing))
+            {
+                targetRing =
+                    FindNextRing(
+                        playerRigidbody.position,
+                        ringLinkRadius,
+                        dashDirection);
+
+                if (targetRing == null)
+                {
+                    EndDash(
+                        preserveMomentum: true,
+                        stopCoroutine: false);
+
+                    yield break;
+                }
+            }
+
+            Vector3 targetPosition =
+                targetRing.DashPosition;
+
+            Vector3 offset =
+                targetPosition -
+                playerRigidbody.position;
+
+            float distance =
+                offset.magnitude;
+
+            if (distance <=
+                ringArrivalRadius)
+            {
+                ArriveAtRing(
+                    targetPosition);
+
+                yield return wait;
+                continue;
+            }
+
+            Vector3 direction =
+                offset /
+                distance;
+
+            dashDirection =
+                direction;
+
+            RotatePlayer(
+                direction);
+
+            float requestedDistance =
+                Mathf.Min(
+                    ringSpeed *
+                    Time.fixedDeltaTime,
+                    distance);
+
+            Vector3 startPosition =
+                playerRigidbody.position;
+
+            float allowedDistance =
+                CalculateSafeDistance(
+                    startPosition,
+                    direction,
+                    requestedDistance);
+
+            Vector3 endPosition =
+                startPosition +
+                direction *
+                allowedDistance;
+
+            MovePlayer(
+                startPosition,
+                endPosition);
+
+            if (allowedDistance <
+                requestedDistance)
+            {
+                EndDash(
+                    preserveMomentum: false,
+                    stopCoroutine: false);
+
+                yield break;
+            }
+
+            elapsed +=
+                Time.fixedDeltaTime;
+
+            yield return wait;
+        }
+
+        EndDash(
+            preserveMomentum: true,
+            stopCoroutine: false);
+    }
+
+    private void ArriveAtRing(
+        Vector3 ringPosition)
+    {
+        playerRigidbody.position =
+            ringPosition;
+
+        DamagePath(
+            ringPosition,
+            ringPosition);
+
+        usedRings.Add(
+            targetRing);
+
+        targetRing =
+            FindNextRing(
+                ringPosition,
+                ringLinkRadius,
+                dashDirection);
+    }
+
+    private LightSpeedDashRing FindNextRing(
+        Vector3 origin,
+        float radius,
+        Vector3? preferredDirection)
+    {
+        int count =
+            Physics.OverlapSphereNonAlloc(
+                origin,
+                radius,
+                ringQuery,
+                ringMask,
+                QueryTriggerInteraction.Collide);
+
+        LightSpeedDashRing bestRing =
+            null;
+
+        float bestScore =
+            float.MaxValue;
+
+        for (int index = 0;
+             index < count;
+             index++)
+        {
+            Collider candidateCollider =
+                ringQuery[index];
+
+            if (candidateCollider == null)
+                continue;
+
+            LightSpeedDashRing candidate =
+                candidateCollider
+                    .GetComponentInParent<LightSpeedDashRing>();
+
+            if (!CanUseRing(candidate) ||
+                usedRings.Contains(candidate))
+            {
+                continue;
+            }
+
+            Vector3 difference =
+                candidate.DashPosition -
+                origin;
+
+            float distance =
+                difference.magnitude;
+
+            if (distance <=
+                ringArrivalRadius)
+            {
+                continue;
+            }
+
+            float allowedDistance =
+                Mathf.Min(
+                    radius,
+                    candidate.ChainRange);
+
+            if (distance >
+                allowedDistance)
+            {
+                continue;
+            }
+
+            float score =
+                distance;
+
+            if (preferredDirection.HasValue)
+            {
+                float alignment =
+                    Vector3.Dot(
+                        preferredDirection.Value.normalized,
+                        difference.normalized);
+
+                if (alignment <
+                    minimumDirectionAlignment)
+                {
+                    continue;
+                }
+
+                score -=
+                    alignment *
+                    allowedDistance *
+                    0.5f;
+            }
+
+            if (score >=
+                bestScore)
+            {
+                continue;
+            }
+
+            bestScore =
+                score;
+
+            bestRing =
+                candidate;
+        }
+
+        return bestRing;
+    }
+
+    private static bool CanUseRing(
+        LightSpeedDashRing ring)
+    {
+        return
+            ring != null &&
+            ring.CanBeDashedThrough;
+    }
+
+    #endregion
+
+    #region Physics Movement
+
+    private void SaveAndOverridePhysics()
+    {
+        savedGravity =
+            playerRigidbody.useGravity;
+
+        savedKinematic =
+            playerRigidbody.isKinematic;
+
+        playerRigidbody.linearVelocity =
+            Vector3.zero;
+
+        playerRigidbody.angularVelocity =
+            Vector3.zero;
+
+        playerRigidbody.useGravity =
+            false;
+
+        playerRigidbody.isKinematic =
+            true;
+    }
+
+    private void RestorePhysics(
+        bool preserveMomentum)
+    {
+        if (playerRigidbody == null)
+            return;
+
+        playerRigidbody.isKinematic =
+            savedKinematic;
+
+        playerRigidbody.useGravity =
+            savedGravity;
+
+        if (playerRigidbody.isKinematic)
+            return;
+
+        playerRigidbody.linearVelocity =
+            preserveMomentum
+                ? dashDirection *
+                  exitSpeed
+                : Vector3.zero;
+    }
+
+    private void MovePlayer(
+        Vector3 startPosition,
+        Vector3 endPosition)
+    {
+        playerRigidbody.MovePosition(
+            endPosition);
+
+        DamagePath(
+            startPosition,
+            endPosition);
+    }
+
+    private void RotatePlayer(
+        Vector3 direction)
+    {
+        if (direction.sqrMagnitude <=
+            0.0001f)
+        {
+            return;
+        }
+
+        Quaternion desiredRotation =
+            Quaternion.LookRotation(
+                direction,
+                Vector3.up);
+
+        playerRigidbody.MoveRotation(
+            Quaternion.RotateTowards(
+                playerRigidbody.rotation,
+                desiredRotation,
+                rotationSpeed *
+                Time.fixedDeltaTime));
+    }
+
+    private float CalculateSafeDistance(
+        Vector3 origin,
+        Vector3 direction,
+        float requestedDistance)
+    {
+        int count =
+            Physics.SphereCastNonAlloc(
+                origin,
+                bodyRadius,
+                direction,
+                collisionQuery,
+                requestedDistance,
+                obstacleMask,
+                QueryTriggerInteraction.Ignore);
+
+        float safeDistance =
+            requestedDistance;
+
+        for (int index = 0;
+             index < count;
+             index++)
+        {
+            RaycastHit hit =
+                collisionQuery[index];
+
+            if (hit.collider == null ||
+                IsTeamObject(
+                    hit.collider.gameObject))
+            {
+                continue;
+            }
+
+            safeDistance =
+                Mathf.Min(
+                    safeDistance,
+                    Mathf.Max(
+                        0f,
+                        hit.distance -
+                        collisionPadding));
+        }
+
+        return safeDistance;
+    }
+
+    private Vector3 BuildInitialDirection()
+    {
+        Vector3 direction =
+            transform.forward;
+
+        if (flattenStraightDirection)
+        {
             direction.y = 0f;
-        if (direction.sqrMagnitude <= 0.0001f)
-            direction = Vector3.forward;
+        }
+
+        if (direction.sqrMagnitude <=
+            0.0001f)
+        {
+            direction =
+                Vector3.forward;
+        }
+
         return direction.normalized;
     }
 
-    private IEnumerator StraightDashRoutine()
-    {
-        float dashTimer = 0f;
-        float distanceTravelled = 0f;
-        WaitForFixedUpdate fixedUpdate = new();
-        while (isDashing &&
-               dashTimer < maximumDashTime &&
-               distanceTravelled < maximumDashDistance)
-        {
-            if (playerRigidbody == null)
-            {
-                FinishDash(false);
-                yield break;
-            }
-            float remainingDistance = maximumDashDistance - distanceTravelled;
-            float movementDistance = Mathf.Min(
-                dashSpeed * Time.fixedDeltaTime,
-                remainingDistance);
-            Vector3 startPosition = playerRigidbody.position;
-            if (CheckObstacle(
-                startPosition,
-                dashDirection,
-                movementDistance,
-                out RaycastHit obstacleHit))
-            {
-                float safeDistance = Mathf.Max(0f, obstacleHit.distance - 0.05f);
-                Vector3 impactPosition =
-                    startPosition + dashDirection * safeDistance;
-                MoveAlongPath(startPosition, impactPosition);
-                distanceTravelled += safeDistance;
-                if (stopOnObstacle)
-                {
-                    FinishDash(false);
-                    yield break;
-                }
-            }
-            else
-            {
-                Vector3 nextPosition =
-                    startPosition + dashDirection * movementDistance;
-                MoveAlongPath(startPosition, nextPosition);
-                distanceTravelled += movementDistance;
-            }
-            dashTimer += Time.fixedDeltaTime;
-            yield return fixedUpdate;
-        }
-        FinishDash(true);
-    }
+    #endregion
 
-    private IEnumerator RingDashRoutine()
-    {
-        float dashTimer = 0f;
-        WaitForFixedUpdate fixedUpdate = new();
-        while (isDashing && dashTimer < maximumRingDashTime)
-        {
-            if (playerRigidbody == null)
-            {
-                FinishDash(false);
-                yield break;
-            }
-            if (!IsValidRing(currentRing))
-            {
-                currentRing = FindClosestRing(
-                    playerRigidbody.position,
-                    ringChainRadius,
-                    dashDirection);
-                if (currentRing == null)
-                {
-                    FinishDash(true);
-                    yield break;
-                }
-            }
-            Vector3 targetPosition = currentRing.DashPosition;
-            Vector3 difference =
-                targetPosition - playerRigidbody.position;
-            float distance = difference.magnitude;
-            if (distance <= ringArrivalDistance)
-            {
-                Vector3 arrivalDirection = difference.sqrMagnitude > 0.0001f
-                    ? difference.normalized
-                    : dashDirection;
-                playerRigidbody.position = targetPosition;
-                DamageDashPath(targetPosition, targetPosition);
-                visitedRings.Add(currentRing);
-                dashDirection = arrivalDirection;
-                LightSpeedDashRing previousRing = currentRing;
-                currentRing = FindClosestRing(
-                    targetPosition,
-                    ringChainRadius,
-                    dashDirection);
-                if (currentRing == null || currentRing == previousRing)
-                {
-                    FinishDash(true);
-                    yield break;
-                }
-                yield return fixedUpdate;
-                continue;
-            }
-            Vector3 direction = difference / distance;
-            dashDirection = direction;
-            RotatePlayer(direction);
-            float movementDistance = Mathf.Min(
-                ringDashSpeed * Time.fixedDeltaTime,
-                distance);
-            Vector3 startPosition = playerRigidbody.position;
-            if (CheckObstacle(
-                startPosition,
-                direction,
-                movementDistance,
-                out RaycastHit obstacleHit))
-            {
-                float safeDistance = Mathf.Max(0f, obstacleHit.distance - 0.05f);
-                Vector3 impactPosition =
-                    startPosition + direction * safeDistance;
-                MoveAlongPath(startPosition, impactPosition);
-                FinishDash(false);
-                yield break;
-            }
-            Vector3 nextPosition = Vector3.MoveTowards(
-                startPosition,
-                targetPosition,
-                movementDistance);
-            MoveAlongPath(startPosition, nextPosition);
-            dashTimer += Time.fixedDeltaTime;
-            yield return fixedUpdate;
-        }
-        FinishDash(true);
-    }
+    #region Damage
 
-    private void MoveAlongPath(
+    private void DamagePath(
         Vector3 startPosition,
         Vector3 endPosition)
     {
-        playerRigidbody.MovePosition(endPosition);
-        DamageDashPath(startPosition, endPosition);
-    }
+        Vector3 difference =
+            endPosition -
+            startPosition;
 
-    private LightSpeedDashRing FindClosestRing(
-    Vector3 searchPosition,
-    float searchRadius,
-    Vector3? preferredDirection)
-    {
-        Collider[] nearbyColliders = Physics.OverlapSphere(
-            searchPosition,
-            searchRadius,
-            ringLayers,
-            QueryTriggerInteraction.Collide);
+        float length =
+            difference.magnitude;
 
-        LightSpeedDashRing closestRing = null;
-        float closestScore = float.MaxValue;
+        Vector3 center =
+            startPosition +
+            difference *
+            0.5f;
 
-        for (int i = 0; i < nearbyColliders.Length; i++)
+        Vector3 extents =
+            new(
+                bodyRadius,
+                bodyRadius,
+                length *
+                0.5f +
+                bodyRadius);
+
+        Quaternion rotation =
+            length > 0.0001f
+                ? Quaternion.LookRotation(
+                    difference.normalized,
+                    Vector3.up)
+                : transform.rotation;
+
+        int count =
+            Physics.OverlapBoxNonAlloc(
+                center,
+                extents,
+                damageQuery,
+                rotation,
+                damageMask,
+                QueryTriggerInteraction.Collide);
+
+        for (int index = 0;
+             index < count;
+             index++)
         {
-            LightSpeedDashRing ring =
-                nearbyColliders[i].GetComponentInParent<LightSpeedDashRing>();
-
-            if (!IsValidRing(ring) || visitedRings.Contains(ring))
-                continue;
-
-            Vector3 difference = ring.DashPosition - searchPosition;
-            float distance = difference.magnitude;
-
-            if (distance <= ringArrivalDistance)
-                continue;
-
-            float allowedChainRange = Mathf.Min(
-                searchRadius,
-                ring.ChainRange);
-
-            if (distance > allowedChainRange)
-                continue;
-
-            float score = distance;
-
-            if (preferredDirection.HasValue &&
-                preferredDirection.Value.sqrMagnitude > 0.0001f &&
-                difference.sqrMagnitude > 0.0001f)
-            {
-                float directionDot = Vector3.Dot(
-                    preferredDirection.Value.normalized,
-                    difference.normalized);
-
-                if (directionDot < minimumRingDirectionDot)
-                    continue;
-
-                score -= directionDot * allowedChainRange * 0.5f;
-            }
-
-            if (score >= closestScore)
-                continue;
-
-            closestScore = score;
-            closestRing = ring;
+            ApplyDamage(
+                damageQuery[index]);
         }
-
-        return closestRing;
     }
 
-    private bool IsValidRing(LightSpeedDashRing ring)
-    {
-        return ring != null && ring.CanBeDashedThrough;
-    }
-
-    private bool CheckObstacle(
-        Vector3 startPosition,
-        Vector3 direction,
-        float distance,
-        out RaycastHit closestHit)
-    {
-        closestHit = default;
-        RaycastHit[] hits = Physics.SphereCastAll(
-            startPosition,
-            dashRadius,
-            direction,
-            distance,
-            obstacleLayers,
-            QueryTriggerInteraction.Ignore);
-        float closestDistance = float.MaxValue;
-        bool foundHit = false;
-        for (int i = 0; i < hits.Length; i++)
-        {
-            Collider hitCollider = hits[i].collider;
-            if (hitCollider == null ||
-                IsSelfOrTeamCharacter(hitCollider.gameObject))
-            {
-                continue;
-            }
-            if (hits[i].distance >= closestDistance)
-                continue;
-            closestDistance = hits[i].distance;
-            closestHit = hits[i];
-            foundHit = true;
-        }
-        return foundHit;
-    }
-
-    private void DamageDashPath(
-        Vector3 startPosition,
-        Vector3 endPosition)
-    {
-        Vector3 difference = endPosition - startPosition;
-        float distance = difference.magnitude;
-        Vector3 centre = distance > 0f
-            ? startPosition + difference * 0.5f
-            : startPosition;
-        Vector3 halfExtents = new(
-            dashRadius,
-            dashRadius,
-            distance * 0.5f + dashRadius);
-        Quaternion rotation = distance > 0.0001f
-            ? Quaternion.LookRotation(difference.normalized, Vector3.up)
-            : playerRigidbody.rotation;
-        Collider[] hits = Physics.OverlapBox(
-            centre,
-            halfExtents,
-            rotation,
-            damageLayers,
-            QueryTriggerInteraction.Collide);
-        for (int i = 0; i < hits.Length; i++)
-            DamageTarget(hits[i]);
-    }
-
-    private void DamageTarget(Collider hitCollider)
+    private void ApplyDamage(
+        Collider hitCollider)
     {
         if (hitCollider == null)
             return;
-        GameObject target = hitCollider.attachedRigidbody != null
-            ? hitCollider.attachedRigidbody.gameObject
-            : hitCollider.gameObject;
-        if (IsSelfOrTeamCharacter(target))
+
+        GameObject target =
+            hitCollider.attachedRigidbody != null
+                ? hitCollider.attachedRigidbody.gameObject
+                : hitCollider.gameObject;
+
+        if (IsTeamObject(target) ||
+            !damagedObjects.Add(target))
+        {
             return;
-        if (!damagedObjects.Add(target))
-            return;
+        }
+
         target.SendMessage(
             "TakeDamage",
             damage,
             SendMessageOptions.DontRequireReceiver);
-        if (breakObjects)
+
+        if (breakDamageableObjects)
         {
             target.SendMessage(
                 "Break",
                 SendMessageOptions.DontRequireReceiver);
         }
-        PlaySound(dashHitSound);
+
+        PlaySound(hitSound);
     }
 
-    private void RotatePlayer(Vector3 direction)
-    {
-        if (direction.sqrMagnitude <= 0.0001f)
-            return;
-        Quaternion targetRotation =
-            Quaternion.LookRotation(direction, Vector3.up);
-        Quaternion nextRotation = Quaternion.RotateTowards(
-            playerRigidbody.rotation,
-            targetRotation,
-            ringRotationSpeed * Time.fixedDeltaTime);
-        playerRigidbody.MoveRotation(nextRotation);
-    }
-
-    private bool IsSelfOrTeamCharacter(GameObject target)
+    private bool IsTeamObject(
+        GameObject target)
     {
         if (target == null)
             return true;
+
+        Transform targetTransform =
+            target.transform;
+
         if (target == gameObject ||
-            target.transform.IsChildOf(transform) ||
-            transform.IsChildOf(target.transform))
+            targetTransform.IsChildOf(transform) ||
+            transform.IsChildOf(targetTransform))
         {
             return true;
         }
-        if (actionController == null)
+
+        if (teamActions == null)
             return false;
-        return target == actionController.SpeedCharacter ||
-               target == actionController.FlyCharacter ||
-               target == actionController.PowerCharacter;
+
+        return
+            BelongsToCharacter(
+                targetTransform,
+                teamActions.SpeedCharacter) ||
+            BelongsToCharacter(
+                targetTransform,
+                teamActions.FlyCharacter) ||
+            BelongsToCharacter(
+                targetTransform,
+                teamActions.PowerCharacter);
     }
 
-    public void CancelDash()
+    private static bool BelongsToCharacter(
+        Transform target,
+        Transform character)
     {
-        if (!isDashing)
-            return;
-        FinishDash(false);
+        return
+            target != null &&
+            character != null &&
+            (target == character ||
+             target.IsChildOf(character) ||
+             character.IsChildOf(target));
     }
 
-    private void FinishDash(bool applyExitMomentum)
-    {
-        if (!isDashing)
-            return;
-        isDashing = false;
-        isFollowingRings = false;
-        nextDashTime = Time.time + dashCoolDown;
-        if (dashCoroutine != null)
-        {
-            StopCoroutine(dashCoroutine);
-            dashCoroutine = null;
-        }
-        if (playerRigidbody != null)
-        {
-            playerRigidbody.isKinematic = previousKinematicState;
-            playerRigidbody.useGravity = previousGravityState;
-            if (applyExitMomentum && !playerRigidbody.isKinematic)
-            {
-                playerRigidbody.linearVelocity =
-                    dashDirection * exitSpeed;
-            }
-            else if (!playerRigidbody.isKinematic)
-            {
-                playerRigidbody.linearVelocity = Vector3.zero;
-            }
-        }
-        currentRing = null;
-        PlayAnimation(exitAnimation);
-        PlaySound(dashEndSound);
-        SetPresentation(false);
-        RestoreMovement();
-        damagedObjects.Clear();
-        visitedRings.Clear();
-        if (logStateChanges)
-            Debug.Log("Light Speed Dash finished.", this);
-    }
+    #endregion
 
-    private void RestoreMovement()
-    {
-        if (actionController != null &&
-            actionController.CurrentAction ==
-            TeamActionController.TeamAction.LightDash)
-        {
-            actionController.EndAction(restoreMovementControl: true);
-        }
-        else if (movementDisabledDirectly && movement != null)
-        {
-            movement.EnableMovement();
-        }
-        movementDisabledDirectly = false;
-    }
+    #region Presentation
 
-    private void PlayAnimation(string animationName)
-    {
-        if (playerAnimator == null ||
-            string.IsNullOrWhiteSpace(animationName))
-        {
-            return;
-        }
-        playerAnimator.Play(animationName);
-    }
-
-    private void PlaySound(AudioClip clip)
-    {
-        if (audioSource == null || clip == null)
-            return;
-        audioSource.PlayOneShot(clip);
-    }
-
-    private void SetPresentation(bool active)
+    private void ShowPresentation()
     {
         if (dashEffect != null)
-            dashEffect.SetActive(active);
+        {
+            dashEffect.SetActive(true);
+        }
+
         if (dashTrail != null)
-            dashTrail.emitting = active;
-    }
-
-    private void OnDisable()
-    {
-        if (isDashing)
-            FinishDash(false);
-        else
-            SetPresentation(false);
-    }
-
-    private void OnValidate()
-    {
-        dashSpeed = Mathf.Max(0.1f, dashSpeed);
-        maximumDashDistance = Mathf.Max(0.1f, maximumDashDistance);
-        maximumDashTime = Mathf.Max(0.05f, maximumDashTime);
-        ringSearchRadius = Mathf.Max(0.1f, ringSearchRadius);
-        ringChainRadius = Mathf.Max(0.1f, ringChainRadius);
-        ringDashSpeed = Mathf.Max(0.1f, ringDashSpeed);
-        ringArrivalDistance = Mathf.Max(0f, ringArrivalDistance);
-        ringRotationSpeed = Mathf.Max(0f, ringRotationSpeed);
-        maximumRingDashTime = Mathf.Max(0.1f, maximumRingDashTime);
-        exitSpeed = Mathf.Max(0f, exitSpeed);
-        dashRadius = Mathf.Max(0.05f, dashRadius);
-        damage = Mathf.Max(0f, damage);
-        dashCoolDown = Mathf.Max(0f, dashCoolDown);
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Vector3 direction = transform.forward;
-        if (!preserveVerticalDirection)
-            direction.y = 0f;
-        if (direction.sqrMagnitude <= 0.0001f)
-            direction = Vector3.forward;
-        direction.Normalize();
-        if (drawDashPath)
         {
-            Vector3 startPosition = transform.position;
-            Vector3 endPosition =
-                startPosition + direction * maximumDashDistance;
-            Gizmos.DrawWireSphere(startPosition, dashRadius);
-            Gizmos.DrawLine(startPosition, endPosition);
-            Gizmos.DrawWireSphere(endPosition, dashRadius);
-        }
-        if (drawRingSearch)
-        {
-            Gizmos.DrawWireSphere(
-                transform.position,
-                ringSearchRadius);
+            dashTrail.emitting = true;
         }
     }
+
+    private void HidePresentation()
+    {
+        if (dashEffect != null)
+        {
+            dashEffect.SetActive(false);
+        }
+
+        if (dashTrail != null)
+        {
+            dashTrail.emitting = false;
+        }
+    }
+
+    private void PlaySound(
+        AudioClip clip)
+    {
+        if (audioSource == null ||
+            clip == null)
+        {
+            return;
+        }
+
+        audioSource.PlayOneShot(
+            clip);
+    }
+
+    #endregion
+
+    #region Validation
+
+    private bool ValidateConfiguration()
+    {
+        bool valid = true;
+
+        valid &=
+            ValidateRequiredReference(
+                playerMovement,
+                nameof(UltimatePlayerMovement));
+
+        valid &=
+            ValidateRequiredReference(
+                playerRigidbody,
+                nameof(Rigidbody));
+
+        valid &=
+            ValidateRequiredReference(
+                teamActions,
+                nameof(TeamActionController));
+
+        if (ringMask.value == 0)
+        {
+            Debug.LogWarning(
+                "LightSpeedDash ring mask is empty.",
+                this);
+        }
+
+        return valid;
+    }
+
+    private bool ValidateRuntimeReferences()
+    {
+        return
+            playerMovement != null &&
+            playerRigidbody != null &&
+            teamActions != null;
+    }
+
+    private bool ValidateRequiredReference(
+        Object reference,
+        string displayName)
+    {
+        if (reference != null)
+            return true;
+
+        Debug.LogError(
+            $"LightSpeedDash requires {displayName}.",
+            this);
+
+        return false;
+    }
+
+    #endregion
+
+    #region Debug
+
+    private void Log(
+        string message)
+    {
+        if (!logStateChanges)
+            return;
+
+        Debug.Log(
+            message,
+            this);
+    }
+
+    #endregion
 }
