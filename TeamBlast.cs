@@ -359,13 +359,18 @@ public sealed class TeamBlast : MonoBehaviour
 
     #region Initialization
 
-    public bool InitializeTeamBlast()
+    private bool InitializeTeamBlast()
     {
         if (isInitialized)
             return true;
 
         CacheComponents();
         ResolveReferences();
+
+        if (deriveBlastFromPlayableTeam)
+        {
+            ResolveTeamBlastFromPlayableTeam();
+        }
 
         if (!ValidateConfiguration())
         {
@@ -382,61 +387,136 @@ public sealed class TeamBlast : MonoBehaviour
 
         GameInstance.teamBlastMeter =
             Mathf.Clamp(
-                GameInstance.teamBlastMeter > 0f
+                GameInstance.teamBlastMeter > MinimumGaugeValue
                     ? GameInstance.teamBlastMeter
                     : startingGauge,
                 MinimumGaugeValue,
                 maxGauge);
 
-        if (deriveBlastFromPlayableTeam)
-        {
-            ResolveTeamBlastFromPlayableTeam();
-        }
-
         ResetRuntimeState();
 
         isInitialized = true;
+
+        LogStateChange(
+            $"TeamBlast initialized as {GetTeamBlastName()}.");
+
         return true;
     }
 
     private void CacheComponents()
     {
-        sonicOverdrive ??=
-            GetComponentInParent<SonicOverdrive>();
+        Transform teamRoot =
+            TeamSetup.Instance != null
+                ? TeamSetup.Instance.transform
+                : transform.root;
 
-        chaosInferno ??=
-            GetComponentInParent<ChaosInferno>();
-
-        flowerFestival ??=
-            GetComponentInParent<FlowerFestival>();
-
-        chaotixRecital ??=
-            GetComponentInParent<ChaotixRecital>();
-
-        superSonicPower ??=
-            GetComponentInParent<SuperSonicPower>();
+        actionController ??=
+            GetComponent<TeamActionController>();
 
         actionController ??=
             GetComponentInParent<TeamActionController>();
 
+        if (actionController == null &&
+            teamRoot != null)
+        {
+            actionController =
+                teamRoot.GetComponentInChildren<TeamActionController>(
+                    includeInactive: true);
+        }
+
+        characterSwitch ??=
+            GetComponent<CharacterSwitch>();
+
         characterSwitch ??=
             GetComponentInParent<CharacterSwitch>();
+
+        if (characterSwitch == null &&
+            teamRoot != null)
+        {
+            characterSwitch =
+                teamRoot.GetComponentInChildren<CharacterSwitch>(
+                    includeInactive: true);
+        }
+
+        sonicOverdrive ??=
+            FindTeamBlastComponent<SonicOverdrive>(
+                teamRoot);
+
+        chaosInferno ??=
+            FindTeamBlastComponent<ChaosInferno>(
+                teamRoot);
+
+        flowerFestival ??=
+            FindTeamBlastComponent<FlowerFestival>(
+                teamRoot);
+
+        chaotixRecital ??=
+            FindTeamBlastComponent<ChaotixRecital>(
+                teamRoot);
+
+        superSonicPower ??=
+            FindTeamBlastComponent<SuperSonicPower>(
+                teamRoot);
 
         audioSource ??=
             GetComponent<AudioSource>();
 
-        audioSource ??=
-            GetComponentInParent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource =
+                gameObject.AddComponent<AudioSource>();
+        }
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
+    }
+
+    private T FindTeamBlastComponent<T>(
+        Transform searchRoot)
+        where T : Component
+    {
+        T component =
+            GetComponent<T>();
+
+        component ??=
+            GetComponentInParent<T>();
+
+        if (component == null &&
+            searchRoot != null)
+        {
+            component =
+                searchRoot.GetComponentInChildren<T>(
+                    includeInactive: true);
+        }
+
+        return component;
     }
 
     private void ResolveReferences()
     {
         animator ??=
+            GetComponent<Animator>();
+
+        animator ??=
             GetComponentInChildren<Animator>(
                 includeInactive: true);
 
+        if (animator == null &&
+            characterSwitch != null &&
+            characterSwitch.CurrentLeader != null)
+        {
+            animator =
+                characterSwitch.CurrentLeader
+                    .GetComponentInChildren<Animator>(
+                        includeInactive: true);
+        }
+
         blastOrigin ??=
-            transform;
+            characterSwitch != null &&
+            characterSwitch.CurrentLeader != null
+                ? characterSwitch.CurrentLeader
+                : transform;
     }
 
     #endregion
@@ -445,12 +525,25 @@ public sealed class TeamBlast : MonoBehaviour
 
     private bool CanActivateTeamBlast()
     {
-        return
-            isInitialized &&
-            !isPerformingTeamBlast &&
-            BlastReady &&
-            actionController != null &&
-            IsTeamBlastAllowed();
+        if (!isInitialized ||
+            isPerformingTeamBlast ||
+            !BlastReady ||
+            actionController == null ||
+            !IsTeamBlastAllowed())
+        {
+            return false;
+        }
+
+        if (!ValidateSelectedTeamBlast())
+        {
+            Debug.LogWarning(
+                $"{GetTeamBlastName()} cannot activate because its behavior component is missing.",
+                this);
+
+            return false;
+        }
+
+        return true;
     }
 
     private bool IsTeamBlastAllowed()
@@ -925,9 +1018,6 @@ public sealed class TeamBlast : MonoBehaviour
         bool valid = true;
 
         valid &=
-            ValidateSelectedTeamBlast();
-
-        valid &=
             ValidateReference(
                 actionController,
                 nameof(TeamActionController));
@@ -948,6 +1038,14 @@ public sealed class TeamBlast : MonoBehaviour
         {
             Debug.LogWarning(
                 "TeamBlast could not find an Animator.",
+                this);
+        }
+
+        if (!ValidateSelectedTeamBlast())
+        {
+            Debug.LogWarning(
+                $"{GetTeamBlastName()} is not currently available. " +
+                "TeamBlast will remain initialized, but activation will be rejected.",
                 this);
         }
 

@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+
 [DisallowMultipleComponent]
 public sealed class HUD : MonoBehaviour
 {
+    #region Inspector
+
     [Header("Main HUD Text")]
     [SerializeField] private TMP_Text scoreText;
     [SerializeField] private TMP_Text timeText;
@@ -15,198 +18,127 @@ public sealed class HUD : MonoBehaviour
     [Header("Team Display")]
     [SerializeField] private List<Image> icons = new();
     [SerializeField] private List<Image> faces = new();
-    [SerializeField] private List<Character> teamSprites = new();
     [SerializeField] private Image livesImage;
-    [SerializeField] private TeamComposition curTeam;
+    [SerializeField] private TeamComposition currentTeam;
 
     [Header("Character Level Lights")]
-    [SerializeField] private List<Image> lightsSpeed = new();
-    [SerializeField] private List<Image> lightsFly = new();
-    [SerializeField] private List<Image> lightsPower = new();
+    [SerializeField] private List<Image> speedLevelLights = new();
+    [SerializeField] private List<Image> flyLevelLights = new();
+    [SerializeField] private List<Image> powerLevelLights = new();
 
     [Header("Team Blast")]
-    [SerializeField] private Slider powerUpGauge;
+    [SerializeField] private TeamBlast teamBlast;
+    [SerializeField] private Slider teamBlastGauge;
     [SerializeField] private GameObject teamBlastPrompt;
     [SerializeField] private Image teamBlastFill;
-    [SerializeField] private KeyCode teamBlastKey = KeyCode.Z;
-    [SerializeField, Min(1)] private int maximumPower = 100;
     [SerializeField] private Color chargingColor = Color.blue;
     [SerializeField] private Color readyColor = Color.yellow;
     [SerializeField] private TeamBlastVideos teamBlastVideos;
 
     [Header("Item Pickup")]
-    [SerializeField] private Image itemPickUp;
+    [SerializeField] private Image itemPickup;
     [SerializeField, Min(0f)] private float pickupDisplayDuration = 3f;
 
+    [Header("Dependencies")]
     [SerializeField] private StageSession stageSession;
 
-    private int powerUpLevel;
-    private int displayedScore = int.MinValue;
-    private int displayedRings = int.MinValue;
-    private int displayedLives = int.MinValue;
-    private int displayedPower = int.MinValue;
-    private int displayedTime = int.MinValue;
+    [Header("Debug")]
+    [SerializeField] private bool logStateChanges;
+
+    #endregion
+
+    #region Runtime State
+
+    private readonly List<Character> teamSprites =
+        new();
 
     private Coroutine pickupRoutine;
-    private bool teamBlastReady;
+
+    private int displayedScore =
+        int.MinValue;
+
+    private int displayedRings =
+        int.MinValue;
+
+    private int displayedLives =
+        int.MinValue;
+
+    private int displayedTime =
+        int.MinValue;
+
+    private float displayedTeamBlastGauge =
+        float.MinValue;
+
+    private CHARACTERTYPES currentLeaderType =
+        CHARACTERTYPES.Speed;
+
+    private bool isInitialized;
     private bool eventsSubscribed;
+    private bool isShuttingDown;
 
-    public int PowerUpLevel => powerUpLevel;
-    public int MaximumPower => maximumPower;
-    public bool TeamBlastReady => teamBlastReady;
+    #endregion
 
-    private void Awake()
+    #region Public API
+
+    public bool IsInitialized =>
+        isInitialized;
+
+    public int PowerUpLevel =>
+        teamBlast != null
+            ? Mathf.RoundToInt(
+                teamBlast.CurrentGauge)
+            : 0;
+
+    public int MaximumPower =>
+        teamBlast != null
+            ? Mathf.RoundToInt(
+                teamBlast.MaxGauge)
+            : 100;
+
+    public bool TeamBlastReady =>
+        teamBlast != null &&
+        teamBlast.BlastReady;
+
+    public bool Setup(
+        TeamComposition team)
     {
-        ValidateReferences();
-
-        if (itemPickUp != null)
-            itemPickUp.enabled = false;
-
-        ConfigurePowerGauge();
-        if (teamBlastVideos == null)
+        if (team == null)
         {
-            teamBlastVideos = Object.FindAnyObjectByType<TeamBlastVideos>();
+            Debug.LogError(
+                "HUD Setup received no TeamComposition.",
+                this);
+
+            return false;
         }
 
-        if (teamBlastVideos == null)
+        currentTeam =
+            team;
+
+        CacheComponents();
+        ResolveReferences();
+        ConfigureComponents();
+
+        if (!BuildTeamDisplayData())
         {
-            Debug.LogWarning("HUD TeamBlastVideos reference is not assigned.", this);
+            Debug.LogError(
+                "HUD could not build the team display.",
+                this);
+
+            isInitialized = false;
+            return false;
         }
 
-        if (stageSession == null)
-        {
-            stageSession = StageSession.Instance;
-        }
+        isInitialized = true;
 
-        if (stageSession == null)
-        {
-            stageSession = Object.FindAnyObjectByType<StageSession>();
-        }
+        SetCharacter(
+            currentLeaderType);
 
-        if (stageSession == null)
-        {
-            Debug.LogWarning("HUD StageSession reference is not assigned.", this);
-        }
-    }
-
-    private void OnEnable()
-    {
-        SubscribeToEvents();
         RefreshAll();
-    }
 
-    private void Start()
-    {
-        RefreshAll();
-    }
+        LogStateChange(
+            $"HUD configured for {currentTeam.PlayableTeam}.");
 
-    private void Update()
-    {
-        UpdateTimer();
-        RefreshChangingValues();
-        HandleTeamBlastInput();
-    }
-
-    private void OnDisable()
-    {
-        UnsubscribeFromEvents();
-
-        if (pickupRoutine != null)
-        {
-            StopCoroutine(pickupRoutine);
-            pickupRoutine = null;
-        }
-    }
-
-    private void OnDestroy()
-    {
-        UnsubscribeFromEvents();
-    }
-
-    private void SubscribeToEvents()
-    {
-        if (eventsSubscribed)
-            return;
-
-        GameInstance.UpdateData += UpdateRings;
-        eventsSubscribed = true;
-    }
-
-    private void UnsubscribeFromEvents()
-    {
-        if (!eventsSubscribed)
-            return;
-
-        GameInstance.UpdateData -= UpdateRings;
-        eventsSubscribed = false;
-    }
-
-    private void ConfigurePowerGauge()
-    {
-        maximumPower = Mathf.Max(1, maximumPower);
-        powerUpLevel = Mathf.Clamp(powerUpLevel, 0, maximumPower);
-
-        if (powerUpGauge == null)
-            return;
-
-        powerUpGauge.minValue = 0f;
-        powerUpGauge.maxValue = maximumPower;
-        powerUpGauge.wholeNumbers = true;
-        powerUpGauge.value = powerUpLevel;
-    }
-
-    private void UpdateTimer()
-    {
-        if (stageSession == null)
-            return;
-
-        int centiseconds =
-            Mathf.FloorToInt(
-                stageSession.ElapsedTime * 100f);
-
-        if (centiseconds == displayedTime)
-            return;
-
-        displayedTime = centiseconds;
-        RefreshTimer();
-    }
-
-    private void RefreshTimer()
-    {
-        if (timeText == null ||
-            stageSession == null)
-        {
-            return;
-        }
-
-        float elapsedTime =
-            stageSession.ElapsedTime;
-
-        int totalCentiseconds =
-            Mathf.FloorToInt(
-                elapsedTime * 100f);
-
-        int minutes =
-            totalCentiseconds / 6000;
-
-        int seconds =
-            totalCentiseconds / 100 % 60;
-
-        int centiseconds =
-            totalCentiseconds % 100;
-
-        timeText.text =
-            $"{minutes:00}:" +
-            $"{seconds:00}:" +
-            $"{centiseconds:00}";
-    }
-
-    private void RefreshChangingValues()
-    {
-        RefreshScore();
-        UpdateRings();
-        RefreshLives();
-        UpdateTeamBlastMeter();
+        return true;
     }
 
     public void UpdateHUD()
@@ -216,134 +148,67 @@ public sealed class HUD : MonoBehaviour
 
     public void RefreshAll()
     {
-        RefreshTimer();
-        RefreshScore(true);
-        UpdateRings(true);
-        RefreshLives(true);
-        UpdateCharacterLevels();
-        UpdateTeamBlastMeter(true);
+        RefreshTimer(
+            force: true);
+
+        RefreshScore(
+            force: true);
+
+        RefreshRings(
+            force: true);
+
+        RefreshLives(
+            force: true);
+
+        RefreshCharacterLevels();
+
+        RefreshTeamBlastMeter(
+            force: true);
+
         RefreshTeamDisplay();
-    }
-
-    private void RefreshScore(bool force = false)
-    {
-        int currentScore = GameInstance.LevelScore;
-
-        if (!force && displayedScore == currentScore)
-            return;
-
-        displayedScore = currentScore;
-
-        if (scoreText != null)
-            scoreText.text = currentScore.ToString("00000000");
     }
 
     public void UpdateRings()
     {
-        UpdateRings(false);
+        RefreshRings(
+            force: false);
     }
 
-    private void UpdateRings(bool force)
+    public void SetCharacter(
+        CHARACTERTYPES characterType)
     {
-        int currentRings = GameInstance.currentRings;
+        currentLeaderType =
+            characterType;
 
-        if (!force && displayedRings == currentRings)
-            return;
-
-        displayedRings = currentRings;
-
-        if (ringText != null)
-            ringText.text = currentRings.ToString("000");
-    }
-
-    private void RefreshLives(bool force = false)
-    {
-        int currentLives = GameInstance.livesCount;
-
-        if (!force && displayedLives == currentLives)
-            return;
-
-        displayedLives = currentLives;
-
-        if (livesText != null)
-            livesText.text = currentLives.ToString("00");
-    }
-
-    public void Setup(TeamComposition currentTeam)
-    {
         if (currentTeam == null)
         {
-            Debug.LogWarning("HUD Setup received no TeamComposition.", this);
-            return;
-        }
-
-        curTeam = currentTeam;
-
-        teamSprites.Clear();
-
-        AddCharacterFromPrefab(
-            curTeam.SpeedCharacterPrefab);
-
-        AddCharacterFromPrefab(
-            curTeam.FlyingCharacterPrefab);
-
-        AddCharacterFromPrefab(
-            curTeam.PowerCharacterPrefab);
-
-        RefreshTeamDisplay();
-        UpdateCharacterLevels();
-    }
-
-    private void AddCharacterFromPrefab(GameObject characterPrefab)
-    {
-        if (characterPrefab == null)
-        {
             Debug.LogWarning(
-                "HUD received an unassigned character prefab.",
+                "HUD cannot change character display because no team is configured.",
                 this);
 
             return;
         }
 
-        Character character =
-            characterPrefab.GetComponent<Character>();
-
-        if (character == null)
+        if (teamSprites.Count != 3 &&
+            !BuildTeamDisplayData())
         {
-            character =
-                characterPrefab.GetComponentInChildren<Character>();
-        }
-
-        if (character == null)
-        {
-            Debug.LogWarning(
-                $"The prefab '{characterPrefab.name}' does not contain a Character component.",
-                characterPrefab);
-
             return;
         }
 
-        teamSprites.Add(character);
-    }
-
-    public void SetCharacter(CHARACTERTYPES type)
-    {
-        if (!TryInitializeTeam())
-            return;
-
-        int leaderIndex = type switch
-        {
-            CHARACTERTYPES.Speed => 0,
-            CHARACTERTYPES.Fly => 1,
-            CHARACTERTYPES.Power => 2,
-            _ => -1
-        };
+        int leaderIndex =
+            characterType switch
+            {
+                CHARACTERTYPES.Speed => 0,
+                CHARACTERTYPES.Fly => 1,
+                CHARACTERTYPES.Power => 2,
+                _ => -1
+            };
 
         if (leaderIndex < 0 ||
             leaderIndex >= teamSprites.Count)
         {
             Debug.LogWarning(
-                $"HUD received unsupported character type: {type}.",
+                $"HUD received unsupported character type: {characterType}.",
                 this);
 
             return;
@@ -355,68 +220,462 @@ public sealed class HUD : MonoBehaviour
         RefreshTeamDisplay();
     }
 
-    public void SetCharacter(int direction)
+    public void SetCharacter(
+        int direction)
     {
-        if (!TryInitializeTeam() || teamSprites.Count < 2)
+        if (teamSprites.Count != 3 &&
+            !BuildTeamDisplayData())
+        {
             return;
+        }
 
         if (direction > 0)
         {
-            Character lastCharacter = teamSprites[^1];
-            teamSprites.RemoveAt(teamSprites.Count - 1);
-            teamSprites.Insert(0, lastCharacter);
+            Character lastCharacter =
+                teamSprites[^1];
+
+            teamSprites.RemoveAt(
+                teamSprites.Count - 1);
+
+            teamSprites.Insert(
+                0,
+                lastCharacter);
         }
         else if (direction < 0)
         {
-            Character firstCharacter = teamSprites[0];
-            teamSprites.RemoveAt(0);
-            teamSprites.Add(firstCharacter);
+            Character firstCharacter =
+                teamSprites[0];
+
+            teamSprites.RemoveAt(
+                0);
+
+            teamSprites.Add(
+                firstCharacter);
         }
 
         RefreshTeamDisplay();
     }
 
-    private void ArrangeTeamWithLeader(Character leader)
+    public void UpdateCharacterLevels()
     {
-        if (leader == null || teamSprites.Count == 0)
+        RefreshCharacterLevels();
+    }
+
+    public void AddPower(
+        int value)
+    {
+        if (value <= 0)
             return;
 
-        int leaderIndex = teamSprites.IndexOf(leader);
+        ResolveTeamBlast();
+
+        if (teamBlast == null)
+        {
+            Debug.LogWarning(
+                "HUD could not add Team Blast gauge because TeamBlast is missing.",
+                this);
+
+            return;
+        }
+
+        teamBlast.AddGauge(
+            value);
+
+        RefreshTeamBlastMeter(
+            force: true);
+    }
+
+    public void UpdateTeamBlastMeter()
+    {
+        RefreshTeamBlastMeter(
+            force: false);
+    }
+
+    public void ActivateTeamBlast()
+    {
+        ResolveTeamBlast();
+
+        if (teamBlast == null)
+        {
+            Debug.LogWarning(
+                "HUD could not activate Team Blast because TeamBlast is missing.",
+                this);
+
+            return;
+        }
+
+        if (!teamBlast.TryActivateTeamBlast())
+            return;
+
+        teamBlastVideos?.PlayTeamBlast();
+
+        RefreshTeamBlastMeter(
+            force: true);
+    }
+
+    public void ResetPower()
+    {
+        ResolveTeamBlast();
+
+        if (teamBlast == null)
+            return;
+
+        teamBlast.ResetGauge();
+
+        RefreshTeamBlastMeter(
+            force: true);
+    }
+
+    public void ShowPickUp(
+        Sprite item)
+    {
+        if (itemPickup == null ||
+            item == null)
+        {
+            return;
+        }
+
+        if (pickupRoutine != null)
+        {
+            StopCoroutine(
+                pickupRoutine);
+        }
+
+        itemPickup.sprite =
+            item;
+
+        pickupRoutine =
+            StartCoroutine(
+                ShowItemRoutine());
+    }
+
+    #endregion
+
+    #region Unity Lifecycle
+
+    private void Awake()
+    {
+        CacheComponents();
+        ResolveReferences();
+        ConfigureComponents();
+
+        if (currentTeam != null)
+        {
+            BuildTeamDisplayData();
+        }
+    }
+
+    private void Start()
+    {
+        InitializeHud();
+    }
+
+    private void OnEnable()
+    {
+        if (isShuttingDown)
+            return;
+
+        CacheComponents();
+        ResolveReferences();
+        ConfigureComponents();
+        SubscribeToEvents();
+
+        if (isInitialized)
+        {
+            RefreshAll();
+        }
+    }
+
+    private void Update()
+    {
+        if (!isInitialized)
+            return;
+
+        RefreshTimer(
+            force: false);
+
+        RefreshScore(
+            force: false);
+
+        RefreshRings(
+            force: false);
+
+        RefreshLives(
+            force: false);
+
+        RefreshTeamBlastMeter(
+            force: false);
+    }
+
+    private void OnDisable()
+    {
+        CleanupRuntimeState();
+    }
+
+    private void OnDestroy()
+    {
+        isShuttingDown = true;
+        CleanupDestroyedState();
+    }
+
+    private void OnValidate()
+    {
+        pickupDisplayDuration =
+            Mathf.Max(
+                0f,
+                pickupDisplayDuration);
+
+        ConfigureTeamBlastGauge();
+    }
+
+    #endregion
+
+    #region Initialization
+
+    private bool InitializeHud()
+    {
+        if (isInitialized)
+            return true;
+
+        CacheComponents();
+        ResolveReferences();
+        ConfigureComponents();
+
+        if (!ValidateConfiguration())
+        {
+            Debug.LogError(
+                $"HUD failed to initialize on '{name}'.",
+                this);
+
+            isInitialized = false;
+            return false;
+        }
+
+        if (currentTeam != null)
+        {
+            BuildTeamDisplayData();
+        }
+
+        isInitialized = true;
+
+        SubscribeToEvents();
+        RefreshAll();
+
+        LogStateChange(
+            "HUD initialized.");
+
+        return true;
+    }
+
+    private void CacheComponents()
+    {
+        if (teamBlastGauge == null)
+        {
+            teamBlastGauge =
+                GetComponentInChildren<Slider>(
+                    includeInactive: true);
+        }
+    }
+
+    private void ResolveReferences()
+    {
+        ResolveStageSession();
+        ResolveTeamBlast();
+        ResolveTeamBlastVideos();
+
+        if (currentTeam == null &&
+            TeamSetup.Instance != null)
+        {
+            currentTeam =
+                TeamSetup.Instance.Team;
+        }
+    }
+
+    private void ResolveStageSession()
+    {
+        stageSession ??=
+            StageSession.Instance;
+
+        stageSession ??=
+            FindAnyObjectByType<StageSession>(
+                FindObjectsInactive.Include);
+    }
+
+    private void ResolveTeamBlast()
+    {
+        teamBlast ??=
+            GetComponent<TeamBlast>();
+
+        teamBlast ??=
+            GetComponentInParent<TeamBlast>();
+
+        if (teamBlast == null &&
+            TeamSetup.Instance != null)
+        {
+            teamBlast =
+                TeamSetup.Instance
+                    .GetComponentInChildren<TeamBlast>(
+                        includeInactive: true);
+        }
+
+        teamBlast ??=
+            FindAnyObjectByType<TeamBlast>(
+                FindObjectsInactive.Include);
+    }
+
+    private void ResolveTeamBlastVideos()
+    {
+        teamBlastVideos ??=
+            GetComponent<TeamBlastVideos>();
+
+        teamBlastVideos ??=
+            GetComponentInParent<TeamBlastVideos>();
+
+        teamBlastVideos ??=
+            FindAnyObjectByType<TeamBlastVideos>(
+                FindObjectsInactive.Include);
+    }
+
+    private void ConfigureComponents()
+    {
+        if (itemPickup != null &&
+            !Application.isPlaying)
+        {
+            itemPickup.enabled =
+                false;
+        }
+
+        ConfigureTeamBlastGauge();
+    }
+
+    private void ConfigureTeamBlastGauge()
+    {
+        if (teamBlastGauge == null)
+            return;
+
+        float maximumGauge =
+            teamBlast != null
+                ? teamBlast.MaxGauge
+                : 100f;
+
+        teamBlastGauge.minValue =
+            0f;
+
+        teamBlastGauge.maxValue =
+            Mathf.Max(
+                1f,
+                maximumGauge);
+
+        teamBlastGauge.wholeNumbers =
+            false;
+
+        teamBlastGauge.value =
+            teamBlast != null
+                ? teamBlast.CurrentGauge
+                : 0f;
+    }
+
+    #endregion
+
+    #region Events
+
+    private void SubscribeToEvents()
+    {
+        if (eventsSubscribed)
+            return;
+
+        GameInstance.UpdateData +=
+            UpdateRings;
+
+        eventsSubscribed =
+            true;
+    }
+
+    private void UnsubscribeFromEvents()
+    {
+        if (!eventsSubscribed)
+            return;
+
+        GameInstance.UpdateData -=
+            UpdateRings;
+
+        eventsSubscribed =
+            false;
+    }
+
+    #endregion
+
+    #region Team Display
+
+    private bool BuildTeamDisplayData()
+    {
+        teamSprites.Clear();
+
+        if (currentTeam == null)
+            return false;
+
+        AddCharacterData(
+            currentTeam.SpeedCharacterData);
+
+        AddCharacterData(
+            currentTeam.FlyingCharacterData);
+
+        AddCharacterData(
+            currentTeam.PowerCharacterData);
+
+        return
+            teamSprites.Count == 3;
+    }
+
+    private void AddCharacterData(
+        Character character)
+    {
+        if (character == null)
+        {
+            Debug.LogWarning(
+                "HUD received missing character display data.",
+                this);
+
+            return;
+        }
+
+        if (!teamSprites.Contains(
+                character))
+        {
+            teamSprites.Add(
+                character);
+        }
+    }
+
+    private void ArrangeTeamWithLeader(
+        Character leader)
+    {
+        if (leader == null ||
+            teamSprites.Count == 0)
+        {
+            return;
+        }
+
+        int leaderIndex =
+            teamSprites.IndexOf(
+                leader);
 
         if (leaderIndex < 0)
             return;
 
-        for (int i = 0; i < leaderIndex; i++)
+        for (int index = 0;
+             index < leaderIndex;
+             index++)
         {
-            Character firstCharacter = teamSprites[0];
-            teamSprites.RemoveAt(0);
-            teamSprites.Add(firstCharacter);
+            Character firstCharacter =
+                teamSprites[0];
+
+            teamSprites.RemoveAt(
+                0);
+
+            teamSprites.Add(
+                firstCharacter);
         }
-    }
-
-    private bool TryInitializeTeam()
-    {
-        if (teamSprites.Count >= 3)
-            return true;
-
-        if (curTeam == null)
-        {
-            Debug.LogWarning("HUD cannot initialize its team without a TeamComposition.", this);
-            return false;
-        }
-
-        teamSprites.Clear();
-
-        AddCharacterFromPrefab(
-            curTeam.SpeedCharacterPrefab);
-
-        AddCharacterFromPrefab(
-            curTeam.FlyingCharacterPrefab);
-
-        AddCharacterFromPrefab(
-            curTeam.PowerCharacterPrefab);
-
-        return teamSprites.Count == 3;
     }
 
     private void RefreshTeamDisplay()
@@ -424,198 +683,481 @@ public sealed class HUD : MonoBehaviour
         if (teamSprites.Count == 0)
             return;
 
-        Character leader = teamSprites[0];
+        Character leader =
+            teamSprites[0];
 
-        if (livesImage != null && leader != null)
-            livesImage.sprite = leader.face;
-
-        int displayCount = Mathf.Min(
-            teamSprites.Count,
-            Mathf.Min(faces.Count, icons.Count));
-
-        for (int i = 0; i < displayCount; i++)
+        if (livesImage != null &&
+            leader != null)
         {
-            Character character = teamSprites[i];
+            livesImage.sprite =
+                leader.face;
+        }
+
+        int displayCount =
+            Mathf.Min(
+                teamSprites.Count,
+                Mathf.Min(
+                    faces.Count,
+                    icons.Count));
+
+        for (int index = 0;
+             index < displayCount;
+             index++)
+        {
+            Character character =
+                teamSprites[index];
 
             if (character == null)
                 continue;
 
-            if (faces[i] != null)
-                faces[i].sprite = character.face;
+            if (faces[index] != null)
+            {
+                faces[index].sprite =
+                    character.face;
+            }
 
-            if (icons[i] != null)
-                icons[i].sprite = character.icon;
+            if (icons[index] != null)
+            {
+                icons[index].sprite =
+                    character.icon;
+            }
         }
     }
 
-    public void UpdateCharacterLevels()
+    #endregion
+
+    #region Main Values
+
+    private void RefreshScore(
+        bool force)
     {
-        GameInstance.speedLevelUp =
-            Mathf.Clamp(GameInstance.speedLevelUp, 0, lightsSpeed.Count);
+        int currentScore =
+            GameInstance.LevelScore;
 
-        GameInstance.flyLevelUp =
-            Mathf.Clamp(GameInstance.flyLevelUp, 0, lightsFly.Count);
+        if (!force &&
+            displayedScore == currentScore)
+        {
+            return;
+        }
 
-        GameInstance.powerLevelUp =
-            Mathf.Clamp(GameInstance.powerLevelUp, 0, lightsPower.Count);
+        displayedScore =
+            currentScore;
 
-        SetLevelLights(lightsSpeed, GameInstance.speedLevelUp);
-        SetLevelLights(lightsFly, GameInstance.flyLevelUp);
-        SetLevelLights(lightsPower, GameInstance.powerLevelUp);
+        if (scoreText != null)
+        {
+            scoreText.text =
+                currentScore.ToString(
+                    "00000000");
+        }
     }
 
-    private static void SetLevelLights(List<Image> lights, int activeCount)
+    private void RefreshRings(
+        bool force)
+    {
+        int currentRings =
+            GameInstance.currentRings;
+
+        if (!force &&
+            displayedRings == currentRings)
+        {
+            return;
+        }
+
+        displayedRings =
+            currentRings;
+
+        if (ringText != null)
+        {
+            ringText.text =
+                currentRings.ToString(
+                    "000");
+        }
+    }
+
+    private void RefreshLives(
+        bool force)
+    {
+        int currentLives =
+            GameInstance.livesCount;
+
+        if (!force &&
+            displayedLives == currentLives)
+        {
+            return;
+        }
+
+        displayedLives =
+            currentLives;
+
+        if (livesText != null)
+        {
+            livesText.text =
+                currentLives.ToString(
+                    "00");
+        }
+    }
+
+    private void RefreshTimer(
+        bool force)
+    {
+        if (timeText == null ||
+            stageSession == null)
+        {
+            return;
+        }
+
+        int totalCentiseconds =
+            Mathf.FloorToInt(
+                stageSession.ElapsedTime *
+                100f);
+
+        if (!force &&
+            displayedTime == totalCentiseconds)
+        {
+            return;
+        }
+
+        displayedTime =
+            totalCentiseconds;
+
+        int minutes =
+            totalCentiseconds /
+            6000;
+
+        int seconds =
+            totalCentiseconds /
+            100 %
+            60;
+
+        int centiseconds =
+            totalCentiseconds %
+            100;
+
+        timeText.text =
+            $"{minutes:00}:" +
+            $"{seconds:00}:" +
+            $"{centiseconds:00}";
+    }
+
+    #endregion
+
+    #region Character Levels
+
+    private void RefreshCharacterLevels()
+    {
+        int speedLevel =
+            Mathf.Clamp(
+                GameInstance.speedLevelUp,
+                0,
+                speedLevelLights.Count);
+
+        int flyLevel =
+            Mathf.Clamp(
+                GameInstance.flyLevelUp,
+                0,
+                flyLevelLights.Count);
+
+        int powerLevel =
+            Mathf.Clamp(
+                GameInstance.powerLevelUp,
+                0,
+                powerLevelLights.Count);
+
+        SetLevelLights(
+            speedLevelLights,
+            speedLevel);
+
+        SetLevelLights(
+            flyLevelLights,
+            flyLevel);
+
+        SetLevelLights(
+            powerLevelLights,
+            powerLevel);
+    }
+
+    private static void SetLevelLights(
+        List<Image> lights,
+        int activeCount)
     {
         if (lights == null)
             return;
 
-        activeCount = Mathf.Clamp(activeCount, 0, lights.Count);
+        activeCount =
+            Mathf.Clamp(
+                activeCount,
+                0,
+                lights.Count);
 
-        for (int i = 0; i < lights.Count; i++)
+        for (int index = 0;
+             index < lights.Count;
+             index++)
         {
-            if (lights[i] != null)
-                lights[i].enabled = i < activeCount;
+            if (lights[index] != null)
+            {
+                lights[index].enabled =
+                    index < activeCount;
+            }
         }
     }
 
-    public void AddPower(int value)
+    #endregion
+
+    #region Team Blast Display
+
+    private void RefreshTeamBlastMeter(
+        bool force)
     {
-        if (value <= 0 || teamBlastReady)
+        ResolveTeamBlast();
+
+        float currentGauge =
+            teamBlast != null
+                ? teamBlast.CurrentGauge
+                : 0f;
+
+        float maximumGauge =
+            teamBlast != null
+                ? teamBlast.MaxGauge
+                : 100f;
+
+        bool ready =
+            teamBlast != null &&
+            teamBlast.BlastReady;
+
+        if (!force &&
+            Mathf.Approximately(
+                displayedTeamBlastGauge,
+                currentGauge))
+        {
             return;
+        }
 
-        powerUpLevel = Mathf.Clamp(
-            powerUpLevel + value,
-            0,
-            maximumPower);
+        displayedTeamBlastGauge =
+            currentGauge;
 
-        UpdateTeamBlastMeter(true);
-    }
+        if (teamBlastGauge != null)
+        {
+            teamBlastGauge.maxValue =
+                Mathf.Max(
+                    1f,
+                    maximumGauge);
 
-    public void UpdateTeamBlastMeter()
-    {
-        UpdateTeamBlastMeter(false);
-    }
-
-    private void UpdateTeamBlastMeter(bool force)
-    {
-        powerUpLevel = Mathf.Clamp(powerUpLevel, 0, maximumPower);
-
-        if (!force && displayedPower == powerUpLevel)
-            return;
-
-        displayedPower = powerUpLevel;
-        teamBlastReady = powerUpLevel >= maximumPower;
-
-        if (powerUpGauge != null)
-            powerUpGauge.value = powerUpLevel;
+            teamBlastGauge.value =
+                currentGauge;
+        }
 
         if (teamBlastPrompt != null)
-            teamBlastPrompt.SetActive(teamBlastReady);
+        {
+            teamBlastPrompt.SetActive(
+                ready);
+        }
 
         if (teamBlastFill != null)
         {
-            teamBlastFill.color = teamBlastReady
-                ? readyColor
-                : chargingColor;
+            teamBlastFill.color =
+                ready
+                    ? readyColor
+                    : chargingColor;
         }
     }
 
-    private void HandleTeamBlastInput()
+    #endregion
+
+    #region Item Pickup
+
+    private IEnumerator ShowItemRoutine()
     {
-        if (!teamBlastReady || !Input.GetKeyDown(teamBlastKey))
-            return;
+        if (itemPickup == null)
+            yield break;
 
-        ActivateTeamBlast();
-    }
-
-    public void ActivateTeamBlast()
-    {
-        if (!teamBlastReady)
-            return;
-
-        if (teamBlastVideos == null)
-        {
-            Debug.LogWarning("HUD could not find TeamBlastVideos.", this);
-
-            return;
-        }
-
-        teamBlastVideos.PlayTeamBlast();
-        ResetPower();
-    }
-
-    public void ResetPower()
-    {
-        powerUpLevel = 0;
-        teamBlastReady = false;
-        UpdateTeamBlastMeter(true);
-    }
-
-    public void ShowPickUp(Sprite item)
-    {
-        if (itemPickUp == null || item == null)
-            return;
-
-        if (pickupRoutine != null)
-            StopCoroutine(pickupRoutine);
-
-        itemPickUp.sprite = item;
-        pickupRoutine = StartCoroutine(ShowItem());
-    }
-
-    private IEnumerator ShowItem()
-    {
-        itemPickUp.enabled = true;
+        itemPickup.enabled =
+            true;
 
         if (pickupDisplayDuration > 0f)
-            yield return new WaitForSeconds(pickupDisplayDuration);
+        {
+            yield return
+                new WaitForSeconds(
+                    pickupDisplayDuration);
+        }
         else
+        {
             yield return null;
+        }
 
-        itemPickUp.enabled = false;
-        pickupRoutine = null;
+        itemPickup.enabled =
+            false;
+
+        pickupRoutine =
+            null;
     }
 
-    private void ValidateReferences()
+    #endregion
+
+    #region Validation
+
+    private bool ValidateConfiguration()
     {
-        if (scoreText == null)
-            Debug.LogWarning("HUD Score Text is not assigned.", this);
+        bool valid = true;
 
-        if (timeText == null)
-            Debug.LogWarning("HUD Time Text is not assigned.", this);
+        valid &=
+            ValidateReference(
+                scoreText,
+                "Score Text");
 
-        if (ringText == null)
-            Debug.LogWarning("HUD Ring Text is not assigned.", this);
+        valid &=
+            ValidateReference(
+                timeText,
+                "Time Text");
 
-        if (livesText == null)
-            Debug.LogWarning("HUD Lives Text is not assigned.", this);
+        valid &=
+            ValidateReference(
+                ringText,
+                "Ring Text");
 
-        if (powerUpGauge == null)
-            Debug.LogWarning("HUD Power Up Gauge is not assigned.", this);
+        valid &=
+            ValidateReference(
+                livesText,
+                "Lives Text");
+
+        if (teamBlastGauge == null)
+        {
+            Debug.LogWarning(
+                "HUD could not find the Team Blast Gauge.",
+                this);
+        }
 
         if (teamBlastPrompt == null)
         {
             Debug.LogWarning(
-                "HUD Team Blast Prompt is not assigned.",
+                "HUD could not find the Team Blast Prompt.",
                 this);
         }
 
         if (teamBlastFill == null)
         {
-            Debug.LogWarning("HUD Team Blast Fill is not assigned.", this);
+            Debug.LogWarning(
+                "HUD could not find the Team Blast Fill image.",
+                this);
         }
-    }
 
-    private void OnValidate()
-    {
-        maximumPower = Mathf.Max(1, maximumPower);
-        pickupDisplayDuration = Mathf.Max(0f, pickupDisplayDuration);
-
-        if (powerUpGauge != null)
+        if (teamBlast == null)
         {
-            powerUpGauge.minValue = 0f;
-            powerUpGauge.maxValue = maximumPower;
-            powerUpGauge.wholeNumbers = true;
+            Debug.LogWarning(
+                "HUD could not find TeamBlast.",
+                this);
+        }
+
+        if (stageSession == null)
+        {
+            Debug.LogWarning(
+                "HUD could not find StageSession.",
+                this);
+        }
+
+        return valid;
+    }
+
+    private bool ValidateReference(
+        Object reference,
+        string displayName)
+    {
+        if (reference != null)
+            return true;
+
+        Debug.LogError(
+            $"HUD requires {displayName}.",
+            this);
+
+        return false;
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    private void CleanupRuntimeState()
+    {
+        UnsubscribeFromEvents();
+
+        if (pickupRoutine != null)
+        {
+            StopCoroutine(
+                pickupRoutine);
+
+            pickupRoutine =
+                null;
+        }
+
+        if (itemPickup != null)
+        {
+            itemPickup.enabled =
+                false;
         }
     }
+
+    private void CleanupDestroyedState()
+    {
+        CleanupRuntimeState();
+
+        isInitialized =
+            false;
+
+        teamSprites.Clear();
+
+        currentTeam =
+            null;
+
+        stageSession =
+            null;
+
+        teamBlast =
+            null;
+
+        teamBlastVideos =
+            null;
+
+        scoreText =
+            null;
+
+        timeText =
+            null;
+
+        ringText =
+            null;
+
+        livesText =
+            null;
+
+        livesImage =
+            null;
+
+        teamBlastGauge =
+            null;
+
+        teamBlastPrompt =
+            null;
+
+        teamBlastFill =
+            null;
+
+        itemPickup =
+            null;
+    }
+
+    #endregion
+
+    #region Debug
+
+    private void LogStateChange(
+        string message)
+    {
+        if (!logStateChanges)
+            return;
+
+        Debug.Log(
+            message,
+            this);
+    }
+
+    #endregion
 }

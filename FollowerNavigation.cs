@@ -103,7 +103,6 @@ public sealed class FollowerNavigation : MonoBehaviour
         ConfigureAgent();
         CacheAnimatorParameters();
 
-
         if (isInitialized && !isExternallyMoving)
         {
             EnableAgent();
@@ -184,12 +183,20 @@ public sealed class FollowerNavigation : MonoBehaviour
 
     #region Initialization
 
-    public bool Setup()
+    public bool Setup(
+        Transform followTarget)
     {
-        return Initialize(target);
+        CacheComponents();
+        ConfigureComponents();
+        ConfigureAgent();
+        CacheAnimatorParameters();
+
+        return Initialize(
+            followTarget);
     }
 
-    public bool Initialize(Transform followTarget)
+    private bool Initialize(
+        Transform followTarget)
     {
         if (followTarget == null)
         {
@@ -201,19 +208,14 @@ public sealed class FollowerNavigation : MonoBehaviour
             return false;
         }
 
-
-        target = followTarget;
+        target =
+            followTarget;
 
         lastDestination =
-                new Vector3(
-                    float.PositiveInfinity,
-                    float.PositiveInfinity,
-                    float.PositiveInfinity);
-
-        CacheComponents();
-        ConfigureComponents();
-        ConfigureAgent();
-        CacheAnimatorParameters();
+            new Vector3(
+                float.PositiveInfinity,
+                float.PositiveInfinity,
+                float.PositiveInfinity);
 
         if (!ValidateConfiguration())
         {
@@ -230,6 +232,7 @@ public sealed class FollowerNavigation : MonoBehaviour
         isInitialized = true;
 
         EnableAgent();
+
         return true;
     }
 
@@ -278,7 +281,8 @@ public sealed class FollowerNavigation : MonoBehaviour
 
     #region Target Management
 
-    public bool SetFollowTarget(Transform followTarget)
+    private bool SetFollowTarget(
+        Transform followTarget)
     {
         if (followTarget == null)
         {
@@ -289,15 +293,7 @@ public sealed class FollowerNavigation : MonoBehaviour
         target = followTarget;
 
         lastDestination =
-        new Vector3(
-        float.PositiveInfinity,
-        float.PositiveInfinity,
-        float.PositiveInfinity);
-
-        if (!isInitialized)
-        {
-            return Initialize(target);
-        }
+            Vector3.positiveInfinity;
 
         if (!isExternallyMoving)
         {
@@ -447,13 +443,16 @@ public sealed class FollowerNavigation : MonoBehaviour
         }
 
         Vector3 destination =
-        target.position;
+            target.position;
 
-        if ((destination - lastDestination).sqrMagnitude > 0.04f)
-        {
-            agent.SetDestination(destination);
-            lastDestination = destination;
-        }
+        if ((destination - lastDestination).sqrMagnitude <= 0.04f)
+            return;
+
+        agent.SetDestination(
+            destination);
+
+        lastDestination =
+            destination;
     }
 
     private void RotateTowardsMovement()

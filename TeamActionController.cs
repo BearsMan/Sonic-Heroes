@@ -50,6 +50,9 @@ public sealed class TeamActionController : MonoBehaviour
     [SerializeField] private UltimatePlayerMovement movement;
     [SerializeField] private RailGrinding railGrinding;
     [SerializeField] private CharacterSwitch characterSwitch;
+    [SerializeField] private CameraController cameraController;
+    [SerializeField] private HUD hud;
+    [SerializeField] private TeamBlast teamBlast;
 
     [Header("Optional Formation Input")]
     [SerializeField] private bool readFormationInput = true;
@@ -91,6 +94,21 @@ public sealed class TeamActionController : MonoBehaviour
     public event Action<TeamAction> ActionStarted;
     public event Action<TeamAction> ActionEnded;
 
+    public bool Setup(
+        Transform speed,
+        Transform fly,
+        Transform power)
+    {
+        SetCharacters(
+            speed,
+            fly,
+            power);
+
+        RefreshControllers();
+
+        return InitializeController();
+    }
+
     #endregion
 
     #region Unity Lifecycle
@@ -99,6 +117,7 @@ public sealed class TeamActionController : MonoBehaviour
     {
         CacheComponents();
         ResolveReferences();
+        ConfigureComponents();
     }
 
     private void Start()
@@ -111,19 +130,18 @@ public sealed class TeamActionController : MonoBehaviour
 
     private void OnEnable()
     {
-        if (isShuttingDown)
-            return;
-
         CacheComponents();
         ResolveReferences();
+        ConfigureComponents();
+
+        if (!isInitialized)
+        {
+            InitializeController();
+        }
 
         SubscribeToCharacterSwitch();
 
-        if (!isInitialized)
-            return;
-
-        EnsureFollowerRootsActive();
-        ApplyFormationToSystems();
+        RefreshControllers();
     }
 
     private void Update()
@@ -164,17 +182,19 @@ public sealed class TeamActionController : MonoBehaviour
         ValidateFormationInputKeys();
     }
 
+
     #endregion
 
     #region Initialization
 
-    public bool InitializeController()
+    private bool InitializeController()
     {
         if (isInitialized)
             return true;
 
         CacheComponents();
         ResolveReferences();
+        ConfigureComponents();
 
         if (!ValidateConfiguration())
         {
@@ -187,9 +207,6 @@ public sealed class TeamActionController : MonoBehaviour
             return false;
         }
 
-        EnsureFollowerRootsActive();
-        ApplyFormationToSystems();
-
         isInitialized = true;
 
         FormationChanged?.Invoke(
@@ -198,7 +215,12 @@ public sealed class TeamActionController : MonoBehaviour
         return true;
     }
 
-    private void CacheComponents()
+    private void ConfigureComponents()
+    {
+        EnsureFollowerRootsActive();
+    }
+
+    private void ResolveCharacters()
     {
         movement ??=
             GetComponent<UltimatePlayerMovement>();
@@ -213,10 +235,22 @@ public sealed class TeamActionController : MonoBehaviour
             GetComponentInParent<RailGrinding>();
 
         characterSwitch ??=
-    GetComponent<CharacterSwitch>();
+            GetComponent<CharacterSwitch>();
 
         characterSwitch ??=
             GetComponentInParent<CharacterSwitch>();
+
+        cameraController ??=
+            FindAnyObjectByType<CameraController>(
+                FindObjectsInactive.Include);
+
+        hud ??=
+            FindAnyObjectByType<HUD>(
+                FindObjectsInactive.Include);
+
+        teamBlast ??=
+            FindAnyObjectByType<TeamBlast>(
+                FindObjectsInactive.Include);
     }
 
     private void HandleLeaderChanged(
@@ -265,7 +299,7 @@ public sealed class TeamActionController : MonoBehaviour
     private void ResolveReferences()
     {
         ResolveFollowers();
-        CacheCharacters();
+        ResolveCharacters();
     }
 
     private void ResolveFollowers()
@@ -304,7 +338,7 @@ public sealed class TeamActionController : MonoBehaviour
 
     #region Character References
 
-    private void CacheCharacters()
+    private void CacheComponents()
     {
         if (speedCharacter != null &&
             flyCharacter != null &&
@@ -353,25 +387,22 @@ public sealed class TeamActionController : MonoBehaviour
     public bool SetFormation(
         TeamFormation newFormation)
     {
-        if (!isInitialized ||
-            actionLocked ||
-            IsPerformingAction)
-        {
+        if (!isInitialized)
             return false;
-        }
 
-        EnsureFollowerRootsActive();
+        if (actionLocked)
+            return false;
+
+        if (IsPerformingAction)
+            return false;
 
         if (currentFormation == newFormation)
-        {
-            ApplyFormationToSystems();
             return true;
-        }
 
         currentFormation =
             newFormation;
 
-        ApplyFormationToSystems();
+        RefreshControllers();
 
         LogStateChange(
             $"Formation changed to {currentFormation}.");
@@ -380,6 +411,80 @@ public sealed class TeamActionController : MonoBehaviour
             currentFormation);
 
         return true;
+    }
+
+    private void RefreshControllers()
+    {
+        ApplyFormationToSystems();
+        RefreshCamera();
+        RefreshHUD();
+        RefreshTeamBlast();
+        EnsureFollowerRootsActive();
+    }
+
+    private void RefreshCamera()
+    {
+        cameraController ??=
+            FindAnyObjectByType<CameraController>(
+                FindObjectsInactive.Include);
+
+        if (cameraController == null)
+            return;
+
+        Transform leader =
+            GetFormationLeader();
+
+        if (leader == null)
+            return;
+
+        cameraController.SetTarget(
+            leader,
+            snapImmediately: true);
+    }
+
+    private void RefreshHUD()
+    {
+        hud ??=
+            FindAnyObjectByType<HUD>(
+                FindObjectsInactive.Include);
+
+        if (hud == null)
+            return;
+
+        CHARACTERTYPES leaderType =
+            currentFormation switch
+            {
+                TeamFormation.Speed =>
+                    CHARACTERTYPES.Speed,
+
+                TeamFormation.Fly =>
+                    CHARACTERTYPES.Fly,
+
+                TeamFormation.Power =>
+                    CHARACTERTYPES.Power,
+
+                _ =>
+                    CHARACTERTYPES.Speed
+            };
+
+        hud.SetCharacter(
+            leaderType);
+
+        hud.UpdateHUD();
+    }
+
+    private void RefreshTeamBlast()
+    {
+        teamBlast ??=
+            FindAnyObjectByType<TeamBlast>(
+                FindObjectsInactive.Include);
+
+        if (teamBlast == null)
+            return;
+
+        teamBlast.SetInputEnabled(
+            isInitialized &&
+            !actionLocked);
     }
 
     private void ApplyFormationToSystems()
@@ -433,6 +538,11 @@ public sealed class TeamActionController : MonoBehaviour
         speedCharacter = speed;
         flyCharacter = fly;
         powerCharacter = power;
+
+        if (isInitialized)
+        {
+            RefreshControllers();
+        }
     }
 
     #endregion
@@ -664,9 +774,9 @@ public sealed class TeamActionController : MonoBehaviour
                 nameof(UltimatePlayerMovement));
 
         valid &=
-    ValidateReference(
-        speedCharacter,
-        "Speed Character");
+            ValidateReference(
+                speedCharacter,
+                "Speed Character");
 
         valid &=
             ValidateReference(
@@ -699,6 +809,27 @@ public sealed class TeamActionController : MonoBehaviour
                 this);
         }
 
+        if (cameraController == null)
+        {
+            Debug.LogWarning(
+                "TeamActionController could not find CameraController.",
+                this);
+        }
+
+        if (hud == null)
+        {
+            Debug.LogWarning(
+                "TeamActionController could not find HUD.",
+                this);
+        }
+
+        if (teamBlast == null)
+        {
+            Debug.LogWarning(
+                "TeamActionController could not find TeamBlast.",
+                this);
+        }
+
         return valid;
     }
 
@@ -722,13 +853,15 @@ public sealed class TeamActionController : MonoBehaviour
 
     private void CleanupRuntimeState()
     {
-        if (!IsPerformingAction)
-            return;
+        if (IsPerformingAction)
+        {
+            currentAction =
+                TeamAction.None;
 
-        currentAction =
-            TeamAction.None;
+            movement?.EnableMovement();
+        }
 
-        movement?.EnableMovement();
+        actionLocked = false;
     }
 
     private void CleanupDestroyedState()
@@ -751,6 +884,11 @@ public sealed class TeamActionController : MonoBehaviour
 
         movement = null;
         railGrinding = null;
+        characterSwitch = null;
+
+        cameraController = null;
+        hud = null;
+        teamBlast = null;
     }
 
     #endregion

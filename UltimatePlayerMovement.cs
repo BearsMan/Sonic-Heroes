@@ -183,13 +183,21 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             : Vector3.zero;
 
     public bool SetCharacterDefinition(
-        CharacterDefinition definition)
+    CharacterDefinition definition)
     {
-        if (definition == null ||
-            !definition.IsValid())
+        if (definition == null)
         {
             Debug.LogError(
-                "UltimatePlayerMovement received an invalid CharacterDefinition.",
+                "UltimatePlayerMovement received no CharacterDefinition.",
+                this);
+
+            return false;
+        }
+
+        if (!definition.IsValid())
+        {
+            Debug.LogError(
+                $"UltimatePlayerMovement received an invalid CharacterDefinition from '{definition.name}'.",
                 this);
 
             return false;
@@ -199,7 +207,13 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             definition;
 
         ApplyCharacterDefinition();
-        SetupAnimation();
+
+        if (initialized)
+        {
+            SetupAnimation();
+            UpdateAnimatorState();
+            UpdateAnimator();
+        }
 
         return true;
     }
@@ -561,7 +575,6 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
         ResolveDependencies();
         ConfigureRigidbody();
-        ApplyCharacterDefinition();
 
         if (!ValidateConfiguration())
         {
@@ -573,6 +586,7 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             return false;
         }
 
+        ApplyCharacterDefinition();
         ResetRuntimeState();
         SetupAnimation();
 
@@ -589,8 +603,7 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
                 ? MovementState.Ground
                 : startingState;
 
-        if (currentState ==
-            MovementState.Ground &&
+        if (currentState == MovementState.Ground &&
             !grounded)
         {
             currentState =
@@ -601,6 +614,9 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
         UpdateAnimatorState();
         UpdateAnimator();
+
+        LogStateChange(
+            $"UltimatePlayerMovement initialized as {characterDefinition.characterType}.");
 
         return true;
     }
@@ -1924,27 +1940,44 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
         valid &=
             ValidateReference(
+                characterDefinition,
+                nameof(CharacterDefinition));
+
+        valid &=
+            ValidateReference(
                 playerRigidbody,
                 nameof(Rigidbody));
 
         valid &=
             ValidateReference(
-            cameraTransform,
-            "Camera Transform");
+                cameraTransform,
+                "Camera Transform");
 
         valid &=
             ValidateReference(
                 groundProbe,
                 GroundProbeName);
 
-        if (characterDefinition != null &&
-            !characterDefinition.IsValid())
+        if (characterDefinition != null)
         {
-            Debug.LogError(
-                "UltimatePlayerMovement has an invalid CharacterDefinition.",
-                this);
+            if (!characterDefinition.IsValid())
+            {
+                Debug.LogError(
+                    "UltimatePlayerMovement has an invalid CharacterDefinition.",
+                    this);
 
-            valid = false;
+                valid = false;
+            }
+
+            valid &=
+                ValidateReference(
+                    characterDefinition.movementProfile,
+                    nameof(CharacterMovementProfile));
+
+            valid &=
+                ValidateReference(
+                    characterDefinition.abilityProfile,
+                    nameof(CharacterAbilityProfile));
         }
 
         if (playerAnimator == null)

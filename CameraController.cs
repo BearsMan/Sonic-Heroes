@@ -4,6 +4,7 @@ using UnityEngine;
 public sealed class CameraController : MonoBehaviour
 {
     #region Constants
+
     private const string MouseXAxis = "Mouse X";
     private const string MouseYAxis = "Mouse Y";
     private const string CameraPivotName = "Camera Pivot";
@@ -55,6 +56,9 @@ public sealed class CameraController : MonoBehaviour
     [Header("Cursor")]
     [SerializeField] private bool lockCursor = true;
 
+    [Header("Debug")]
+    [SerializeField] private bool logStateChanges;
+
     #endregion
 
     #region Runtime State
@@ -76,8 +80,119 @@ public sealed class CameraController : MonoBehaviour
     public Transform Target => target;
     public Transform CameraPivot => cameraPivot;
     public Camera PlayerCamera => playerCamera;
-    public bool IsInitialized => isInitialized;
+
     public Vector3 ActiveOffset => activeOffset;
+
+    public bool IsInitialized => isInitialized;
+    public bool HasTarget => target != null;
+
+    public bool Setup(
+        Transform followTarget,
+        bool snapImmediately = true)
+    {
+        if (followTarget == null)
+        {
+            Debug.LogError(
+                "CameraController Setup received no follow target.",
+                this);
+
+            return false;
+        }
+
+        target =
+            followTarget;
+
+        CacheComponents();
+        ResolveReferences();
+        ConfigureComponents();
+
+        if (!InitializeCamera())
+            return false;
+
+        if (snapImmediately)
+        {
+            SnapToTarget();
+        }
+
+        return true;
+    }
+
+    public bool SetTarget(
+        Transform newTarget,
+        bool snapImmediately = true)
+    {
+        if (newTarget == null)
+        {
+            Debug.LogWarning(
+                "CameraController rejected a null target.",
+                this);
+
+            return false;
+        }
+
+        target =
+            newTarget;
+
+        CacheComponents();
+        ResolvePlayerCamera();
+        ResolveCameraPivot();
+        ConfigureComponents();
+
+        ReparentOwnedPivot();
+
+        if (!isInitialized)
+        {
+            return Setup(
+                newTarget,
+                snapImmediately);
+        }
+
+        if (snapImmediately)
+        {
+            SnapToTarget();
+        }
+
+        LogStateChange(
+            $"Camera target changed to '{newTarget.name}'.");
+
+        return true;
+    }
+
+    public void ClearTarget()
+    {
+        target = null;
+    }
+
+    public void ApplySpeedOffset()
+    {
+        SetActiveOffset(
+            speedOffset);
+    }
+
+    public void ApplyFlyOffset()
+    {
+        SetActiveOffset(
+            flyOffset);
+    }
+
+    public void ApplyPowerOffset()
+    {
+        SetActiveOffset(
+            powerOffset);
+    }
+
+    public void SetActiveOffset(
+        Vector3 newOffset)
+    {
+        activeOffset =
+            newOffset;
+    }
+
+    public void ClearActiveOffset()
+    {
+        activeOffset =
+            Vector3.zero;
+    }
 
     #endregion
 
@@ -92,10 +207,22 @@ public sealed class CameraController : MonoBehaviour
 
     private void Start()
     {
-        if (!InitializeCamera())
+        if (target == null)
         {
-            enabled = false;
+            ResolveTarget();
         }
+
+        if (target == null)
+        {
+            LogStateChange(
+                "CameraController is waiting for CharacterSwitch to assign a target.");
+
+            return;
+        }
+
+        Setup(
+            target,
+            snapImmediately: true);
     }
 
     private void OnEnable()
@@ -116,8 +243,11 @@ public sealed class CameraController : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!isInitialized)
+        if (!isInitialized ||
+            target == null)
+        {
             return;
+        }
 
         if (!EnsureRuntimeReferences())
             return;
@@ -140,22 +270,62 @@ public sealed class CameraController : MonoBehaviour
 
     private void OnValidate()
     {
-        targetHeight = Mathf.Max(0f, targetHeight);
-        followDistance = Mathf.Max(0.1f, followDistance);
-        followSmoothness = Mathf.Max(0f, followSmoothness);
-        horizontalSensitivity = Mathf.Max(0f, horizontalSensitivity);
-        verticalSensitivity = Mathf.Max(0f, verticalSensitivity);
-        rotationSmoothness = Mathf.Max(0f, rotationSmoothness);
+        targetHeight =
+            Mathf.Max(
+                0f,
+                targetHeight);
 
-        minimumPitch = Mathf.Clamp(minimumPitch, -89f, 0f);
-        maximumPitch = Mathf.Clamp(maximumPitch, 0f, 89f);
+        followDistance =
+            Mathf.Max(
+                0.1f,
+                followDistance);
 
-        if (maximumPitch < minimumPitch)
-            maximumPitch = minimumPitch;
+        followSmoothness =
+            Mathf.Max(
+                0f,
+                followSmoothness);
 
-        collisionRadius = Mathf.Max(0.01f, collisionRadius);
-        collisionPadding = Mathf.Max(0f, collisionPadding);
-        collisionSmoothness = Mathf.Max(0f, collisionSmoothness);
+        horizontalSensitivity =
+            Mathf.Max(
+                0f,
+                horizontalSensitivity);
+
+        verticalSensitivity =
+            Mathf.Max(
+                0f,
+                verticalSensitivity);
+
+        rotationSmoothness =
+            Mathf.Max(
+                0f,
+                rotationSmoothness);
+
+        minimumPitch =
+            Mathf.Clamp(
+                minimumPitch,
+                -89f,
+                0f);
+
+        maximumPitch =
+            Mathf.Clamp(
+                maximumPitch,
+                0f,
+                89f);
+
+        collisionRadius =
+            Mathf.Max(
+                0.01f,
+                collisionRadius);
+
+        collisionPadding =
+            Mathf.Max(
+                0f,
+                collisionPadding);
+
+        collisionSmoothness =
+            Mathf.Max(
+                0f,
+                collisionSmoothness);
     }
 
     private void OnDrawGizmosSelected()
@@ -163,23 +333,29 @@ public sealed class CameraController : MonoBehaviour
         if (target == null)
             return;
 
-        Vector3 targetPosition = GetTargetPosition();
+        Vector3 targetPosition =
+            GetTargetPosition();
 
-        Gizmos.DrawWireSphere(targetPosition, 0.15f);
+        Gizmos.DrawWireSphere(
+            targetPosition,
+            0.15f);
 
         if (cameraPivot == null)
             return;
 
+        Vector3 cameraPosition =
+            cameraPivot.position -
+            cameraPivot.forward *
+            followDistance;
+
         Gizmos.DrawLine(
             targetPosition,
-            cameraPivot.position -
-            cameraPivot.forward * followDistance);
+            cameraPosition);
 
         if (useCollision)
         {
             Gizmos.DrawWireSphere(
-                cameraPivot.position -
-                cameraPivot.forward * followDistance,
+                cameraPosition,
                 collisionRadius);
         }
     }
@@ -188,19 +364,13 @@ public sealed class CameraController : MonoBehaviour
 
     #region Initialization
 
-    public bool InitializeCamera()
+    private bool InitializeCamera()
     {
         if (isInitialized)
             return true;
 
-        CacheComponents();
-        ResolveReferences();
-        ConfigureComponents();
-
         if (!ValidateConfiguration())
         {
-            isInitialized = false;
-
             Debug.LogError(
                 $"CameraController failed to initialize on '{name}'.",
                 this);
@@ -211,39 +381,37 @@ public sealed class CameraController : MonoBehaviour
         Vector3 startingEuler =
             cameraPivot.rotation.eulerAngles;
 
-        yaw = startingEuler.y;
+        yaw =
+            startingEuler.y;
 
         pitch =
             Mathf.Clamp(
-                NormalizeAngle(startingEuler.x),
+                NormalizeAngle(
+                    startingEuler.x),
                 minimumPitch,
                 maximumPitch);
 
-        currentDistance = followDistance;
+        currentDistance =
+            followDistance;
 
-        cameraPivot.position = GetTargetPosition();
-
-        cameraPivot.rotation =
-            Quaternion.Euler(
-                pitch,
-                yaw,
-                0f);
-
-        ApplyCameraPosition(currentDistance);
         ApplyCursorState();
 
         isInitialized = true;
+
+        LogStateChange(
+            "CameraController initialized.");
+
         return true;
     }
 
     private void CacheComponents()
     {
-        if (playerCamera == null)
-        {
-            playerCamera =
-                GetComponentInChildren<Camera>(
-                    includeInactive: true);
-        }
+        playerCamera ??=
+            GetComponent<Camera>();
+
+        playerCamera ??=
+            GetComponentInChildren<Camera>(
+                includeInactive: true);
     }
 
     private void ResolveReferences()
@@ -258,14 +426,28 @@ public sealed class CameraController : MonoBehaviour
         if (target != null)
             return;
 
-        UltimatePlayerMovement movement =
-            GetComponent<UltimatePlayerMovement>();
+        CharacterSwitch characterSwitch =
+            FindAnyObjectByType<CharacterSwitch>(
+                FindObjectsInactive.Include);
 
-        movement ??=
-            GetComponentInParent<UltimatePlayerMovement>();
+        if (characterSwitch != null &&
+            characterSwitch.CurrentLeader != null)
+        {
+            target =
+                characterSwitch.CurrentLeader;
+
+            return;
+        }
+
+        UltimatePlayerMovement movement =
+            FindAnyObjectByType<UltimatePlayerMovement>(
+                FindObjectsInactive.Include);
 
         if (movement != null)
-            target = movement.transform;
+        {
+            target =
+                movement.transform;
+        }
     }
 
     private void ResolvePlayerCamera()
@@ -277,8 +459,15 @@ public sealed class CameraController : MonoBehaviour
             GetComponentInChildren<Camera>(
                 includeInactive: true);
 
+        playerCamera ??=
+            Camera.main;
+
         if (playerCamera == null)
-            playerCamera = Camera.main;
+        {
+            playerCamera =
+                FindAnyObjectByType<Camera>(
+                    FindObjectsInactive.Include);
+        }
     }
 
     private void ResolveCameraPivot()
@@ -292,10 +481,15 @@ public sealed class CameraController : MonoBehaviour
                 playerCamera.transform.parent;
 
             if (cameraParent != null &&
+                cameraParent != transform &&
                 cameraParent != target)
             {
-                cameraPivot = cameraParent;
-                ownsCameraPivot = false;
+                cameraPivot =
+                    cameraParent;
+
+                ownsCameraPivot =
+                    false;
+
                 return;
             }
         }
@@ -314,20 +508,26 @@ public sealed class CameraController : MonoBehaviour
         GameObject pivotObject =
             new(CameraPivotName);
 
-        cameraPivot = pivotObject.transform;
+        cameraPivot =
+            pivotObject.transform;
 
         cameraPivot.SetParent(
             target,
             worldPositionStays: false);
 
         cameraPivot.localPosition =
-            Vector3.up * targetHeight;
+            Vector3.up *
+            targetHeight;
+
+        cameraPivot.localRotation =
+            Quaternion.identity;
 
         playerCamera.transform.SetParent(
             cameraPivot,
-            worldPositionStays: true);
+            worldPositionStays: false);
 
-        ownsCameraPivot = true;
+        ownsCameraPivot =
+            true;
     }
 
     private void ConfigureComponents()
@@ -339,181 +539,71 @@ public sealed class CameraController : MonoBehaviour
             Quaternion.identity;
     }
 
+    private void ReparentOwnedPivot()
+    {
+        if (!ownsCameraPivot ||
+            cameraPivot == null ||
+            target == null ||
+            cameraPivot.parent == target)
+        {
+            return;
+        }
+
+        cameraPivot.SetParent(
+            target,
+            worldPositionStays: true);
+    }
+
     private void RestoreRuntimeState()
     {
-        ApplyCursorState();
-
         currentDistance =
             Mathf.Clamp(
                 currentDistance,
                 0f,
                 followDistance);
+
+        ApplyCursorState();
     }
 
     #endregion
 
-    #region Validation
+    #region Target Positioning
 
-    private bool ValidateConfiguration()
+    private void SnapToTarget()
     {
-        bool valid = true;
-
-        valid &= ValidateReference(target, "Target");
-        valid &= ValidateReference(cameraPivot, "Camera Pivot");
-        valid &= ValidateReference(playerCamera, nameof(Camera));
-
-        return valid;
-    }
-
-    private bool ValidateReference(
-        Object reference,
-        string displayName)
-    {
-        if (reference != null)
-            return true;
-
-        Debug.LogError(
-            $"CameraController requires {displayName}.",
-            this);
-
-        return false;
-    }
-
-    private bool EnsureRuntimeReferences()
-    {
-        if (target != null &&
-            cameraPivot != null &&
-            playerCamera != null)
-        {
-            return true;
-        }
-
-        ResolveReferences();
-
         if (target == null ||
-            cameraPivot == null ||
-            playerCamera == null)
+            cameraPivot == null)
         {
-            return false;
+            return;
         }
 
-        ConfigureComponents();
-        return true;
+        cameraPivot.position =
+            GetTargetPosition();
+
+        cameraPivot.rotation =
+            Quaternion.Euler(
+                pitch,
+                yaw,
+                0f);
+
+        currentDistance =
+            followDistance;
+
+        ApplyCameraPosition(
+            currentDistance);
     }
 
-    #endregion
-
-    #region Cleanup
-
-    private void CleanupRuntimeState()
+    private Vector3 GetTargetPosition()
     {
-        RestoreCursorState();
-    }
+        if (target == null)
+            return transform.position;
 
-    private void CleanupDestroyedState()
-    {
-        CleanupRuntimeState();
-
-        isInitialized = false;
-
-        if (ownsCameraPivot &&
-            cameraPivot != null)
-        {
-            if (Application.isPlaying)
-                Destroy(cameraPivot.gameObject);
-            else
-                DestroyImmediate(cameraPivot.gameObject);
-        }
-
-        ownsCameraPivot = false;
-
-        target = null;
-        cameraPivot = null;
-        playerCamera = null;
-    }
-
-    #endregion
-
-    #region Target Management
-
-    public bool SetTarget(
-        Transform newTarget,
-        bool snapImmediately = true)
-    {
-        if (newTarget == null)
-        {
-            Debug.LogWarning(
-                "CameraController rejected a null target.",
-                this);
-
-            return false;
-        }
-
-        target = newTarget;
-
-        if (ownsCameraPivot &&
-            cameraPivot != null)
-        {
-            cameraPivot.SetParent(
-                target,
-                worldPositionStays: true);
-        }
-
-        if (snapImmediately &&
-            cameraPivot != null)
-        {
-            cameraPivot.position =
-                GetTargetPosition();
-        }
-
-        return true;
-    }
-
-    public void ClearTarget()
-    {
-        target = null;
-    }
-
-    public void ApplySpeedOffset()
-    {
-        activeOffset = speedOffset;
-    }
-
-    public void ApplyFlyOffset()
-    {
-        activeOffset = flyOffset;
-    }
-
-    public void ApplyPowerOffset()
-    {
-        activeOffset = powerOffset;
-    }
-
-    public void SetActiveOffset(Vector3 newOffset)
-    {
-        activeOffset = newOffset;
-    }
-
-    public void ClearActiveOffset()
-    {
-        activeOffset = Vector3.zero;
-    }
-
-    #endregion
-
-    #region Input
-
-    private void ReadRotationInput()
-    {
-        float horizontalInput = Input.GetAxis(MouseXAxis);
-        float verticalInput = Input.GetAxis(MouseYAxis);
-
-        yaw += horizontalInput * horizontalSensitivity;
-
-        float verticalDirection = invertVerticalInput ? 1f : -1f;
-
-        pitch += verticalInput * verticalSensitivity * verticalDirection;
-        pitch = Mathf.Clamp(pitch, minimumPitch, maximumPitch);
+        return
+            target.position +
+            target.up *
+            targetHeight +
+            target.TransformDirection(
+                activeOffset);
     }
 
     #endregion
@@ -531,65 +621,34 @@ public sealed class CameraController : MonoBehaviour
         Vector3 desiredPosition =
             GetTargetPosition();
 
-        if (followSmoothness <= 0f)
-        {
-            cameraPivot.position =
-                desiredPosition;
-        }
-        else
-        {
-            float positionBlend =
-                CalculateExponentialBlend(
-                    followSmoothness,
-                    Time.unscaledDeltaTime);
+        float positionBlend =
+            CalculateExponentialBlend(
+                followSmoothness,
+                Time.unscaledDeltaTime);
 
-            cameraPivot.position =
-                Vector3.Lerp(
-                    cameraPivot.position,
-                    desiredPosition,
-                    positionBlend);
-        }
+        cameraPivot.position =
+            Vector3.Lerp(
+                cameraPivot.position,
+                desiredPosition,
+                positionBlend);
 
-        Quaternion targetRotation =
+        Quaternion desiredRotation =
             Quaternion.Euler(
                 pitch,
                 yaw,
                 0f);
 
-        if (rotationSmoothness <= 0f)
-        {
-            cameraPivot.rotation =
-                targetRotation;
-        }
-        else
-        {
-            float rotationBlend =
-                CalculateExponentialBlend(
-                    rotationSmoothness,
-                    Time.unscaledDeltaTime);
+        float rotationBlend =
+            CalculateExponentialBlend(
+                rotationSmoothness,
+                Time.unscaledDeltaTime);
 
-            cameraPivot.rotation =
-                Quaternion.Slerp(
-                    cameraPivot.rotation,
-                    targetRotation,
-                    rotationBlend);
-        }
+        cameraPivot.rotation =
+            Quaternion.Slerp(
+                cameraPivot.rotation,
+                desiredRotation,
+                rotationBlend);
     }
-
-    private Vector3 GetTargetPosition()
-    {
-        if (target == null)
-            return transform.position;
-
-        return
-            target.position +
-            target.up * targetHeight +
-            target.TransformDirection(activeOffset);
-    }
-
-    #endregion
-
-    #region Collision
 
     private void UpdateCameraDistance()
     {
@@ -602,32 +661,47 @@ public sealed class CameraController : MonoBehaviour
         float desiredDistance =
             ResolveCollisionDistance();
 
-        if (collisionSmoothness <= 0f)
-        {
-            currentDistance =
-                desiredDistance;
-        }
-        else
-        {
-            float distanceBlend =
-                CalculateExponentialBlend(
-                    collisionSmoothness,
-                    Time.unscaledDeltaTime);
+        float distanceBlend =
+            CalculateExponentialBlend(
+                collisionSmoothness,
+                Time.unscaledDeltaTime);
 
-            currentDistance =
-                Mathf.Lerp(
-                    currentDistance,
-                    desiredDistance,
-                    distanceBlend);
-        }
+        currentDistance =
+            Mathf.Lerp(
+                currentDistance,
+                desiredDistance,
+                distanceBlend);
 
-        ApplyCameraPosition(currentDistance);
+        ApplyCameraPosition(
+            currentDistance);
     }
+
+    private void ApplyCameraPosition(
+        float distance)
+    {
+        if (playerCamera == null)
+            return;
+
+        playerCamera.transform.localPosition =
+            new Vector3(
+                0f,
+                0f,
+                -Mathf.Max(
+                    0f,
+                    distance));
+
+        playerCamera.transform.localRotation =
+            Quaternion.identity;
+    }
+
+    #endregion
+
+    #region Collision
 
     private float ResolveCollisionDistance()
     {
-        if (cameraPivot == null ||
-            !useCollision ||
+        if (!useCollision ||
+            cameraPivot == null ||
             collisionMask.value == 0)
         {
             return followDistance;
@@ -662,19 +736,98 @@ public sealed class CameraController : MonoBehaviour
                 followDistance);
     }
 
-    private void ApplyCameraPosition(float distance)
+    #endregion
+
+    #region Input
+
+    private void ReadRotationInput()
     {
-        if (playerCamera == null)
-            return;
+        float horizontalInput =
+            Input.GetAxis(
+                MouseXAxis);
 
-        playerCamera.transform.localPosition =
-            new Vector3(
-                0f,
-                0f,
-                -Mathf.Max(0f, distance));
+        float verticalInput =
+            Input.GetAxis(
+                MouseYAxis);
 
-        playerCamera.transform.localRotation =
-            Quaternion.identity;
+        yaw +=
+            horizontalInput *
+            horizontalSensitivity;
+
+        float verticalDirection =
+            invertVerticalInput
+                ? 1f
+                : -1f;
+
+        pitch +=
+            verticalInput *
+            verticalSensitivity *
+            verticalDirection;
+
+        pitch =
+            Mathf.Clamp(
+                pitch,
+                minimumPitch,
+                maximumPitch);
+    }
+
+    #endregion
+
+    #region Validation
+
+    private bool ValidateConfiguration()
+    {
+        bool valid = true;
+
+        valid &=
+            ValidateReference(
+                target,
+                "Target");
+
+        valid &=
+            ValidateReference(
+                playerCamera,
+                nameof(Camera));
+
+        valid &=
+            ValidateReference(
+                cameraPivot,
+                "Camera Pivot");
+
+        return valid;
+    }
+
+    private bool EnsureRuntimeReferences()
+    {
+        if (target != null &&
+            playerCamera != null &&
+            cameraPivot != null)
+        {
+            return true;
+        }
+
+        CacheComponents();
+        ResolveReferences();
+        ConfigureComponents();
+
+        return
+            target != null &&
+            playerCamera != null &&
+            cameraPivot != null;
+    }
+
+    private bool ValidateReference(
+        Object reference,
+        string displayName)
+    {
+        if (reference != null)
+            return true;
+
+        Debug.LogError(
+            $"CameraController requires {displayName}.",
+            this);
+
+        return false;
     }
 
     #endregion
@@ -691,7 +844,8 @@ public sealed class CameraController : MonoBehaviour
                 ? CursorLockMode.Locked
                 : CursorLockMode.None;
 
-        Cursor.visible = !lockCursor;
+        Cursor.visible =
+            !lockCursor;
     }
 
     private void RestoreCursorState()
@@ -702,20 +856,72 @@ public sealed class CameraController : MonoBehaviour
         Cursor.lockState =
             CursorLockMode.None;
 
-        Cursor.visible = true;
+        Cursor.visible =
+            true;
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    private void CleanupRuntimeState()
+    {
+        RestoreCursorState();
+    }
+
+    private void CleanupDestroyedState()
+    {
+        CleanupRuntimeState();
+
+        isInitialized =
+            false;
+
+        if (ownsCameraPivot &&
+            cameraPivot != null)
+        {
+            if (Application.isPlaying)
+            {
+                Destroy(
+                    cameraPivot.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(
+                    cameraPivot.gameObject);
+            }
+        }
+
+        ownsCameraPivot =
+            false;
+
+        target =
+            null;
+
+        cameraPivot =
+            null;
+
+        playerCamera =
+            null;
     }
 
     #endregion
 
     #region Utilities
 
-    private static float NormalizeAngle(float angle)
+    private static float NormalizeAngle(
+        float angle)
     {
         while (angle > 180f)
-            angle -= 360f;
+        {
+            angle -=
+                360f;
+        }
 
         while (angle < -180f)
-            angle += 360f;
+        {
+            angle +=
+                360f;
+        }
 
         return angle;
     }
@@ -735,6 +941,17 @@ public sealed class CameraController : MonoBehaviour
             Mathf.Exp(
                 -smoothness *
                 deltaTime);
+    }
+
+    private void LogStateChange(
+        string message)
+    {
+        if (!logStateChanges)
+            return;
+
+        Debug.Log(
+            message,
+            this);
     }
 
     #endregion

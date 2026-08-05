@@ -17,6 +17,14 @@ public sealed class CharacterSwitch : MonoBehaviour
     [FormerlySerializedAs("currentCharacterType")]
     [SerializeField] private CHARACTERTYPES initialLeaderType = CHARACTERTYPES.Speed;
 
+    [Header("Reference Resolution")]
+    private const string LeaderSlotName = "Team Leader";
+    private const string LeftFollowerSlotName = "Left Team Member";
+    private const string RightFollowerSlotName = "Right Team Member";
+
+    private const string LeftFollowTargetName = "LeftPos";
+    private const string RightFollowTargetName = "RightPos";
+
     [Header("Formation Slots")]
     [FormerlySerializedAs("player")]
     [SerializeField] private Transform leaderSlot;
@@ -198,12 +206,12 @@ public sealed class CharacterSwitch : MonoBehaviour
     #region Initialization
 
     public bool ConfigureTeam(
-    Transform speed,
-    Transform flying,
-    Transform power,
-    GameObject normalSpeed,
-    GameObject superSpeed,
-    CHARACTERTYPES initialLeader)
+        Transform speed,
+        Transform flying,
+        Transform power,
+        GameObject normalSpeed,
+        GameObject superSpeed,
+        CHARACTERTYPES initialLeader)
     {
         if (!ValidateTeamArguments(
                 speed,
@@ -255,7 +263,6 @@ public sealed class CharacterSwitch : MonoBehaviour
 
         ResolveDependencies();
         ResolveFormationReferences();
-        ResolveCharacterReferences();
         EnsureFormationRootsActive();
         CacheControllers();
 
@@ -426,7 +433,6 @@ public sealed class CharacterSwitch : MonoBehaviour
 
         try
         {
-            ResolveFormationReferences();
             EnsureFormationRootsActive();
 
             if (!IsSupportedType(leaderType) ||
@@ -543,7 +549,7 @@ public sealed class CharacterSwitch : MonoBehaviour
     }
 
     private CharacterDefinition GetCharacterDefinition(
-    CHARACTERTYPES characterType)
+        CHARACTERTYPES characterType)
     {
         return characterType switch
         {
@@ -600,16 +606,22 @@ public sealed class CharacterSwitch : MonoBehaviour
 
         try
         {
-            Transform previousSpeedCharacter = speedCharacter;
-            Transform currentParent = previousSpeedCharacter.parent;
-            int siblingIndex = previousSpeedCharacter.GetSiblingIndex();
+            Transform previousSpeedCharacter =
+                speedCharacter;
+
+            Transform currentParent =
+                previousSpeedCharacter.parent;
+
+            int siblingIndex =
+                previousSpeedCharacter.GetSiblingIndex();
 
             GameObject replacement =
                 Instantiate(
                     replacementPrefab,
                     currentParent);
 
-            Transform replacementTransform = replacement.transform;
+            Transform replacementTransform =
+                replacement.transform;
 
             replacementTransform.SetSiblingIndex(
                 siblingIndex);
@@ -617,11 +629,18 @@ public sealed class CharacterSwitch : MonoBehaviour
             ResetLocalTransform(
                 replacementTransform);
 
-            speedCharacter = replacementTransform;
-            isSuperForm = !isSuperForm;
+            speedCharacter =
+                replacementTransform;
+
+            isSuperForm =
+                !isSuperForm;
 
             Destroy(
                 previousSpeedCharacter.gameObject);
+
+            ResolveCharacterReferences();
+            CacheControllers();
+            RefreshFormation();
 
             replacementSucceeded = true;
         }
@@ -632,8 +651,6 @@ public sealed class CharacterSwitch : MonoBehaviour
 
         if (!replacementSucceeded)
             return false;
-
-        RefreshFormation();
 
         LogStateChange(
             isSuperForm
@@ -672,21 +689,19 @@ public sealed class CharacterSwitch : MonoBehaviour
             return false;
         }
 
+        if (character.parent == slot)
+        {
+            ResetLocalTransform(character);
+            return true;
+        }
+
         character.SetParent(
             slot,
-            worldPositionStays: false);
+            false);
 
-        ResetLocalTransform(
-            character);
+        ResetLocalTransform(character);
 
-        if (character.parent == slot)
-            return true;
-
-        Debug.LogError(
-            $"CharacterSwitch failed to parent '{character.name}' to '{slot.name}'.",
-            character);
-
-        return false;
+        return character.parent == slot;
     }
 
     private void ResetLocalTransform(
@@ -784,7 +799,7 @@ public sealed class CharacterSwitch : MonoBehaviour
         else
         {
             valid &=
-                leftFollowerNavigation.Initialize(
+                leftFollowerNavigation.Setup(
                     leftFollowTarget);
         }
 
@@ -799,7 +814,7 @@ public sealed class CharacterSwitch : MonoBehaviour
         else
         {
             valid &=
-                rightFollowerNavigation.Initialize(
+                rightFollowerNavigation.Setup(
                     rightFollowTarget);
         }
 
@@ -910,74 +925,70 @@ public sealed class CharacterSwitch : MonoBehaviour
     private void ResolveFormationReferences()
     {
         Transform searchRoot =
-            teamSetup != null
-                ? teamSetup.transform
-                : transform.root;
+            transform;
 
         leaderSlot ??=
             FindDescendantByName(
                 searchRoot,
-                "Test Player");
+                LeaderSlotName);
 
         leftFollowerSlot ??=
             FindDescendantByName(
                 searchRoot,
-                "Left Team Member");
+                LeftFollowerSlotName);
 
         rightFollowerSlot ??=
             FindDescendantByName(
                 searchRoot,
-                "Right Team Member");
+                RightFollowerSlotName);
 
         if (leaderSlot == null)
-            return;
-
-        leftFollowTarget ??=
-            FindDescendantByName(
-                leaderSlot,
-                "LeftPos");
-
-        rightFollowTarget ??=
-            FindDescendantByName(
-                leaderSlot,
-                "RightPos");
-    }
-
-    private static Transform FindDescendantByName(
-        Transform root,
-        string objectName)
-    {
-        if (root == null ||
-            string.IsNullOrWhiteSpace(objectName))
         {
-            return null;
+            Debug.LogError(
+                "CharacterSwitch could not locate the Team Leader anchor.",
+                this);
+        }
+        else
+        {
+            leftFollowTarget ??=
+                FindDescendantByName(
+                    leaderSlot,
+                    LeftFollowTargetName);
+
+            rightFollowTarget ??=
+                FindDescendantByName(
+                    leaderSlot,
+                    RightFollowTargetName);
         }
 
-        Transform[] descendants =
-            root.GetComponentsInChildren<Transform>(
-                includeInactive: true);
+        LogStateChange(
+            $"Leader Slot: {(leaderSlot != null ? "Resolved" : "Missing")}");
 
-        foreach (Transform descendant in descendants)
-        {
-            if (descendant != null &&
-                descendant.name == objectName)
-            {
-                return descendant;
-            }
-        }
+        LogStateChange(
+            $"Left Follower Slot: {(leftFollowerSlot != null ? "Resolved" : "Missing")}");
 
-        return null;
+        LogStateChange(
+            $"Right Follower Slot: {(rightFollowerSlot != null ? "Resolved" : "Missing")}");
+
+        LogStateChange(
+            $"Left Follow Target: {(leftFollowTarget != null ? "Resolved" : "Missing")}");
+
+        LogStateChange(
+            $"Right Follow Target: {(rightFollowTarget != null ? "Resolved" : "Missing")}");
     }
 
     private void ResolveCharacterReferences()
     {
-        Transform searchRoot =
-            teamSetup != null
-                ? teamSetup.transform
-                : transform.root;
+        speedCharacter = null;
+        flyingCharacter = null;
+        powerCharacter = null;
 
-        if (searchRoot == null)
-            return;
+        speedDefinition = null;
+        flyingDefinition = null;
+        powerDefinition = null;
+
+        Transform searchRoot =
+            transform;
 
         UltimatePlayerMovement[] movements =
             searchRoot.GetComponentsInChildren<UltimatePlayerMovement>(
@@ -1021,6 +1032,57 @@ public sealed class CharacterSwitch : MonoBehaviour
                     break;
             }
         }
+
+        LogStateChange(
+            $"Speed Character: {(speedCharacter != null ? "Resolved" : "Missing")}");
+
+        LogStateChange(
+            $"Flying Character: {(flyingCharacter != null ? "Resolved" : "Missing")}");
+
+        LogStateChange(
+            $"Power Character: {(powerCharacter != null ? "Resolved" : "Missing")}");
+    }
+
+    private static Transform FindDescendantByName(
+        Transform root,
+        string objectName)
+    {
+        if (root == null ||
+            string.IsNullOrWhiteSpace(objectName))
+        {
+            return null;
+        }
+
+        string target =
+            NormalizeObjectName(objectName);
+
+        foreach (Transform child in
+                 root.GetComponentsInChildren<Transform>(true))
+        {
+            if (child == null)
+                continue;
+
+            if (NormalizeObjectName(child.name) == target)
+            {
+                return child;
+            }
+        }
+
+        return null;
+    }
+
+    private static string NormalizeObjectName(
+        string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        return value
+            .Replace(" ", "")
+            .Replace("_", "")
+            .Replace("-", "")
+            .Trim()
+            .ToLowerInvariant();
     }
 
     #endregion
