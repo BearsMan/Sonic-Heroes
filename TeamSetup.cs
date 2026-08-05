@@ -188,18 +188,21 @@ public sealed class TeamSetup : MonoBehaviour
         }
 
         Transform speedCharacter =
-            SpawnCharacter(
-                team.SpeedCharacterPrefab,
-                leaderSlot);
+     SpawnCharacter(
+         team.SpeedCharacterPrefab,
+         team.SpeedCharacterDefinition,
+         leaderSlot);
 
         Transform flyingCharacter =
             SpawnCharacter(
                 team.FlyingCharacterPrefab,
+                team.FlyingCharacterDefinition,
                 leftFollowerSlot);
 
         Transform powerCharacter =
             SpawnCharacter(
                 team.PowerCharacterPrefab,
+                team.PowerCharacterDefinition,
                 rightFollowerSlot);
 
         if (speedCharacter == null ||
@@ -300,6 +303,7 @@ public sealed class TeamSetup : MonoBehaviour
 
     private Transform SpawnCharacter(
     GameObject prefab,
+    CharacterDefinition definition,
     Transform slot)
     {
         if (prefab == null)
@@ -307,6 +311,15 @@ public sealed class TeamSetup : MonoBehaviour
             Debug.LogError(
                 "TeamSetup cannot spawn a null character prefab.",
                 this);
+
+            return null;
+        }
+
+        if (definition == null)
+        {
+            Debug.LogError(
+                $"TeamSetup could not resolve a CharacterDefinition from '{prefab.name}'.",
+                prefab);
 
             return null;
         }
@@ -321,10 +334,10 @@ public sealed class TeamSetup : MonoBehaviour
         }
 
         GameObject characterObject =
-        Instantiate(
-            prefab,
-            slot,
-            false);
+            Instantiate(
+                prefab,
+                slot,
+                false);
 
         Transform characterTransform =
             characterObject.transform;
@@ -356,7 +369,20 @@ public sealed class TeamSetup : MonoBehaviour
                 characterTransform);
 
             Destroy(
-               characterObject);
+                characterObject);
+
+            return null;
+        }
+
+        if (!movement.SetCharacterDefinition(
+                definition))
+        {
+            Debug.LogError(
+                $"Failed to assign the CharacterDefinition to '{characterTransform.name}'.",
+                characterTransform);
+
+            Destroy(
+                characterObject);
 
             return null;
         }
@@ -384,7 +410,7 @@ public sealed class TeamSetup : MonoBehaviour
         }
 
         if (homingAttack != null &&
-    !homingAttack.InitializeHomingAttack())
+            !homingAttack.InitializeHomingAttack())
         {
             Debug.LogWarning(
                 $"Failed to initialize HomingAttack on '{characterTransform.name}'.",

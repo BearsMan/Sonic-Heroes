@@ -31,20 +31,24 @@ public sealed class CharacterSwitch : MonoBehaviour
     [SerializeField] private Transform leftFollowTarget;
     [SerializeField] private Transform rightFollowTarget;
 
-    [Header("Character Instances")]
-    [FormerlySerializedAs("speedCharacter")]
-    [SerializeField] private Transform speedCharacter;
+    [Header("Resolved Characters")]
+    [SerializeField, HideInInspector]
+    private Transform speedCharacter;
 
-    [FormerlySerializedAs("flyingCharacter")]
-    [SerializeField] private Transform flyingCharacter;
+    [SerializeField, HideInInspector]
+    private Transform flyingCharacter;
 
-    [FormerlySerializedAs("powerCharacter")]
-    [SerializeField] private Transform powerCharacter;
+    [SerializeField, HideInInspector]
+    private Transform powerCharacter;
 
-    [Header("Character Definitions")]
-    [SerializeField] private CharacterDefinition speedDefinition;
-    [SerializeField] private CharacterDefinition flyingDefinition;
-    [SerializeField] private CharacterDefinition powerDefinition;
+    [SerializeField, HideInInspector]
+    private CharacterDefinition speedDefinition;
+
+    [SerializeField, HideInInspector]
+    private CharacterDefinition flyingDefinition;
+
+    [SerializeField, HideInInspector]
+    private CharacterDefinition powerDefinition;
 
     [Header("Speed Character Forms")]
     [FormerlySerializedAs("sonic")]
@@ -116,6 +120,7 @@ public sealed class CharacterSwitch : MonoBehaviour
 
         ResolveDependencies();
         ResolveFormationReferences();
+        ResolveCharacterReferences();
         EnsureFormationRootsActive();
         CacheControllers();
     }
@@ -127,6 +132,7 @@ public sealed class CharacterSwitch : MonoBehaviour
 
         ResolveDependencies();
         ResolveFormationReferences();
+        ResolveCharacterReferences();
         EnsureFormationRootsActive();
         CacheControllers();
 
@@ -249,6 +255,7 @@ public sealed class CharacterSwitch : MonoBehaviour
 
         ResolveDependencies();
         ResolveFormationReferences();
+        ResolveCharacterReferences();
         EnsureFormationRootsActive();
         CacheControllers();
 
@@ -274,6 +281,7 @@ public sealed class CharacterSwitch : MonoBehaviour
 
         ResolveDependencies();
         ResolveFormationReferences();
+        ResolveCharacterReferences();
         EnsureFormationRootsActive();
         CacheControllers();
 
@@ -961,6 +969,60 @@ public sealed class CharacterSwitch : MonoBehaviour
         return null;
     }
 
+    private void ResolveCharacterReferences()
+    {
+        Transform searchRoot =
+            teamSetup != null
+                ? teamSetup.transform
+                : transform.root;
+
+        if (searchRoot == null)
+            return;
+
+        UltimatePlayerMovement[] movements =
+            searchRoot.GetComponentsInChildren<UltimatePlayerMovement>(
+                includeInactive: true);
+
+        foreach (UltimatePlayerMovement movement in movements)
+        {
+            if (movement == null)
+                continue;
+
+            CharacterDefinition definition =
+                movement.CharacterDefinition;
+
+            if (definition == null)
+                continue;
+
+            switch (definition.characterType)
+            {
+                case CharacterDefinition.CharacterType.Speed:
+                    speedCharacter =
+                        movement.transform;
+
+                    speedDefinition =
+                        definition;
+                    break;
+
+                case CharacterDefinition.CharacterType.Fly:
+                    flyingCharacter =
+                        movement.transform;
+
+                    flyingDefinition =
+                        definition;
+                    break;
+
+                case CharacterDefinition.CharacterType.Power:
+                    powerCharacter =
+                        movement.transform;
+
+                    powerDefinition =
+                        definition;
+                    break;
+            }
+        }
+    }
+
     #endregion
 
     #region HUD
@@ -1029,9 +1091,9 @@ public sealed class CharacterSwitch : MonoBehaviour
                 "Right Follow Target");
 
         valid &=
-    ValidateRequiredReference(
-        speedDefinition,
-        "Speed Character Definition");
+            ValidateRequiredReference(
+                speedDefinition,
+                "Speed Character Definition");
 
         valid &=
             ValidateRequiredReference(
