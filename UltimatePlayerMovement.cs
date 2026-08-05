@@ -63,6 +63,50 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     [SerializeField, Min(0.01f)] private float groundProbeRadius = 0.3f;
     [SerializeField, Min(0.01f)] private float groundProbeDistance = 0.65f;
 
+    [Header("Automatic Spawn Stabilization")]
+    [SerializeField] private bool stabilizeOnSpawn = true;
+    [SerializeField, Min(0.1f)] private float spawnGroundSearchHeight = 3f;
+    [SerializeField, Min(0.1f)] private float spawnGroundSearchDistance = 10f;
+    [SerializeField, Min(0.1f)] private float maximumStabilizationTime = 2f;
+    [SerializeField] private float spawnGroundOffset = 0.05f;
+
+    [Header("Automatic World Recovery")]
+    [SerializeField] private bool enableWorldRecovery = true;
+    [SerializeField] private Transform recoveryPoint;
+    [SerializeField] private bool resolveRecoveryPointAutomatically = true;
+    [SerializeField] private bool rememberSafeGroundAutomatically = true;
+    [SerializeField] private bool useStartingPoseAsFallback = true;
+    [SerializeField] private bool stabilizeAfterRecovery = true;
+
+    [SerializeField] private float worldFallLimit = -30f;
+    [SerializeField, Min(0f)] private float recoveryCooldown = 0.5f;
+    [SerializeField, Min(0.1f)] private float safeGroundSaveDelay = 0.5f;
+    [SerializeField, Min(0.1f)] private float maximumSafeDistance = 500f;
+
+    [Header("Recovery Grounding")]
+    [SerializeField, Min(0.1f)] private float recoverySearchHeight = 3f;
+    [SerializeField, Min(0.1f)] private float recoverySearchDistance = 12f;
+    [SerializeField, Min(0.01f)] private float recoveryCastRadius = 0.25f;
+    [SerializeField, Range(0f, 89f)] private float maximumRecoverySlope = 55f;
+    [SerializeField] private float recoveryGroundOffset = 0.05f;
+
+    [Header("Physics Safety")]
+    [SerializeField] private bool enablePhysicsSafety = true;
+    [SerializeField, Min(1f)] private float maximumLinearSpeed = 250f;
+    [SerializeField, Min(1f)] private float maximumAngularSpeed = 100f;
+    [SerializeField, Min(0.01f)] private float minimumValidScale = 0.01f;
+    [SerializeField, Min(0.1f)] private float missingGroundGraceTime = 3f;
+    [SerializeField, Min(0.01f)] private float overlapCheckPadding = 0.05f;
+
+    [Header("Recovery Loop Protection")]
+    [SerializeField, Min(1)] private int maximumRecoveriesPerWindow = 3;
+    [SerializeField, Min(0.1f)] private float recoveryWindowDuration = 5f;
+    [SerializeField, Min(0.1f)] private float recoveryLockoutDuration = 2f;
+
+    [Header("Moving Platform Safety")]
+    [SerializeField] private bool trackMovingPlatforms = true;
+    [SerializeField, Min(0.01f)] private float platformDetachDistance = 2f;
+
     [Header("Input")]
     [SerializeField] private bool acceptPlayerInput = true;
     [SerializeField] private KeyCode jumpKey = KeyCode.Space;
@@ -135,13 +179,46 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     private float coyoteTimer;
     private float jumpBufferTimer;
     private float stateTimer;
-
+    private float stabilizationTimer;
+    private bool isStabilizingSpawn;
+    private bool originalUseGravity;
+    private RigidbodyConstraints originalConstraints;
     private bool grounded;
     private bool groundedLastFrame;
     private bool movementEnabled = true;
     private bool initialized;
     private bool shuttingDown;
     private bool isInTrickZone;
+
+    private Vector3 startingRecoveryPosition;
+    private Quaternion startingRecoveryRotation;
+
+    private Vector3 safeDestinationPosition;
+    private Quaternion safeDestinationRotation;
+
+    private float recoveryCooldownTimer;
+    private float safeGroundTimer;
+
+    private bool recoveryInitialized;
+    private bool hasSafeDestination;
+    private bool isRecovering;
+
+    private Collider playerCollider;
+    private Rigidbody currentGroundRigidbody;
+    private Transform currentGroundTransform;
+
+    private Vector3 currentGroundLocalPoint;
+    private Vector3 previousGroundPosition;
+    private Quaternion previousGroundRotation;
+
+    private float missingGroundTimer;
+    private float recoveryWindowTimer;
+    private float recoveryLockoutTimer;
+
+    private int recoveryCountInWindow;
+
+    private bool applicationQuitting;
+    private bool safetyShutdown;
 
     #endregion
 
@@ -176,6 +253,84 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     public bool MovementEnabled =>
         movementEnabled;
+
+    public Transform RecoveryPoint =>
+    recoveryPoint;
+
+    public bool HasSafeDestination =>
+        hasSafeDestination;
+
+    public bool IsRecovering =>
+        isRecovering;
+
+    public bool IsSafetyShutdown =>
+    safetyShutdown;
+
+    public bool HasValidRecoveryPoint =>
+        IsRecoveryPointValid();
+
+    public bool HasValidPhysicsState =>
+        ValidateRuntimePhysicsState(
+            logErrors: false);
+
+    public bool SetRecoveryPoint(
+        Transform newRecoveryPoint)
+    {
+        if (newRecoveryPoint == null)
+            return false;
+
+        recoveryPoint =
+            newRecoveryPoint;
+
+        return true;
+    }
+
+    public bool SetSafeDestination(
+        Vector3 destination,
+        Quaternion rotation)
+    {
+        if (!TryResolveGroundedDestination(
+                destination,
+                out Vector3 groundedDestination,
+                out _))
+        {
+            return false;
+        }
+
+        safeDestinationPosition =
+            groundedDestination;
+
+        safeDestinationRotation =
+            rotation;
+
+        safeGroundTimer = 0f;
+        hasSafeDestination = true;
+
+        return true;
+    }
+
+    public bool SetSafeDestination(
+        Transform destination)
+    {
+        if (destination == null)
+            return false;
+
+        return SetSafeDestination(
+            destination.position,
+            destination.rotation);
+    }
+
+    public bool RecoverFromFall()
+    {
+        if (!initialized ||
+            playerRigidbody == null ||
+            isRecovering)
+        {
+            return false;
+        }
+
+        return PerformWorldRecovery();
+    }
 
     public Vector3 Velocity =>
         playerRigidbody != null
@@ -439,10 +594,40 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!initialized)
+        if (!initialized ||
+            shuttingDown ||
+            applicationQuitting ||
+            safetyShutdown)
+        {
             return;
+        }
+
+        UpdateSafetyTimers();
+
+        if (enablePhysicsSafety &&
+            !RunPhysicsSafetyChecks())
+        {
+            return;
+        }
+
+        UpdateRecoveryCooldown();
+
+        if (ShouldRecoverFromWorld())
+        {
+            PerformWorldRecovery();
+            return;
+        }
+
+        if (isStabilizingSpawn)
+        {
+            UpdateSpawnStabilization();
+            return;
+        }
 
         UpdateGrounding();
+        UpdateMovingPlatformTracking();
+        UpdateAutomaticSafeDestination();
+        UpdateMissingGroundProtection();
 
         if (!movementEnabled)
             return;
@@ -497,19 +682,34 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     private void OnDisable()
     {
+        CancelSpawnStabilization();
         StopMovement();
+
+        isRecovering = false;
+        recoveryCooldownTimer = 0f;
+        safeGroundTimer = 0f;
     }
 
     private void OnDestroy()
     {
         shuttingDown = true;
 
+        CancelSpawnStabilization();
         StopMovement();
 
         StateChanged = null;
 
         animatorParameters.Clear();
 
+        currentGroundRigidbody = null;
+        currentGroundTransform = null;
+
+        recoveryInitialized = false;
+        isRecovering = false;
+        hasSafeDestination = false;
+        recoveryPoint = null;
+
+        playerCollider = null;
         playerRigidbody = null;
         playerAnimator = null;
         cameraTransform = null;
@@ -528,6 +728,102 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             Mathf.Max(
                 0.01f,
                 groundProbeDistance);
+
+        spawnGroundSearchHeight =
+    Mathf.Max(
+        0.1f,
+        spawnGroundSearchHeight);
+
+        spawnGroundSearchDistance =
+            Mathf.Max(
+                0.1f,
+                spawnGroundSearchDistance);
+
+        maximumStabilizationTime =
+            Mathf.Max(
+                0.1f,
+                maximumStabilizationTime);
+
+        recoveryCooldown =
+            Mathf.Max(
+                0f,
+                recoveryCooldown);
+
+        safeGroundSaveDelay =
+            Mathf.Max(
+                0.1f,
+                safeGroundSaveDelay);
+
+        maximumSafeDistance =
+            Mathf.Max(
+                0.1f,
+                maximumSafeDistance);
+
+        recoverySearchHeight =
+            Mathf.Max(
+                0.1f,
+                recoverySearchHeight);
+
+        recoverySearchDistance =
+            Mathf.Max(
+                0.1f,
+                recoverySearchDistance);
+
+        recoveryCastRadius =
+            Mathf.Max(
+                0.01f,
+                recoveryCastRadius);
+
+        maximumRecoverySlope =
+            Mathf.Clamp(
+                maximumRecoverySlope,
+                0f,
+                89f);
+
+        maximumLinearSpeed =
+    Mathf.Max(
+        1f,
+        maximumLinearSpeed);
+
+        maximumAngularSpeed =
+            Mathf.Max(
+                1f,
+                maximumAngularSpeed);
+
+        minimumValidScale =
+            Mathf.Max(
+                0.01f,
+                minimumValidScale);
+
+        missingGroundGraceTime =
+            Mathf.Max(
+                0.1f,
+                missingGroundGraceTime);
+
+        overlapCheckPadding =
+            Mathf.Max(
+                0.01f,
+                overlapCheckPadding);
+
+        maximumRecoveriesPerWindow =
+            Mathf.Max(
+                1,
+                maximumRecoveriesPerWindow);
+
+        recoveryWindowDuration =
+            Mathf.Max(
+                0.1f,
+                recoveryWindowDuration);
+
+        recoveryLockoutDuration =
+            Mathf.Max(
+                0.1f,
+                recoveryLockoutDuration);
+
+        platformDetachDistance =
+            Mathf.Max(
+                0.01f,
+                platformDetachDistance);
 
         if (!Enum.IsDefined(
                 typeof(MovementState),
@@ -566,6 +862,20 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     #endregion
 
+    private void OnApplicationQuit()
+    {
+        applicationQuitting = true;
+    }
+
+    private void OnApplicationPause(
+        bool paused)
+    {
+        if (!paused)
+            return;
+
+        StopMovement();
+    }
+
     #region Initialization
 
     public bool InitializeMovement()
@@ -575,20 +885,27 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
         ResolveDependencies();
         ConfigureRigidbody();
+        ApplyCharacterDefinition();
 
         if (!ValidateConfiguration())
         {
+            initialized = false;
+            movementEnabled = false;
+
             Debug.LogError(
                 $"UltimatePlayerMovement failed to initialize on '{name}'.",
                 this);
 
-            initialized = false;
             return false;
         }
 
-        ApplyCharacterDefinition();
         ResetRuntimeState();
-        SetupAnimation();
+        InitializeRecoverySystem();
+
+        currentState =
+            IsValidMovementState(startingState)
+                ? startingState
+                : MovementState.Ground;
 
         grounded =
             DetectGround(
@@ -598,13 +915,8 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         groundedLastFrame =
             grounded;
 
-        currentState =
-            grounded
-                ? MovementState.Ground
-                : startingState;
-
-        if (currentState == MovementState.Ground &&
-            !grounded)
+        if (!grounded &&
+            currentState == MovementState.Ground)
         {
             currentState =
                 MovementState.Air;
@@ -612,18 +924,26 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
         initialized = true;
 
+        BeginSpawnStabilization();
+
         UpdateAnimatorState();
         UpdateAnimator();
 
-        LogStateChange(
-            $"UltimatePlayerMovement initialized as {characterDefinition.characterType}.");
-
         return true;
+    }
+
+    private static bool IsValidMovementState(
+    MovementState state)
+    {
+        return Enum.IsDefined(
+            typeof(MovementState),
+            state);
     }
 
     private void ResolveDependencies()
     {
         ResolveRigidbody();
+        ResolveCollider();
         ResolveAnimator();
         ResolveCamera();
         ResolveGroundProbe();
@@ -775,6 +1095,22 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
                 $"{nameof(UltimatePlayerMovement)} requires a Rigidbody.",
                 this);
         }
+    }
+
+    private void ResolveCollider()
+    {
+        if (playerCollider != null)
+            return;
+
+        playerCollider =
+            GetComponent<Collider>();
+
+        playerCollider ??=
+            GetComponentInChildren<Collider>(
+                includeInactive: true);
+
+        playerCollider ??=
+            GetComponentInParent<Collider>();
     }
 
     private void ResetRuntimeState()
@@ -1075,6 +1411,91 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     #region Grounding
 
+    private void CacheGroundPlatform(
+    RaycastHit hit)
+    {
+        if (!trackMovingPlatforms ||
+            hit.collider == null)
+        {
+            ClearGroundPlatform();
+            return;
+        }
+
+        currentGroundTransform =
+            hit.collider.transform;
+
+        currentGroundRigidbody =
+            hit.rigidbody;
+
+        currentGroundLocalPoint =
+            currentGroundTransform
+                .InverseTransformPoint(
+                    playerRigidbody.position);
+
+        previousGroundPosition =
+            currentGroundTransform.position;
+
+        previousGroundRotation =
+            currentGroundTransform.rotation;
+    }
+
+    private void ClearGroundPlatform()
+    {
+        currentGroundRigidbody = null;
+        currentGroundTransform = null;
+
+        currentGroundLocalPoint =
+            Vector3.zero;
+    }
+
+    private void UpdateMovingPlatformTracking()
+    {
+        if (!trackMovingPlatforms ||
+            !grounded ||
+            currentGroundTransform == null ||
+            playerRigidbody == null)
+        {
+            return;
+        }
+
+        Vector3 currentWorldPoint =
+            currentGroundTransform
+                .TransformPoint(
+                    currentGroundLocalPoint);
+
+        Vector3 platformMovement =
+            currentWorldPoint -
+            playerRigidbody.position;
+
+        if (!IsFiniteVector(
+                platformMovement))
+        {
+            ClearGroundPlatform();
+            return;
+        }
+
+        if (platformMovement.magnitude >
+            platformDetachDistance)
+        {
+            ClearGroundPlatform();
+            return;
+        }
+
+        if (platformMovement.sqrMagnitude >
+            0.000001f)
+        {
+            playerRigidbody.MovePosition(
+                playerRigidbody.position +
+                platformMovement);
+        }
+
+        previousGroundPosition =
+            currentGroundTransform.position;
+
+        previousGroundRotation =
+            currentGroundTransform.rotation;
+    }
+
     private void UpdateGrounding()
     {
         groundedLastFrame =
@@ -1098,8 +1519,8 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     }
 
     private bool DetectGround(
-        out Vector3 normal,
-        out float slopeAngle)
+    out Vector3 normal,
+    out float slopeAngle)
     {
         normal =
             Vector3.up;
@@ -1107,7 +1528,10 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         slopeAngle = 0f;
 
         if (groundProbe == null)
+        {
+            ClearGroundPlatform();
             return false;
+        }
 
         Vector3 origin =
             groundProbe.position +
@@ -1123,6 +1547,14 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
                 groundMask,
                 QueryTriggerInteraction.Ignore))
         {
+            ClearGroundPlatform();
+            return false;
+        }
+
+        if (IsOwnCollider(
+                hit.collider))
+        {
+            ClearGroundPlatform();
             return false;
         }
 
@@ -1134,9 +1566,18 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
                 normal,
                 Vector3.up);
 
-        return
-            slopeAngle <=
-            maximumSlopeAngle;
+        if (!float.IsFinite(slopeAngle) ||
+            slopeAngle >
+                maximumSlopeAngle)
+        {
+            ClearGroundPlatform();
+            return false;
+        }
+
+        CacheGroundPlatform(
+            hit);
+
+        return true;
     }
 
     private void HandleLanding()
@@ -1164,6 +1605,1164 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             ChangeState(
                 MovementState.Air);
         }
+    }
+
+    #endregion
+
+
+    #region Spawn Stabilization
+
+    private void BeginSpawnStabilization()
+    {
+        stabilizationTimer = 0f;
+        isStabilizingSpawn = false;
+
+        if (!stabilizeOnSpawn)
+            return;
+
+        if (playerRigidbody == null)
+        {
+            Debug.LogWarning(
+                $"Spawn stabilization could not start on '{name}' because the Rigidbody is missing.",
+                this);
+
+            return;
+        }
+
+        originalUseGravity =
+            playerRigidbody.useGravity;
+
+        originalConstraints =
+            playerRigidbody.constraints;
+
+        movementEnabled = false;
+        isStabilizingSpawn = true;
+
+        StopRigidbodyMotion();
+
+        playerRigidbody.useGravity = false;
+        playerRigidbody.constraints =
+            originalConstraints |
+            RigidbodyConstraints.FreezePositionY;
+
+        if (TryCompleteSpawnStabilization())
+        {
+            return;
+        }
+    }
+
+    private void UpdateSpawnStabilization()
+    {
+        if (!isStabilizingSpawn)
+            return;
+
+        if (playerRigidbody == null)
+        {
+            EndSpawnStabilization(
+                groundedSuccessfully: false);
+
+            return;
+        }
+
+        stabilizationTimer +=
+            Time.fixedDeltaTime;
+
+        StopRigidbodyMotion();
+
+        if (TryCompleteSpawnStabilization())
+            return;
+
+        if (stabilizationTimer <
+            maximumStabilizationTime)
+        {
+            return;
+        }
+
+        EndSpawnStabilization(
+            groundedSuccessfully: false);
+    }
+
+    private bool TryCompleteSpawnStabilization()
+    {
+        if (!isStabilizingSpawn ||
+            playerRigidbody == null)
+        {
+            return false;
+        }
+
+        if (!TryFindSpawnGround(
+                out RaycastHit hit))
+        {
+            return false;
+        }
+
+        SnapRigidbodyToGround(
+            hit);
+
+        Physics.SyncTransforms();
+
+        grounded =
+            DetectGround(
+                out groundNormal,
+                out currentSlopeAngle);
+
+        groundedLastFrame =
+            grounded;
+
+        if (!grounded)
+            return false;
+
+        EndSpawnStabilization(
+            groundedSuccessfully: true);
+
+        return true;
+    }
+
+    private bool TryFindSpawnGround(
+        out RaycastHit hit)
+    {
+        hit =
+            default;
+
+        if (playerRigidbody == null)
+            return false;
+
+        float searchHeight =
+            Mathf.Max(
+                0.1f,
+                spawnGroundSearchHeight);
+
+        float searchDistance =
+            Mathf.Max(
+                0.1f,
+                spawnGroundSearchDistance);
+
+        float castRadius =
+            Mathf.Max(
+                0.01f,
+                groundProbeRadius);
+
+        Vector3 origin =
+            playerRigidbody.position +
+            Vector3.up *
+            searchHeight;
+
+        float distance =
+            searchHeight +
+            searchDistance;
+
+        return Physics.SphereCast(
+            origin,
+            castRadius,
+            Vector3.down,
+            out hit,
+            distance,
+            groundMask,
+            QueryTriggerInteraction.Ignore);
+    }
+
+    private void SnapRigidbodyToGround(
+        RaycastHit hit)
+    {
+        if (playerRigidbody == null ||
+            hit.collider == null)
+        {
+            return;
+        }
+
+        float bottomOffset =
+            GetColliderBottomOffset();
+
+        Vector3 groundedPosition =
+            playerRigidbody.position;
+
+        groundedPosition.y =
+            hit.point.y +
+            bottomOffset +
+            spawnGroundOffset;
+
+        playerRigidbody.position =
+            groundedPosition;
+
+        StopRigidbodyMotion();
+    }
+
+    private float GetColliderBottomOffset()
+    {
+        Collider characterCollider =
+            GetComponent<Collider>();
+
+        characterCollider ??=
+            GetComponentInChildren<Collider>(
+                includeInactive: true);
+
+        characterCollider ??=
+            GetComponentInParent<Collider>();
+
+        if (characterCollider == null)
+            return 0f;
+
+        float offset =
+            transform.position.y -
+            characterCollider.bounds.min.y;
+
+        return Mathf.Max(
+            0f,
+            offset);
+    }
+
+    private void EndSpawnStabilization(
+        bool groundedSuccessfully)
+    {
+        if (!isStabilizingSpawn)
+            return;
+
+        RestoreRigidbodyAfterStabilization();
+
+        isStabilizingSpawn = false;
+        stabilizationTimer = 0f;
+        movementEnabled = true;
+
+        if (groundedSuccessfully)
+        {
+            grounded = true;
+            groundedLastFrame = true;
+
+            ChangeState(
+                MovementState.Ground);
+        }
+        else
+        {
+            grounded =
+                DetectGround(
+                    out groundNormal,
+                    out currentSlopeAngle);
+
+            groundedLastFrame =
+                grounded;
+
+            ChangeState(
+                grounded
+                    ? MovementState.Ground
+                    : MovementState.Air);
+
+            Debug.LogWarning(
+                $"Spawn stabilization timed out on '{name}'. Normal physics was restored.",
+                this);
+        }
+
+        UpdateAnimatorState();
+        UpdateAnimator();
+    }
+
+    private void CancelSpawnStabilization()
+    {
+        if (!isStabilizingSpawn)
+            return;
+
+        RestoreRigidbodyAfterStabilization();
+
+        isStabilizingSpawn = false;
+        stabilizationTimer = 0f;
+    }
+
+    private void RestoreRigidbodyAfterStabilization()
+    {
+        if (playerRigidbody == null)
+            return;
+
+        playerRigidbody.constraints =
+            originalConstraints;
+
+        playerRigidbody.useGravity =
+            originalUseGravity;
+
+        StopRigidbodyMotion();
+        playerRigidbody.WakeUp();
+    }
+
+    private void StopRigidbodyMotion()
+    {
+        if (playerRigidbody == null)
+            return;
+
+        playerRigidbody.linearVelocity =
+            Vector3.zero;
+
+        playerRigidbody.angularVelocity =
+            Vector3.zero;
+    }
+
+    #endregion
+
+
+    #region World Recovery
+
+    private bool IsRecoveryPointValid()
+    {
+        if (recoveryPoint == null)
+            return false;
+
+        if (!recoveryPoint.gameObject.scene.IsValid())
+            return false;
+
+        if (!recoveryPoint.gameObject.activeInHierarchy)
+            return false;
+
+        return
+            IsFiniteVector(
+                recoveryPoint.position) &&
+            IsFiniteQuaternion(
+                recoveryPoint.rotation);
+    }
+
+    private static bool IsFiniteQuaternion(
+        Quaternion value)
+    {
+        return
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z) &&
+            float.IsFinite(value.w);
+    }
+
+    private void InitializeRecoverySystem()
+    {
+        if (recoveryInitialized)
+            return;
+
+        Vector3 currentPosition =
+            playerRigidbody != null
+                ? playerRigidbody.position
+                : transform.position;
+
+        Quaternion currentRotation =
+            playerRigidbody != null
+                ? playerRigidbody.rotation
+                : transform.rotation;
+
+        startingRecoveryPosition =
+            currentPosition;
+
+        startingRecoveryRotation =
+            currentRotation;
+
+        recoveryCooldownTimer = 0f;
+        safeGroundTimer = 0f;
+        isRecovering = false;
+
+        if (resolveRecoveryPointAutomatically &&
+            recoveryPoint == null)
+        {
+            recoveryPoint =
+                ResolveAutomaticRecoveryPoint();
+        }
+
+        SetSafeDestination(
+            currentPosition,
+            currentRotation);
+
+        recoveryInitialized = true;
+    }
+
+    private Transform ResolveAutomaticRecoveryPoint()
+    {
+        Transform point =
+            FindSceneTransformByName(
+                "Player Spawn Point");
+
+        point ??=
+            FindSceneTransformByName(
+                "Respawn Point");
+
+        point ??=
+            FindSceneTransformByName(
+                "Reset Point");
+
+        point ??=
+            FindSceneTransformByName(
+                "Checkpoint");
+
+        return point;
+    }
+
+    private static Transform FindSceneTransformByName(
+        string targetName)
+    {
+        if (string.IsNullOrWhiteSpace(targetName))
+            return null;
+
+        Transform[] transforms =
+    FindObjectsByType<Transform>(
+        FindObjectsInactive.Include);
+
+        string normalizedTarget =
+            NormalizeRecoveryName(
+                targetName);
+
+        foreach (Transform candidate in transforms)
+        {
+            if (candidate == null)
+                continue;
+
+            if (NormalizeRecoveryName(candidate.name) ==
+                normalizedTarget)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private static string NormalizeRecoveryName(
+        string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        return value
+            .Replace(" ", "")
+            .Replace("_", "")
+            .Replace("-", "")
+            .Trim()
+            .ToLowerInvariant();
+    }
+
+    private void UpdateRecoveryCooldown()
+    {
+        if (recoveryCooldownTimer <= 0f)
+            return;
+
+        recoveryCooldownTimer =
+            Mathf.Max(
+                0f,
+                recoveryCooldownTimer -
+                Time.fixedDeltaTime);
+    }
+
+    private bool ShouldRecoverFromWorld()
+    {
+        if (!enableWorldRecovery ||
+            !recoveryInitialized ||
+            isRecovering ||
+            isStabilizingSpawn ||
+            recoveryCooldownTimer > 0f ||
+            playerRigidbody == null)
+        {
+            return false;
+        }
+
+        Vector3 position =
+            playerRigidbody.position;
+
+        if (!IsFiniteVector(position))
+            return true;
+
+        if (position.y <
+            worldFallLimit)
+        {
+            return true;
+        }
+
+        if (!hasSafeDestination)
+            return false;
+
+        return
+            Vector3.Distance(
+                position,
+                safeDestinationPosition) >
+            maximumSafeDistance;
+    }
+
+    private void UpdateAutomaticSafeDestination()
+    {
+        if (!rememberSafeGroundAutomatically ||
+            !grounded ||
+            isRecovering ||
+            isStabilizingSpawn ||
+            playerRigidbody == null)
+        {
+            safeGroundTimer = 0f;
+            return;
+        }
+
+        Vector3 velocity =
+            playerRigidbody.linearVelocity;
+
+        if (Mathf.Abs(velocity.y) > 0.25f)
+        {
+            safeGroundTimer = 0f;
+            return;
+        }
+
+        safeGroundTimer +=
+            Time.fixedDeltaTime;
+
+        if (safeGroundTimer <
+            safeGroundSaveDelay)
+        {
+            return;
+        }
+
+        SetSafeDestination(
+            playerRigidbody.position,
+            playerRigidbody.rotation);
+    }
+
+    private bool PerformWorldRecovery()
+    {
+        if (playerRigidbody == null ||
+    !CanStartRecovery())
+        {
+            return false;
+        }
+
+        else
+        {
+            Debug.LogWarning(
+                $"World recovery triggered on '{name}'.",
+                this);
+        }
+
+        isRecovering = true;
+        movementEnabled = false;
+
+        try
+        {
+            CancelSpawnStabilization();
+            StopRigidbodyMotion();
+
+            GetRecoveryPose(
+                out Vector3 destination,
+                out Quaternion rotation);
+
+            if (TryResolveGroundedDestination(
+                    destination,
+                    out Vector3 groundedDestination,
+                    out _))
+            {
+                destination =
+                    groundedDestination;
+            }
+
+            if (!IsFiniteVector(destination))
+            {
+                destination =
+                    startingRecoveryPosition;
+
+                rotation =
+                    startingRecoveryRotation;
+            }
+
+            playerRigidbody.position =
+                destination;
+
+            playerRigidbody.rotation =
+                rotation;
+
+            Physics.SyncTransforms();
+
+            StopRigidbodyMotion();
+
+            grounded =
+                DetectGround(
+                    out groundNormal,
+                    out currentSlopeAngle);
+
+            groundedLastFrame =
+                grounded;
+
+            ChangeState(
+                grounded
+                    ? MovementState.Ground
+                    : MovementState.Air);
+
+            recoveryCooldownTimer =
+                recoveryCooldown;
+
+            if (stabilizeAfterRecovery)
+            {
+                BeginSpawnStabilization();
+            }
+            else
+            {
+                movementEnabled = true;
+            }
+
+            return true;
+        }
+        finally
+        {
+            isRecovering = false;
+
+            if (!isStabilizingSpawn)
+            {
+                movementEnabled = true;
+            }
+        }
+    }
+
+    private void GetRecoveryPose(
+        out Vector3 position,
+        out Quaternion rotation)
+    {
+        if (IsRecoveryPointValid())
+        {
+            position =
+                recoveryPoint.position;
+
+            rotation =
+                recoveryPoint.rotation;
+
+            return;
+        }
+
+        if (hasSafeDestination)
+        {
+            position =
+                safeDestinationPosition;
+
+            rotation =
+                safeDestinationRotation;
+
+            return;
+        }
+
+        position =
+            useStartingPoseAsFallback
+                ? startingRecoveryPosition
+                : transform.position;
+
+        rotation =
+            useStartingPoseAsFallback
+                ? startingRecoveryRotation
+                : transform.rotation;
+    }
+
+    private bool TryResolveGroundedDestination(
+        Vector3 requestedPosition,
+        out Vector3 groundedPosition,
+        out Vector3 resolvedNormal)
+    {
+        groundedPosition =
+            requestedPosition;
+
+        resolvedNormal =
+            Vector3.up;
+
+        float searchHeight =
+            Mathf.Max(
+                0.1f,
+                recoverySearchHeight);
+
+        float searchDistance =
+            Mathf.Max(
+                0.1f,
+                recoverySearchDistance);
+
+        float castRadius =
+            Mathf.Max(
+                0.01f,
+                recoveryCastRadius);
+
+        Vector3 origin =
+            requestedPosition +
+            Vector3.up *
+            searchHeight;
+
+        RaycastHit[] hits =
+            Physics.SphereCastAll(
+                origin,
+                castRadius,
+                Vector3.down,
+                searchHeight +
+                searchDistance,
+                groundMask,
+                QueryTriggerInteraction.Ignore);
+
+        float nearestDistance =
+            float.PositiveInfinity;
+
+        bool foundGround =
+            false;
+
+        foreach (RaycastHit candidate in hits)
+        {
+            if (candidate.collider == null)
+                continue;
+
+            if (IsOwnCollider(
+                    candidate.collider))
+            {
+                continue;
+            }
+
+            float slopeAngle =
+                Vector3.Angle(
+                    candidate.normal,
+                    Vector3.up);
+
+            if (slopeAngle >
+                maximumRecoverySlope)
+            {
+                continue;
+            }
+
+            if (candidate.distance >=
+                nearestDistance)
+            {
+                continue;
+            }
+
+            nearestDistance =
+                candidate.distance;
+
+            groundedPosition =
+                requestedPosition;
+
+            groundedPosition.y =
+                candidate.point.y +
+                GetColliderBottomOffset() +
+                recoveryGroundOffset;
+
+            resolvedNormal =
+                candidate.normal.normalized;
+
+            foundGround =
+                true;
+        }
+
+        return foundGround;
+    }
+
+    private bool IsOwnCollider(
+        Collider candidate)
+    {
+        if (candidate == null)
+            return false;
+
+        Transform candidateTransform =
+            candidate.transform;
+
+        Transform rigidbodyTransform =
+            playerRigidbody != null
+                ? playerRigidbody.transform
+                : transform;
+
+        return
+            candidateTransform == rigidbodyTransform ||
+            candidateTransform.IsChildOf(rigidbodyTransform);
+    }
+
+    private static bool IsFiniteVector(
+        Vector3 value)
+    {
+        return
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z);
+    }
+
+    #endregion
+
+    #region Runtime Safety
+
+    private bool RunPhysicsSafetyChecks()
+    {
+        if (!ValidateRuntimeReferences())
+        {
+            AttemptRuntimeReferenceRecovery();
+
+            if (!ValidateRuntimeReferences())
+            {
+                EnterSafetyShutdown(
+                    "Required runtime references could not be restored.");
+
+                return false;
+            }
+        }
+
+        if (!ValidateRuntimePhysicsState(
+                logErrors: true))
+        {
+            if (!TryRecoverInvalidPhysicsState())
+            {
+                EnterSafetyShutdown(
+                    "The Rigidbody entered an unrecoverable physics state.");
+
+                return false;
+            }
+
+            return false;
+        }
+
+        if (!ValidateTransformScale())
+        {
+            EnterSafetyShutdown(
+                "The character has an invalid or near-zero transform scale.");
+
+            return false;
+        }
+
+        if (IsCharacterInsideBlockingGeometry())
+        {
+            PerformWorldRecovery();
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ValidateRuntimeReferences()
+    {
+        if (playerRigidbody == null ||
+            playerCollider == null ||
+            characterDefinition == null ||
+            characterDefinition.movementProfile == null ||
+            characterDefinition.abilityProfile == null)
+        {
+            return false;
+        }
+
+        if (!playerRigidbody.gameObject.activeInHierarchy)
+            return false;
+
+        if (!playerCollider.enabled)
+        {
+            playerCollider.enabled = true;
+        }
+
+        if (playerAnimator != null &&
+            !playerAnimator.enabled)
+        {
+            playerAnimator.enabled = true;
+        }
+
+        if (playerRigidbody.isKinematic &&
+            !isStabilizingSpawn &&
+            !isRecovering)
+        {
+            playerRigidbody.isKinematic = false;
+        }
+
+        if (!playerRigidbody.useGravity &&
+            !isStabilizingSpawn &&
+            currentState != MovementState.Flying)
+        {
+            playerRigidbody.useGravity = true;
+        }
+
+        return true;
+    }
+
+    private void AttemptRuntimeReferenceRecovery()
+    {
+        ResolveDependencies();
+
+        if (characterDefinition != null)
+        {
+            ApplyCharacterDefinition();
+        }
+
+        if (playerAnimator == null)
+        {
+            ResolveAnimator();
+        }
+
+        if (groundProbe == null)
+        {
+            ResolveGroundProbe();
+        }
+    }
+
+    private bool ValidateRuntimePhysicsState(
+        bool logErrors)
+    {
+        if (playerRigidbody == null)
+            return false;
+
+        Vector3 position =
+            playerRigidbody.position;
+
+        Vector3 velocity =
+            playerRigidbody.linearVelocity;
+
+        Vector3 angularVelocity =
+            playerRigidbody.angularVelocity;
+
+        bool valid =
+            IsFiniteVector(position) &&
+            IsFiniteVector(velocity) &&
+            IsFiniteVector(angularVelocity);
+
+        if (!valid)
+        {
+            if (logErrors)
+            {
+                Debug.LogError(
+                    $"Invalid Rigidbody values detected on '{name}'.",
+                    this);
+            }
+
+            return false;
+        }
+
+        float maximumLinearSpeedSquared =
+            maximumLinearSpeed *
+            maximumLinearSpeed;
+
+        float maximumAngularSpeedSquared =
+            maximumAngularSpeed *
+            maximumAngularSpeed;
+
+        if (velocity.sqrMagnitude >
+            maximumLinearSpeedSquared)
+        {
+            if (logErrors)
+            {
+                Debug.LogWarning(
+                    $"Excessive linear velocity detected on '{name}'.",
+                    this);
+            }
+
+            return false;
+        }
+
+        if (angularVelocity.sqrMagnitude >
+            maximumAngularSpeedSquared)
+        {
+            if (logErrors)
+            {
+                Debug.LogWarning(
+                    $"Excessive angular velocity detected on '{name}'.",
+                    this);
+            }
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool TryRecoverInvalidPhysicsState()
+    {
+        if (playerRigidbody == null)
+            return false;
+
+        StopRigidbodyMotion();
+
+        if (!IsFiniteVector(
+                playerRigidbody.position))
+        {
+            return PerformWorldRecovery();
+        }
+
+        playerRigidbody.linearVelocity =
+            Vector3.ClampMagnitude(
+                playerRigidbody.linearVelocity,
+                maximumLinearSpeed);
+
+        playerRigidbody.angularVelocity =
+            Vector3.ClampMagnitude(
+                playerRigidbody.angularVelocity,
+                maximumAngularSpeed);
+
+        return true;
+    }
+
+    private bool ValidateTransformScale()
+    {
+        Vector3 scale =
+            transform.lossyScale;
+
+        return
+            IsFiniteVector(scale) &&
+            Mathf.Abs(scale.x) >=
+                minimumValidScale &&
+            Mathf.Abs(scale.y) >=
+                minimumValidScale &&
+            Mathf.Abs(scale.z) >=
+                minimumValidScale;
+    }
+
+    private bool IsCharacterInsideBlockingGeometry()
+    {
+        if (playerCollider == null)
+            return false;
+
+        Bounds bounds =
+            playerCollider.bounds;
+
+        Vector3 halfExtents =
+            bounds.extents -
+            Vector3.one *
+            overlapCheckPadding;
+
+        halfExtents.x =
+            Mathf.Max(
+                halfExtents.x,
+                0.01f);
+
+        halfExtents.y =
+            Mathf.Max(
+                halfExtents.y,
+                0.01f);
+
+        halfExtents.z =
+            Mathf.Max(
+                halfExtents.z,
+                0.01f);
+
+        Collider[] overlaps =
+            Physics.OverlapBox(
+                bounds.center,
+                halfExtents,
+                transform.rotation,
+                groundMask,
+                QueryTriggerInteraction.Ignore);
+
+        foreach (Collider overlap in overlaps)
+        {
+            if (overlap == null ||
+                IsOwnCollider(
+                    overlap))
+            {
+                continue;
+            }
+
+            if (Physics.ComputePenetration(
+                    playerCollider,
+                    playerCollider.transform.position,
+                    playerCollider.transform.rotation,
+                    overlap,
+                    overlap.transform.position,
+                    overlap.transform.rotation,
+                    out _,
+                    out float penetrationDistance) &&
+                penetrationDistance >
+                    overlapCheckPadding)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void UpdateMissingGroundProtection()
+    {
+        if (grounded ||
+            currentState == MovementState.Flying ||
+            currentState == MovementState.Spring ||
+            currentState == MovementState.HomingAttack ||
+            currentState == MovementState.Grinding ||
+            isRecovering ||
+            isStabilizingSpawn)
+        {
+            missingGroundTimer = 0f;
+            return;
+        }
+
+        missingGroundTimer +=
+            Time.fixedDeltaTime;
+
+        if (missingGroundTimer <
+            missingGroundGraceTime)
+        {
+            return;
+        }
+
+        if (playerRigidbody != null &&
+            playerRigidbody.linearVelocity.y <= 0f)
+        {
+            PerformWorldRecovery();
+        }
+
+        missingGroundTimer = 0f;
+    }
+
+    private void UpdateSafetyTimers()
+    {
+        if (recoveryWindowTimer > 0f)
+        {
+            recoveryWindowTimer -=
+                Time.fixedDeltaTime;
+
+            if (recoveryWindowTimer <= 0f)
+            {
+                recoveryWindowTimer = 0f;
+                recoveryCountInWindow = 0;
+            }
+        }
+
+        if (recoveryLockoutTimer > 0f)
+        {
+            recoveryLockoutTimer =
+                Mathf.Max(
+                    0f,
+                    recoveryLockoutTimer -
+                    Time.fixedDeltaTime);
+        }
+    }
+
+    private bool CanStartRecovery()
+    {
+        if (isRecovering ||
+            recoveryLockoutTimer > 0f ||
+            shuttingDown ||
+            applicationQuitting)
+        {
+            return false;
+        }
+
+        if (recoveryWindowTimer <= 0f)
+        {
+            recoveryWindowTimer =
+                recoveryWindowDuration;
+
+            recoveryCountInWindow = 0;
+        }
+
+        if (recoveryCountInWindow >=
+            maximumRecoveriesPerWindow)
+        {
+            recoveryLockoutTimer =
+                recoveryLockoutDuration;
+
+            Debug.LogError(
+                $"Recovery loop protection activated on '{name}'.",
+                this);
+
+            return false;
+        }
+
+        recoveryCountInWindow++;
+
+        return true;
+    }
+
+    private void EnterSafetyShutdown(
+        string reason)
+    {
+        if (safetyShutdown)
+            return;
+
+        safetyShutdown = true;
+        movementEnabled = false;
+
+        CancelSpawnStabilization();
+        StopRigidbodyMotion();
+
+        if (playerRigidbody != null)
+        {
+            playerRigidbody.useGravity = false;
+            playerRigidbody.isKinematic = true;
+        }
+
+        Debug.LogError(
+            $"{nameof(UltimatePlayerMovement)} entered safety shutdown on '{name}': {reason}",
+            this);
     }
 
     #endregion
