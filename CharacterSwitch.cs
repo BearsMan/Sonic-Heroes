@@ -5,6 +5,16 @@ using UnityEngine.Serialization;
 [DisallowMultipleComponent]
 public sealed class CharacterSwitch : MonoBehaviour
 {
+    #region Constants
+
+    private const string LeaderSlotName = "Team Leader";
+    private const string LeftFollowerSlotName = "Left Team Member";
+    private const string RightFollowerSlotName = "Right Team Member";
+    private const string LeftFollowTargetName = "LeftPos";
+    private const string RightFollowTargetName = "RightPos";
+
+    #endregion
+
     #region Inspector
 
     [Header("Input")]
@@ -16,14 +26,6 @@ public sealed class CharacterSwitch : MonoBehaviour
     [Header("Initial State")]
     [FormerlySerializedAs("currentCharacterType")]
     [SerializeField] private CHARACTERTYPES initialLeaderType = CHARACTERTYPES.Speed;
-
-    [Header("Reference Resolution")]
-    private const string LeaderSlotName = "Team Leader";
-    private const string LeftFollowerSlotName = "Left Team Member";
-    private const string RightFollowerSlotName = "Right Team Member";
-
-    private const string LeftFollowTargetName = "LeftPos";
-    private const string RightFollowTargetName = "RightPos";
 
     [Header("Formation Slots")]
     [FormerlySerializedAs("player")]
@@ -40,23 +42,9 @@ public sealed class CharacterSwitch : MonoBehaviour
     [SerializeField] private Transform rightFollowTarget;
 
     [Header("Resolved Characters")]
-    [SerializeField, HideInInspector]
-    private Transform speedCharacter;
-
-    [SerializeField, HideInInspector]
-    private Transform flyingCharacter;
-
-    [SerializeField, HideInInspector]
-    private Transform powerCharacter;
-
-    [SerializeField, HideInInspector]
-    private CharacterDefinition speedDefinition;
-
-    [SerializeField, HideInInspector]
-    private CharacterDefinition flyingDefinition;
-
-    [SerializeField, HideInInspector]
-    private CharacterDefinition powerDefinition;
+    [SerializeField, HideInInspector] private Transform speedCharacter;
+    [SerializeField, HideInInspector] private Transform flyingCharacter;
+    [SerializeField, HideInInspector] private Transform powerCharacter;
 
     [Header("Speed Character Forms")]
     [FormerlySerializedAs("sonic")]
@@ -64,6 +52,10 @@ public sealed class CharacterSwitch : MonoBehaviour
 
     [FormerlySerializedAs("superSonic")]
     [SerializeField] private GameObject superSpeedPrefab;
+    private const int RequiredSuperRings = 50; // This is only for Super Sonic, not for the other characters.
+    [SerializeField] private bool superFormRequiresRings = true;
+
+    [SerializeField] private bool dieWhenSuperRingsReachZero = true;
 
     [Header("Dependencies")]
     [SerializeField] private TeamSetup teamSetup;
@@ -73,7 +65,13 @@ public sealed class CharacterSwitch : MonoBehaviour
 
     [Header("Placement")]
     [SerializeField] private Vector3 localPosition = Vector3.zero;
-    [SerializeField] private Vector3 localEulerAngles = new(0f, 180f, 0f);
+    [SerializeField] private Vector3 localEulerAngles = new(0f, -180f, 0f);
+
+    [Header("Automatic Ground Placement")]
+    [SerializeField] private bool snapCharactersToGround = true;
+    [SerializeField, Min(0.1f)] private float groundCheckHeight = 2f;
+    [SerializeField, Min(0.1f)] private float groundCheckDistance = 6f;
+    [SerializeField] private float groundOffset = 0.05f;
 
     [Header("Debug")]
     [SerializeField] private bool logStateChanges;
@@ -82,16 +80,36 @@ public sealed class CharacterSwitch : MonoBehaviour
 
     #region Runtime State
 
+    private CharacterDefinition speedDefinition;
+    private CharacterDefinition flyingDefinition;
+    private CharacterDefinition powerDefinition;
+    private CharacterDefinition superSpeedDefinition;
+
     private UltimatePlayerMovement leaderMovement;
     private FollowerNavigation leftFollowerNavigation;
     private FollowerNavigation rightFollowerNavigation;
 
+    private LayerMask groundMask;
     private CHARACTERTYPES currentLeaderType;
 
     private bool isSuperForm;
     private bool isInitialized;
     private bool isChangingFormation;
     private bool isShuttingDown;
+
+    private readonly struct MovementSnapshot
+    {
+        public MovementSnapshot(
+            Vector3 linearVelocity,
+            Vector3 angularVelocity)
+        {
+            LinearVelocity = linearVelocity;
+            AngularVelocity = angularVelocity;
+        }
+
+        public Vector3 LinearVelocity { get; }
+        public Vector3 AngularVelocity { get; }
+    }
 
     #endregion
 
@@ -101,13 +119,10 @@ public sealed class CharacterSwitch : MonoBehaviour
     public event Action<bool> SuperFormChanged;
 
     public CHARACTERTYPES CurrentLeaderType => currentLeaderType;
-
     public Transform SpeedCharacter => speedCharacter;
     public Transform FlyingCharacter => flyingCharacter;
     public Transform PowerCharacter => powerCharacter;
-
     public Transform CurrentLeader => GetCurrentLeader();
-
     public bool IsSuperForm => isSuperForm;
     public bool IsInitialized => isInitialized;
     public bool CanSwitch => isInitialized && !isChangingFormation;
@@ -123,14 +138,7 @@ public sealed class CharacterSwitch : MonoBehaviour
                 ? initialLeaderType
                 : CHARACTERTYPES.Speed;
 
-        isSuperForm = false;
-        isInitialized = false;
-
-        ResolveDependencies();
-        ResolveFormationReferences();
-        ResolveCharacterReferences();
-        EnsureFormationRootsActive();
-        CacheControllers();
+        ResolveAllReferences();
     }
 
     private void OnEnable()
@@ -138,11 +146,7 @@ public sealed class CharacterSwitch : MonoBehaviour
         if (isShuttingDown)
             return;
 
-        ResolveDependencies();
-        ResolveFormationReferences();
-        ResolveCharacterReferences();
-        EnsureFormationRootsActive();
-        CacheControllers();
+        ResolveAllReferences();
 
         if (isInitialized)
         {
@@ -152,7 +156,10 @@ public sealed class CharacterSwitch : MonoBehaviour
 
     private void Start()
     {
-        if (!isInitialized)
+        ResolveDependencies();
+
+        if (teamSetup == null &&
+            !isInitialized)
         {
             InitializeCharacterSwitch();
         }
@@ -182,28 +189,124 @@ public sealed class CharacterSwitch : MonoBehaviour
         {
             ToggleSuperForm();
         }
+
+        UpdateSuperForm();
+    }
+
+    private void UpdateSuperForm()
+    {
+        if (!isSuperForm ||
+            !superFormRequiresRings)
+        {
+            return;
+        }
+
+        if (GameInstance.currentRings > 0)
+        {
+            return;
+        }
+
+        if (dieWhenSuperRingsReachZero)
+        {
+            KillSuperCharacter();
+        }
+        else
+        {
+            ToggleSuperForm();
+        }
+    }
+
+    private void KillSuperCharacter()
+    {
+        Debug.Log(
+            "Super Sonic ran out of rings and died.",
+            this);
+
+        // TODO:
+        // Play death animation.
+        // Disable player input.
+        // Notify GameManager.
+        // Reload checkpoint or restart the level.
     }
 
     private void OnDisable()
     {
-        CleanupRuntimeState();
+        isChangingFormation = false;
     }
 
     private void OnDestroy()
     {
         isShuttingDown = true;
-        CleanupDestroyedState();
+
+        LeaderChanged = null;
+        SuperFormChanged = null;
+
+        ClearCachedReferences();
     }
 
     private void OnValidate()
     {
-        ValidateSerializedState();
-        ValidateInputKeys();
+        if (!IsSupportedType(initialLeaderType))
+        {
+            initialLeaderType =
+                CHARACTERTYPES.Speed;
+        }
+
+        groundCheckHeight =
+            Mathf.Max(
+                0.1f,
+                groundCheckHeight);
+
+        groundCheckDistance =
+            Mathf.Max(
+                0.1f,
+                groundCheckDistance);
+
+        if (acceptPlayerInput &&
+            (previousLeaderKey == nextLeaderKey ||
+             previousLeaderKey == toggleSuperFormKey ||
+             nextLeaderKey == toggleSuperFormKey))
+        {
+            Debug.LogWarning(
+                "CharacterSwitch has duplicate input keys.",
+                this);
+        }
     }
 
     #endregion
 
     #region Initialization
+
+    public bool InitializeCharacterSwitch()
+    {
+        if (isInitialized)
+            return true;
+
+        ResolveAllReferences();
+
+        if (!ValidateConfiguration() ||
+            !ValidateCharacterInstances())
+        {
+            return false;
+        }
+
+        currentLeaderType =
+            IsSupportedType(currentLeaderType)
+                ? currentLeaderType
+                : initialLeaderType;
+
+        isInitialized = true;
+
+        if (!ApplyLeader(
+                currentLeaderType,
+                notifyListeners: false))
+        {
+            isInitialized = false;
+            return false;
+        }
+
+        return true;
+    }
 
     public bool ConfigureTeam(
         Transform speed,
@@ -224,6 +327,10 @@ public sealed class CharacterSwitch : MonoBehaviour
             return false;
         }
 
+        isInitialized = false;
+        isChangingFormation = false;
+        isSuperForm = false;
+
         speedCharacter = speed;
         flyingCharacter = flying;
         powerCharacter = power;
@@ -231,84 +338,25 @@ public sealed class CharacterSwitch : MonoBehaviour
         normalSpeedPrefab = normalSpeed;
         superSpeedPrefab = superSpeed;
 
-        UltimatePlayerMovement speedMovement =
-            speedCharacter.GetComponentInChildren<UltimatePlayerMovement>(
-                includeInactive: true);
-
-        UltimatePlayerMovement flyingMovement =
-            flyingCharacter.GetComponentInChildren<UltimatePlayerMovement>(
-                includeInactive: true);
-
-        UltimatePlayerMovement powerMovement =
-            powerCharacter.GetComponentInChildren<UltimatePlayerMovement>(
-                includeInactive: true);
-
-        speedDefinition =
-            speedMovement != null
-                ? speedMovement.CharacterDefinition
-                : null;
-
-        flyingDefinition =
-            flyingMovement != null
-                ? flyingMovement.CharacterDefinition
-                : null;
-
-        powerDefinition =
-            powerMovement != null
-                ? powerMovement.CharacterDefinition
-                : null;
-
         currentLeaderType = initialLeader;
-        isSuperForm = false;
 
-        ResolveDependencies();
-        ResolveFormationReferences();
-        EnsureFormationRootsActive();
-        CacheControllers();
-
-        if (!ValidateConfiguration())
-        {
-            isInitialized = false;
-            return false;
-        }
-
-        isInitialized = true;
-
-        ApplyLeader(
-            currentLeaderType,
-            notifyListeners: false);
-
-        return true;
-    }
-
-    public bool InitializeCharacterSwitch()
-    {
-        if (isInitialized)
-            return true;
-
-        ResolveDependencies();
-        ResolveFormationReferences();
-        ResolveCharacterReferences();
-        EnsureFormationRootsActive();
-        CacheControllers();
+        ResolveAllReferences();
 
         if (!ValidateConfiguration() ||
             !ValidateCharacterInstances())
         {
-            isInitialized = false;
             return false;
         }
 
-        currentLeaderType =
-            IsSupportedType(currentLeaderType)
-                ? currentLeaderType
-                : initialLeaderType;
-
         isInitialized = true;
 
-        ApplyLeader(
-            currentLeaderType,
-            notifyListeners: false);
+        if (!ApplyLeader(
+                currentLeaderType,
+                notifyListeners: false))
+        {
+            isInitialized = false;
+            return false;
+        }
 
         return true;
     }
@@ -321,6 +369,8 @@ public sealed class CharacterSwitch : MonoBehaviour
         GameObject superSpeed,
         CHARACTERTYPES initialLeader)
     {
+        bool valid = true;
+
         if (speed == null ||
             flying == null ||
             power == null)
@@ -329,17 +379,17 @@ public sealed class CharacterSwitch : MonoBehaviour
                 "CharacterSwitch received an incomplete team.",
                 this);
 
-            return false;
+            valid = false;
         }
 
         if (normalSpeed == null ||
             superSpeed == null)
         {
             Debug.LogError(
-                "CharacterSwitch requires both Speed prefabs.",
+                "CharacterSwitch requires both normal and super Speed prefabs.",
                 this);
 
-            return false;
+            valid = false;
         }
 
         if (!IsSupportedType(initialLeader))
@@ -348,10 +398,10 @@ public sealed class CharacterSwitch : MonoBehaviour
                 $"Unsupported initial leader: {initialLeader}.",
                 this);
 
-            return false;
+            valid = false;
         }
 
-        return true;
+        return valid;
     }
 
     #endregion
@@ -389,23 +439,15 @@ public sealed class CharacterSwitch : MonoBehaviour
     public bool SetLeader(
         CHARACTERTYPES leaderType)
     {
-        if (!CanSwitch)
-            return false;
-
-        if (!IsSupportedType(leaderType))
+        if (!CanSwitch ||
+            !IsSupportedType(leaderType))
         {
-            Debug.LogWarning(
-                $"Unsupported leader type: {leaderType}.",
-                this);
-
             return false;
         }
 
-        ApplyLeader(
+        return ApplyLeader(
             leaderType,
             notifyListeners: true);
-
-        return true;
     }
 
     public void RefreshFormation()
@@ -421,25 +463,25 @@ public sealed class CharacterSwitch : MonoBehaviour
             notifyListeners: false);
     }
 
-    private void ApplyLeader(
+    private bool ApplyLeader(
         CHARACTERTYPES leaderType,
         bool notifyListeners)
     {
         if (isChangingFormation)
-            return;
+            return false;
 
         isChangingFormation = true;
-        bool formationApplied = false;
+        bool applied = false;
 
         try
         {
-            EnsureFormationRootsActive();
+            ResolveAllReferences();
 
             if (!IsSupportedType(leaderType) ||
                 !ValidateCharacterInstances() ||
                 !ValidateFormationReferences())
             {
-                return;
+                return false;
             }
 
             GetFormation(
@@ -448,35 +490,26 @@ public sealed class CharacterSwitch : MonoBehaviour
                 out Transform leftCharacter,
                 out Transform rightCharacter);
 
-            EnsureCharacterActive(leader);
-            EnsureCharacterActive(leftCharacter);
-            EnsureCharacterActive(rightCharacter);
-
-            bool assigned =
-                AssignToSlot(
+            if (!AssignToSlot(
                     leader,
-                    leaderSlot);
-
-            assigned &=
-                AssignToSlot(
+                    leaderSlot) ||
+                !AssignToSlot(
                     leftCharacter,
-                    leftFollowerSlot);
-
-            assigned &=
-                AssignToSlot(
+                    leftFollowerSlot) ||
+                !AssignToSlot(
                     rightCharacter,
-                    rightFollowerSlot);
-
-            if (!assigned)
+                    rightFollowerSlot))
             {
                 Debug.LogError(
                     "CharacterSwitch failed to assign the complete formation.",
                     this);
 
-                return;
+                return false;
             }
 
             currentLeaderType = leaderType;
+
+            SnapFormationToGround();
 
             if (!RefreshControllers())
             {
@@ -484,19 +517,19 @@ public sealed class CharacterSwitch : MonoBehaviour
                     "CharacterSwitch could not finish configuring the formation controllers.",
                     this);
 
-                return;
+                return false;
             }
 
             RefreshDependentSystems();
-            formationApplied = true;
+            applied = true;
         }
         finally
         {
             isChangingFormation = false;
         }
 
-        if (!formationApplied)
-            return;
+        if (!applied)
+            return false;
 
         LogStateChange(
             $"Leader changed to {currentLeaderType}.");
@@ -506,6 +539,8 @@ public sealed class CharacterSwitch : MonoBehaviour
             LeaderChanged?.Invoke(
                 currentLeaderType);
         }
+
+        return true;
     }
 
     private void GetFormation(
@@ -554,7 +589,10 @@ public sealed class CharacterSwitch : MonoBehaviour
         return characterType switch
         {
             CHARACTERTYPES.Speed =>
-                speedDefinition,
+                isSuperForm &&
+                superSpeedDefinition != null
+                    ? superSpeedDefinition
+                    : speedDefinition,
 
             CHARACTERTYPES.Fly =>
                 flyingDefinition,
@@ -573,8 +611,23 @@ public sealed class CharacterSwitch : MonoBehaviour
 
     public bool ToggleSuperForm()
     {
-        if (!CanSwitch)
+        if (!CanSwitch ||
+        speedCharacter == null)
+        {
             return false;
+        }
+
+        if (!isSuperForm &&
+            GameInstance.currentRings <
+            RequiredSuperRings)
+        {
+            Debug.Log(
+                $"Super Sonic requires at least {RequiredSuperRings} rings. " +
+                $"Current rings: {GameInstance.currentRings}.",
+                this);
+
+            return false;
+        }
 
         GameObject replacementPrefab =
             isSuperForm
@@ -583,84 +636,121 @@ public sealed class CharacterSwitch : MonoBehaviour
 
         if (replacementPrefab == null)
         {
-            Debug.LogWarning(
-                isSuperForm
-                    ? "Normal Speed prefab is not assigned."
-                    : "Super Speed prefab is not assigned.",
+            Debug.LogError(
+                "CharacterSwitch cannot toggle Super form because the replacement prefab is missing.",
                 this);
 
             return false;
         }
 
-        if (speedCharacter == null)
+        MovementSnapshot movementSnapshot =
+            CaptureMovementSnapshot();
+
+        Transform previousSpeedCharacter =
+            speedCharacter;
+
+        Transform currentParent =
+            previousSpeedCharacter.parent;
+
+        int siblingIndex =
+            previousSpeedCharacter.GetSiblingIndex();
+
+        GameObject replacement =
+            Instantiate(
+                replacementPrefab,
+                currentParent,
+                false);
+
+        if (replacement == null)
+            return false;
+
+        Transform replacementTransform =
+            replacement.transform;
+
+        replacementTransform.SetSiblingIndex(
+            siblingIndex);
+
+        ResetLocalTransform(
+            replacementTransform);
+
+        speedCharacter =
+            replacementTransform;
+
+        isSuperForm =
+            !isSuperForm;
+
+        Destroy(
+            previousSpeedCharacter.gameObject);
+
+        if (!ApplyLeader(
+        currentLeaderType,
+        notifyListeners: false))
         {
             Debug.LogError(
-                "The Speed character instance is missing.",
+                "CharacterSwitch replaced the Speed character but could not refresh the formation.",
                 this);
 
             return false;
         }
 
-        isChangingFormation = true;
-        bool replacementSucceeded = false;
+        RestoreMovementSnapshot(
+            movementSnapshot);
 
-        try
-        {
-            Transform previousSpeedCharacter =
-                speedCharacter;
-
-            Transform currentParent =
-                previousSpeedCharacter.parent;
-
-            int siblingIndex =
-                previousSpeedCharacter.GetSiblingIndex();
-
-            GameObject replacement =
-                Instantiate(
-                    replacementPrefab,
-                    currentParent);
-
-            Transform replacementTransform =
-                replacement.transform;
-
-            replacementTransform.SetSiblingIndex(
-                siblingIndex);
-
-            ResetLocalTransform(
-                replacementTransform);
-
-            speedCharacter =
-                replacementTransform;
-
-            isSuperForm =
-                !isSuperForm;
-
-            Destroy(
-                previousSpeedCharacter.gameObject);
-
-            ResolveCharacterReferences();
-            CacheControllers();
-            RefreshFormation();
-
-            replacementSucceeded = true;
-        }
-        finally
-        {
-            isChangingFormation = false;
-        }
-
-        if (!replacementSucceeded)
-            return false;
+        SuperFormChanged?.Invoke(
+            isSuperForm);
 
         LogStateChange(
             isSuperForm
                 ? "Super form enabled."
                 : "Super form disabled.");
 
-        SuperFormChanged?.Invoke(
-            isSuperForm);
-
         return true;
+    }
+
+    private MovementSnapshot CaptureMovementSnapshot()
+    {
+        Rigidbody playerRigidbody =
+            leaderMovement != null
+                ? leaderMovement.GetComponent<Rigidbody>()
+                : leaderSlot != null
+                    ? leaderSlot.GetComponent<Rigidbody>()
+                    : null;
+
+        if (playerRigidbody == null)
+        {
+            return new MovementSnapshot(
+                Vector3.zero,
+                Vector3.zero);
+        }
+
+        return new MovementSnapshot(
+            playerRigidbody.linearVelocity,
+            playerRigidbody.angularVelocity);
+    }
+
+    private void RestoreMovementSnapshot(
+        MovementSnapshot snapshot)
+    {
+        Rigidbody playerRigidbody =
+            leaderMovement != null
+                ? leaderMovement.GetComponent<Rigidbody>()
+                : leaderSlot != null
+                    ? leaderSlot.GetComponent<Rigidbody>()
+                    : null;
+
+        if (playerRigidbody == null ||
+            playerRigidbody.isKinematic)
+        {
+            return;
+        }
+
+        playerRigidbody.linearVelocity =
+            snapshot.LinearVelocity;
+
+        playerRigidbody.angularVelocity =
+            snapshot.AngularVelocity;
+
+        playerRigidbody.WakeUp();
     }
 
     #endregion
@@ -671,35 +761,22 @@ public sealed class CharacterSwitch : MonoBehaviour
         Transform character,
         Transform slot)
     {
-        if (character == null)
+        if (character == null ||
+            slot == null ||
+            character == slot)
         {
-            Debug.LogError(
-                "CharacterSwitch attempted to assign a null character.",
-                this);
-
             return false;
         }
 
-        if (slot == null)
+        if (character.parent != slot)
         {
-            Debug.LogError(
-                $"CharacterSwitch attempted to assign '{character.name}' to a null slot.",
-                this);
-
-            return false;
+            character.SetParent(
+                slot,
+                false);
         }
 
-        if (character.parent == slot)
-        {
-            ResetLocalTransform(character);
-            return true;
-        }
-
-        character.SetParent(
-            slot,
-            false);
-
-        ResetLocalTransform(character);
+        ResetLocalTransform(
+            character);
 
         return character.parent == slot;
     }
@@ -710,35 +787,78 @@ public sealed class CharacterSwitch : MonoBehaviour
         if (character == null)
             return;
 
-        character.localPosition = localPosition;
+        character.localPosition =
+            localPosition;
+
         character.localRotation =
             Quaternion.Euler(
                 localEulerAngles);
+
+        if (snapCharactersToGround)
+        {
+            SnapCharacterToGround(
+                character);
+        }
     }
 
-    private void EnsureFormationRootsActive()
+    private void SnapFormationToGround()
     {
-        SetTransformActive(leaderSlot);
-        SetTransformActive(leftFollowerSlot);
-        SetTransformActive(rightFollowerSlot);
+        SnapCharacterToGround(
+            speedCharacter);
+
+        SnapCharacterToGround(
+            flyingCharacter);
+
+        SnapCharacterToGround(
+            powerCharacter);
     }
 
-    private static void EnsureCharacterActive(
+    private void SnapCharacterToGround(
         Transform character)
     {
-        SetTransformActive(character);
-    }
-
-    private static void SetTransformActive(
-        Transform targetTransform)
-    {
-        if (targetTransform == null)
-            return;
-
-        if (!targetTransform.gameObject.activeSelf)
+        if (!snapCharactersToGround ||
+            character == null)
         {
-            targetTransform.gameObject.SetActive(true);
+            return;
         }
+
+        Collider characterCollider =
+            character.GetComponentInChildren<Collider>(
+                includeInactive: true);
+
+        float bottomOffset =
+            characterCollider != null
+                ? character.position.y -
+                  characterCollider.bounds.min.y
+                : 0f;
+
+        Vector3 origin =
+            character.position +
+            Vector3.up *
+            groundCheckHeight;
+
+        if (!Physics.Raycast(
+                origin,
+                Vector3.down,
+                out RaycastHit hit,
+                groundCheckHeight +
+                groundCheckDistance,
+                groundMask,
+                QueryTriggerInteraction.Ignore))
+        {
+            return;
+        }
+
+        Vector3 groundedPosition =
+            character.position;
+
+        groundedPosition.y =
+            hit.point.y +
+            bottomOffset +
+            groundOffset;
+
+        character.position =
+            groundedPosition;
     }
 
     #endregion
@@ -747,6 +867,7 @@ public sealed class CharacterSwitch : MonoBehaviour
 
     private bool RefreshControllers()
     {
+        ResolveDefinitionsFromTeamSetup();
         CacheControllers();
 
         bool valid = true;
@@ -754,7 +875,7 @@ public sealed class CharacterSwitch : MonoBehaviour
         if (leaderMovement == null)
         {
             Debug.LogError(
-                "CharacterSwitch could not find UltimatePlayerMovement in the leader slot.",
+                "CharacterSwitch could not find UltimatePlayerMovement on Team Leader.",
                 this);
 
             valid = false;
@@ -768,30 +889,22 @@ public sealed class CharacterSwitch : MonoBehaviour
             if (definition == null)
             {
                 Debug.LogError(
-                    $"CharacterSwitch has no CharacterDefinition assigned for {currentLeaderType}.",
+                    $"CharacterSwitch has no CharacterDefinition for {currentLeaderType}.",
                     this);
 
                 valid = false;
             }
             else if (!leaderMovement.SetCharacterDefinition(
-                         definition))
+             definition))
             {
-                Debug.LogError(
-                    $"CharacterSwitch failed to apply the CharacterDefinition for {currentLeaderType}.",
-                    this);
-
                 valid = false;
-            }
-            else
-            {
-                leaderMovement.SetupAnimation();
             }
         }
 
         if (leftFollowerNavigation == null)
         {
             Debug.LogError(
-                "CharacterSwitch could not find FollowerNavigation in the left follower slot.",
+                "CharacterSwitch could not find FollowerNavigation on Left Team Member.",
                 this);
 
             valid = false;
@@ -806,7 +919,7 @@ public sealed class CharacterSwitch : MonoBehaviour
         if (rightFollowerNavigation == null)
         {
             Debug.LogError(
-                "CharacterSwitch could not find FollowerNavigation in the right follower slot.",
+                "CharacterSwitch could not find FollowerNavigation on Right Team Member.",
                 this);
 
             valid = false;
@@ -821,19 +934,119 @@ public sealed class CharacterSwitch : MonoBehaviour
         return valid;
     }
 
+    private void ApplyAnimatorController(
+    Transform character,
+    CharacterDefinition definition)
+    {
+        if (character == null ||
+            definition == null)
+        {
+            return;
+        }
+
+        Animator animator =
+            character.GetComponentInChildren<Animator>(
+                includeInactive: true);
+
+        if (animator == null)
+        {
+            Debug.LogError(
+                $"CharacterSwitch could not find an Animator on '{character.name}'.",
+                character);
+
+            return;
+        }
+
+        if (definition.animatorProfile == null)
+        {
+            Debug.LogError(
+                $"CharacterSwitch could not find an AnimatorProfile for '{character.name}'.",
+                character);
+
+            return;
+        }
+
+        if (definition.animatorProfile.animatorController != null)
+        {
+            animator.runtimeAnimatorController =
+                definition.animatorProfile.animatorController;
+        }
+
+        if (definition.animatorProfile.avatar != null)
+        {
+            animator.avatar =
+                definition.animatorProfile.avatar;
+        }
+
+        animator.enabled = true;
+        animator.speed = 1f;
+
+        animator.Rebind();
+        animator.Update(0f);
+    }
+
     private void CacheControllers()
     {
         leaderMovement =
-            GetComponentFromSlot<UltimatePlayerMovement>(
-                leaderSlot);
+            leaderSlot != null
+                ? leaderSlot.GetComponent<UltimatePlayerMovement>()
+                : null;
 
         leftFollowerNavigation =
-            GetComponentFromSlot<FollowerNavigation>(
-                leftFollowerSlot);
+            GetOrCreateFollowerNavigation(
+                leftFollowerSlot,
+                "Left Team Member");
 
         rightFollowerNavigation =
-            GetComponentFromSlot<FollowerNavigation>(
-                rightFollowerSlot);
+            GetOrCreateFollowerNavigation(
+                rightFollowerSlot,
+                "Right Team Member");
+    }
+
+    private FollowerNavigation GetOrCreateFollowerNavigation(
+    Transform followerSlot,
+    string displayName)
+    {
+        if (followerSlot == null)
+        {
+            Debug.LogError(
+                $"CharacterSwitch cannot repair {displayName} because its slot is missing.",
+                this);
+
+            return null;
+        }
+
+        FollowerNavigation navigation =
+            followerSlot.GetComponent<FollowerNavigation>();
+
+        if (navigation == null)
+        {
+            navigation =
+                followerSlot.gameObject.AddComponent<FollowerNavigation>();
+
+            if (navigation != null)
+            {
+                Debug.Log(
+                    $"CharacterSwitch automatically added FollowerNavigation to '{followerSlot.name}'.",
+                    followerSlot);
+            }
+        }
+
+        if (navigation == null)
+        {
+            Debug.LogError(
+                $"CharacterSwitch could not create FollowerNavigation on '{followerSlot.name}'.",
+                followerSlot);
+
+            return null;
+        }
+
+        if (!navigation.enabled)
+        {
+            navigation.enabled = true;
+        }
+
+        return navigation;
     }
 
     private void RefreshDependentSystems()
@@ -845,60 +1058,23 @@ public sealed class CharacterSwitch : MonoBehaviour
                 snapImmediately: true);
         }
 
-        RefreshHud();
-    }
-
-    private static T GetComponentFromSlot<T>(
-        Transform slot)
-        where T : Component
-    {
-        if (slot == null)
-            return null;
-
-        T component = slot.GetComponent<T>();
-
-        return
-            component != null
-                ? component
-                : slot.GetComponentInChildren<T>(
-                    includeInactive: true);
-    }
-
-    #endregion
-
-    #region State And Input
-
-    public void SetInputEnabled(
-        bool enabled)
-    {
-        acceptPlayerInput = enabled;
-    }
-
-    public CharacterSwitchState CaptureState()
-    {
-        return new CharacterSwitchState(
-            currentLeaderType,
-            isSuperForm);
-    }
-
-    public void RestoreState(
-        CharacterSwitchState state)
-    {
-        if (!isInitialized)
-            return;
-
-        if (state.IsSuperForm != isSuperForm)
-        {
-            ToggleSuperForm();
-        }
-
-        SetLeader(
-            state.LeaderType);
+        hud?.SetCharacter(
+            currentLeaderType);
     }
 
     #endregion
 
     #region Reference Resolution
+
+    private void ResolveAllReferences()
+    {
+        ResolveDependencies();
+        ResolveGroundSettings();
+        ResolveFormationReferences();
+        ResolveDefinitionsFromTeamSetup();
+        CacheControllers();
+        EnsureFormationRootsActive();
+    }
 
     private void ResolveDependencies()
     {
@@ -906,7 +1082,14 @@ public sealed class CharacterSwitch : MonoBehaviour
             GetComponent<TeamSetup>();
 
         teamSetup ??=
+            GetComponentInParent<TeamSetup>();
+
+        teamSetup ??=
             TeamSetup.Instance;
+
+        teamSetup ??=
+            FindAnyObjectByType<TeamSetup>(
+                FindObjectsInactive.Include);
 
         teamActionController ??=
             GetComponent<TeamActionController>();
@@ -914,133 +1097,111 @@ public sealed class CharacterSwitch : MonoBehaviour
         teamActionController ??=
             GetComponentInParent<TeamActionController>();
 
+        teamActionController ??=
+            FindAnyObjectByType<TeamActionController>(
+                FindObjectsInactive.Include);
+
         cameraController ??=
-            FindAnyObjectByType<CameraController>();
+            FindAnyObjectByType<CameraController>(
+                FindObjectsInactive.Include);
 
         hud ??=
             FindAnyObjectByType<HUD>(
                 FindObjectsInactive.Include);
     }
 
+    private void ResolveGroundSettings()
+    {
+        int groundLayer =
+            LayerMask.NameToLayer(
+                "Ground");
+
+        groundMask =
+            groundLayer >= 0
+                ? 1 << groundLayer
+                : Physics.DefaultRaycastLayers;
+    }
+
     private void ResolveFormationReferences()
     {
         Transform searchRoot =
-            transform;
+            teamSetup != null
+                ? teamSetup.transform
+                : transform.root;
 
-        leaderSlot ??=
-            FindDescendantByName(
+        leaderSlot =
+            ResolveSlot(
+                leaderSlot,
                 searchRoot,
                 LeaderSlotName);
 
-        leftFollowerSlot ??=
-            FindDescendantByName(
+        leftFollowerSlot =
+            ResolveSlot(
+                leftFollowerSlot,
                 searchRoot,
                 LeftFollowerSlotName);
 
-        rightFollowerSlot ??=
-            FindDescendantByName(
+        rightFollowerSlot =
+            ResolveSlot(
+                rightFollowerSlot,
                 searchRoot,
                 RightFollowerSlotName);
 
-        if (leaderSlot == null)
-        {
-            Debug.LogError(
-                "CharacterSwitch could not locate the Team Leader anchor.",
-                this);
-        }
-        else
-        {
-            leftFollowTarget ??=
-                FindDescendantByName(
-                    leaderSlot,
-                    LeftFollowTargetName);
+        leftFollowTarget =
+            ResolveSlot(
+                leftFollowTarget,
+                leaderSlot,
+                LeftFollowTargetName);
 
-            rightFollowTarget ??=
-                FindDescendantByName(
-                    leaderSlot,
-                    RightFollowTargetName);
-        }
-
-        LogStateChange(
-            $"Leader Slot: {(leaderSlot != null ? "Resolved" : "Missing")}");
-
-        LogStateChange(
-            $"Left Follower Slot: {(leftFollowerSlot != null ? "Resolved" : "Missing")}");
-
-        LogStateChange(
-            $"Right Follower Slot: {(rightFollowerSlot != null ? "Resolved" : "Missing")}");
-
-        LogStateChange(
-            $"Left Follow Target: {(leftFollowTarget != null ? "Resolved" : "Missing")}");
-
-        LogStateChange(
-            $"Right Follow Target: {(rightFollowTarget != null ? "Resolved" : "Missing")}");
+        rightFollowTarget =
+            ResolveSlot(
+                rightFollowTarget,
+                leaderSlot,
+                RightFollowTargetName);
     }
 
-    private void ResolveCharacterReferences()
+    private void ResolveDefinitionsFromTeamSetup()
     {
-        speedCharacter = null;
-        flyingCharacter = null;
-        powerCharacter = null;
+        ResolveDependencies();
 
-        speedDefinition = null;
-        flyingDefinition = null;
-        powerDefinition = null;
+        TeamComposition composition =
+            teamSetup != null
+                ? teamSetup.Team
+                : null;
 
-        Transform searchRoot =
-            transform;
+        if (composition == null)
+            return;
 
-        UltimatePlayerMovement[] movements =
-            searchRoot.GetComponentsInChildren<UltimatePlayerMovement>(
-                includeInactive: true);
+        speedDefinition =
+            composition.SpeedCharacterDefinition;
 
-        foreach (UltimatePlayerMovement movement in movements)
-        {
-            if (movement == null)
-                continue;
+        flyingDefinition =
+            composition.FlyingCharacterDefinition;
 
-            CharacterDefinition definition =
-                movement.CharacterDefinition;
+        powerDefinition =
+            composition.PowerCharacterDefinition;
 
-            if (definition == null)
-                continue;
+        superSpeedDefinition =
+            composition.SuperCharacterDefinition;
 
-            switch (definition.characterType)
-            {
-                case CharacterDefinition.CharacterType.Speed:
-                    speedCharacter =
-                        movement.transform;
+        normalSpeedPrefab ??=
+            composition.SpeedCharacterPrefab;
 
-                    speedDefinition =
-                        definition;
-                    break;
+        superSpeedPrefab ??=
+            composition.SuperCharacterPrefab;
+    }
 
-                case CharacterDefinition.CharacterType.Fly:
-                    flyingCharacter =
-                        movement.transform;
+    private static Transform ResolveSlot(
+        Transform current,
+        Transform root,
+        string targetName)
+    {
+        if (current != null)
+            return current;
 
-                    flyingDefinition =
-                        definition;
-                    break;
-
-                case CharacterDefinition.CharacterType.Power:
-                    powerCharacter =
-                        movement.transform;
-
-                    powerDefinition =
-                        definition;
-                    break;
-            }
-        }
-
-        LogStateChange(
-            $"Speed Character: {(speedCharacter != null ? "Resolved" : "Missing")}");
-
-        LogStateChange(
-            $"Flying Character: {(flyingCharacter != null ? "Resolved" : "Missing")}");
-
-        LogStateChange(
-            $"Power Character: {(powerCharacter != null ? "Resolved" : "Missing")}");
+        return FindDescendantByName(
+            root,
+            targetName);
     }
 
     private static Transform FindDescendantByName(
@@ -1053,18 +1214,23 @@ public sealed class CharacterSwitch : MonoBehaviour
             return null;
         }
 
-        string target =
-            NormalizeObjectName(objectName);
+        string normalizedTarget =
+            NormalizeObjectName(
+                objectName);
 
-        foreach (Transform child in
-                 root.GetComponentsInChildren<Transform>(true))
+        Transform[] descendants =
+            root.GetComponentsInChildren<Transform>(
+                includeInactive: true);
+
+        foreach (Transform descendant in descendants)
         {
-            if (child == null)
+            if (descendant == null)
                 continue;
 
-            if (NormalizeObjectName(child.name) == target)
+            if (NormalizeObjectName(descendant.name) ==
+                normalizedTarget)
             {
-                return child;
+                return descendant;
             }
         }
 
@@ -1078,53 +1244,43 @@ public sealed class CharacterSwitch : MonoBehaviour
             return string.Empty;
 
         return value
-            .Replace(" ", "")
-            .Replace("_", "")
-            .Replace("-", "")
+            .Replace(" ", string.Empty)
+            .Replace("_", string.Empty)
+            .Replace("-", string.Empty)
             .Trim()
             .ToLowerInvariant();
     }
 
-    #endregion
-
-    #region HUD
-
-    private void RefreshHud()
+    private void EnsureFormationRootsActive()
     {
-        hud?.SetCharacter(
-            currentLeaderType);
+        SetTransformActive(
+            leaderSlot);
+
+        SetTransformActive(
+            leftFollowerSlot);
+
+        SetTransformActive(
+            rightFollowerSlot);
+    }
+
+    private static void SetTransformActive(
+        Transform target)
+    {
+        if (target != null &&
+            !target.gameObject.activeSelf)
+        {
+            target.gameObject.SetActive(true);
+        }
     }
 
     #endregion
 
     #region Validation
 
-    private void ValidateSerializedState()
-    {
-        if (!IsSupportedType(initialLeaderType))
-        {
-            initialLeaderType =
-                CHARACTERTYPES.Speed;
-        }
-    }
-
-    private void ValidateInputKeys()
-    {
-        if (!acceptPlayerInput)
-            return;
-
-        if (previousLeaderKey == nextLeaderKey ||
-            previousLeaderKey == toggleSuperFormKey ||
-            nextLeaderKey == toggleSuperFormKey)
-        {
-            Debug.LogWarning(
-                "CharacterSwitch has duplicate input keys.",
-                this);
-        }
-    }
-
     private bool ValidateConfiguration()
     {
+        ResolveAllReferences();
+
         bool valid = true;
 
         valid &=
@@ -1167,12 +1323,15 @@ public sealed class CharacterSwitch : MonoBehaviour
                 powerDefinition,
                 "Power Character Definition");
 
-        if (teamSetup == null)
-        {
-            Debug.LogWarning(
-                "CharacterSwitch could not find TeamSetup.",
-                this);
-        }
+        valid &=
+            ValidateRequiredReference(
+                normalSpeedPrefab,
+                "Normal Speed Prefab");
+
+        valid &=
+            ValidateRequiredReference(
+                superSpeedPrefab,
+                "Super Speed Prefab");
 
         if (teamActionController == null)
         {
@@ -1255,22 +1414,42 @@ public sealed class CharacterSwitch : MonoBehaviour
 
     #endregion
 
-    #region Cleanup
+    #region State And Input
 
-    private void CleanupRuntimeState()
+    public void SetInputEnabled(
+        bool enabled)
     {
-        isChangingFormation = false;
+        acceptPlayerInput = enabled;
     }
 
-    private void CleanupDestroyedState()
+    public CharacterSwitchState CaptureState()
     {
-        CleanupRuntimeState();
+        return new CharacterSwitchState(
+            currentLeaderType,
+            isSuperForm);
+    }
 
-        isInitialized = false;
+    public void RestoreState(
+        CharacterSwitchState state)
+    {
+        if (!isInitialized)
+            return;
 
-        LeaderChanged = null;
-        SuperFormChanged = null;
+        if (state.IsSuperForm != isSuperForm)
+        {
+            ToggleSuperForm();
+        }
 
+        SetLeader(
+            state.LeaderType);
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    private void ClearCachedReferences()
+    {
         leaderMovement = null;
         leftFollowerNavigation = null;
         rightFollowerNavigation = null;
@@ -1294,6 +1473,7 @@ public sealed class CharacterSwitch : MonoBehaviour
         speedDefinition = null;
         flyingDefinition = null;
         powerDefinition = null;
+        superSpeedDefinition = null;
 
         normalSpeedPrefab = null;
         superSpeedPrefab = null;

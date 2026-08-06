@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 #if UNITY_EDITOR
-using System.Linq;
 using UnityEditor;
 #endif
 
@@ -26,20 +27,11 @@ public sealed class CharacterDefinition : ScriptableObject
 
     #region Constants
 
-    private const string DefinitionSuffix =
-        "Character Definition";
-
-    private const string MovementFolderName =
-        "Movement Profiles";
-
-    private const string AbilityFolderName =
-        "Ability Profiles";
-
-    private const string AnimatorFolderName =
-        "Animator Profiles";
-
-    private const string PresentationFolderName =
-        "Presentation Profiles";
+    private const string DefinitionSuffix = "Character Definition";
+    private const string MovementFolderName = "Movement Profiles";
+    private const string AbilityFolderName = "Ability Profiles";
+    private const string AnimatorFolderName = "Animator Profiles";
+    private const string PresentationFolderName = "Presentation Profiles";
 
     #endregion
 
@@ -48,9 +40,7 @@ public sealed class CharacterDefinition : ScriptableObject
     [Header("Identity")]
     public string characterId;
     public string displayName;
-
-    public CharacterType characterType =
-        CharacterType.Speed;
+    public CharacterType characterType = CharacterType.Speed;
 
     [Header("Profiles")]
     public CharacterMovementProfile movementProfile;
@@ -62,6 +52,8 @@ public sealed class CharacterDefinition : ScriptableObject
     [SerializeField] private bool automaticSetup = true;
     [SerializeField] private bool applyTypePresets = true;
     [SerializeField] private bool autoAssignProjectAssets = true;
+    [SerializeField] private bool replaceInvalidAssignments = true;
+    [SerializeField] private bool logAutomaticAssignments = true;
 
     #endregion
 
@@ -82,7 +74,9 @@ public sealed class CharacterDefinition : ScriptableObject
             !string.IsNullOrWhiteSpace(characterId) &&
             !string.IsNullOrWhiteSpace(displayName) &&
             movementProfile != null &&
-            abilityProfile != null;
+            abilityProfile != null &&
+            animatorProfile != null &&
+            presentationProfile != null;
     }
 
 #if UNITY_EDITOR
@@ -101,15 +95,14 @@ public sealed class CharacterDefinition : ScriptableObject
 #if UNITY_EDITOR
         if (!automaticSetup ||
             applyingSetup ||
-            setupScheduled)
+            setupScheduled ||
+            EditorApplication.isPlayingOrWillChangePlaymode)
         {
             return;
         }
 
         setupScheduled = true;
-
-        EditorApplication.delayCall +=
-            RunScheduledSetup;
+        EditorApplication.delayCall += RunScheduledSetup;
 #endif
     }
 
@@ -132,15 +125,14 @@ public sealed class CharacterDefinition : ScriptableObject
             AssetDatabase.GetAssetPath(this);
 
         if (string.IsNullOrWhiteSpace(definitionPath))
-        {
             return;
-        }
 
         applyingSetup = true;
 
         try
         {
             ConfigureIdentity();
+            ApplyAutomaticAssetName();
             CreateAndAssignProfiles();
 
             if (applyTypePresets)
@@ -157,8 +149,11 @@ public sealed class CharacterDefinition : ScriptableObject
                 AutoAssignProjectAssets();
             }
 
+            ValidateAssignedAssets();
             MarkAssetsDirty();
+
             AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
         }
         finally
         {
@@ -180,21 +175,172 @@ public sealed class CharacterDefinition : ScriptableObject
         RunAutomaticSetup();
     }
 
+    private static string NormalizeAssetName(
+    string assetName)
+    {
+        if (string.IsNullOrWhiteSpace(assetName))
+            return string.Empty;
+
+        string normalizedName =
+            assetName
+                .Replace(
+                    DefinitionSuffix,
+                    string.Empty)
+                .Replace(
+                    "Definition",
+                    string.Empty)
+                .Trim();
+
+        int separatorIndex =
+            normalizedName.LastIndexOf(
+                " - ",
+                StringComparison.Ordinal);
+
+        if (separatorIndex >= 0 &&
+            separatorIndex + 3 < normalizedName.Length)
+        {
+            normalizedName =
+                normalizedName.Substring(
+                    separatorIndex + 3);
+        }
+
+        int firstSpaceIndex =
+            normalizedName.IndexOf(' ');
+
+        if (firstSpaceIndex > 0)
+        {
+            string possibleNumber =
+                normalizedName.Substring(
+                    0,
+                    firstSpaceIndex);
+
+            if (int.TryParse(
+                    possibleNumber,
+                    out _))
+            {
+                normalizedName =
+                    normalizedName.Substring(
+                        firstSpaceIndex + 1);
+            }
+        }
+
+        return normalizedName
+            .Trim()
+            .ToLowerInvariant();
+    }
+
+    #endregion
+
+    #region Identity
+
     private void ConfigureIdentity()
     {
         CharacterSetupData setupData =
             GetCharacterSetupData(
                 NormalizeAssetName(name));
 
-        characterId =
-            setupData.characterId;
-
-        displayName =
-            setupData.displayName;
-
-        characterType =
-            setupData.characterType;
+        characterId = setupData.characterId;
+        displayName = setupData.displayName;
+        characterType = setupData.characterType;
     }
+
+
+    private void ApplyAutomaticAssetName()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+            return;
+
+        string assetPath =
+            AssetDatabase.GetAssetPath(this);
+
+        if (string.IsNullOrWhiteSpace(assetPath))
+            return;
+
+        string sortedAssetName =
+            GetSortedAssetName();
+
+        if (string.IsNullOrWhiteSpace(sortedAssetName) ||
+            name == sortedAssetName)
+        {
+            return;
+        }
+
+        string renameError =
+            AssetDatabase.RenameAsset(
+                assetPath,
+                sortedAssetName);
+
+        if (!string.IsNullOrWhiteSpace(renameError))
+        {
+            Debug.LogError(
+                $"CharacterDefinition could not rename '{name}' to " +
+                $"'{sortedAssetName}'. Unity reported: {renameError}",
+                this);
+
+            return;
+        }
+
+        name = sortedAssetName;
+
+        if (logAutomaticAssignments)
+        {
+            Debug.Log(
+                $"CharacterDefinition automatically sorted asset as '{sortedAssetName}'.",
+                this);
+        }
+    }
+
+    private string GetSortedAssetName()
+    {
+        return characterId switch
+        {
+            "sonic" =>
+                "01 Team Sonic - 01 Sonic Character Definition",
+
+            "tails" =>
+                "01 Team Sonic - 02 Tails Character Definition",
+
+            "knuckles" =>
+                "01 Team Sonic - 03 Knuckles Character Definition",
+
+            "super-sonic" =>
+                "01 Team Sonic - 04 Super Sonic Character Definition",
+
+            "shadow" =>
+                "02 Team Dark - 01 Shadow Character Definition",
+
+            "rouge" =>
+                "02 Team Dark - 02 Rouge Character Definition",
+
+            "omega" =>
+                "02 Team Dark - 03 Omega Character Definition",
+
+            "amy" =>
+                "03 Team Rose - 01 Amy Character Definition",
+
+            "cream" =>
+                "03 Team Rose - 02 Cream Character Definition",
+
+            "big" =>
+                "03 Team Rose - 03 Big Character Definition",
+
+            "espio" =>
+                "04 Team Chaotix - 01 Espio Character Definition",
+
+            "charmy" =>
+                "04 Team Chaotix - 02 Charmy Character Definition",
+
+            "vector" =>
+                "04 Team Chaotix - 03 Vector Character Definition",
+
+            _ =>
+                $"99 Unsorted - 99 {displayName} Character Definition"
+        };
+    }
+
+    #endregion
+
+    #region Profile Creation
 
     private void CreateAndAssignProfiles()
     {
@@ -206,9 +352,7 @@ public sealed class CharacterDefinition : ScriptableObject
             ?.Replace("\\", "/");
 
         if (string.IsNullOrWhiteSpace(parentFolder))
-        {
             return;
-        }
 
         string movementFolder =
             EnsureFolder(
@@ -230,22 +374,22 @@ public sealed class CharacterDefinition : ScriptableObject
                 parentFolder,
                 PresentationFolderName);
 
-        movementProfile ??=
+        movementProfile =
             LoadOrCreateAsset<CharacterMovementProfile>(
                 movementFolder,
                 $"{displayName} Movement Profile");
 
-        abilityProfile ??=
+        abilityProfile =
             LoadOrCreateAsset<CharacterAbilityProfile>(
                 abilityFolder,
                 $"{displayName} Ability Profile");
 
-        animatorProfile ??=
+        animatorProfile =
             LoadOrCreateAsset<CharacterAnimatorProfile>(
                 animatorFolder,
                 $"{displayName} Animator Profile");
 
-        presentationProfile ??=
+        presentationProfile =
             LoadOrCreateAsset<CharacterPresentationProfile>(
                 presentationFolder,
                 $"{displayName} Presentation Profile");
@@ -340,6 +484,7 @@ public sealed class CharacterDefinition : ScriptableObject
     private void ApplySpecialMovementPreset()
     {
         ApplySpeedMovementPreset();
+
         movementProfile.runSpeed = 28f;
         movementProfile.acceleration = 56f;
         movementProfile.airSpeed = 21f;
@@ -475,7 +620,7 @@ public sealed class CharacterDefinition : ScriptableObject
 
     #endregion
 
-    #region Animator Setup
+    #region Animator And Presentation Defaults
 
     private void ConfigureAnimatorDefaults()
     {
@@ -493,10 +638,6 @@ public sealed class CharacterDefinition : ScriptableObject
         animatorProfile.homingAttackTrigger = "HomingAttack";
     }
 
-    #endregion
-
-    #region Presentation Setup
-
     private void ConfigurePresentationDefaults()
     {
         if (presentationProfile == null)
@@ -509,61 +650,537 @@ public sealed class CharacterDefinition : ScriptableObject
 
     #endregion
 
-    #region Project Asset Assignment
+    #region Deterministic Asset Assignment
 
     private void AutoAssignProjectAssets()
     {
-        string[] searchTerms =
-            GetSearchTerms();
+        string definitionPath =
+            AssetDatabase.GetAssetPath(this);
+
+        string definitionFolder =
+            Path.GetDirectoryName(definitionPath)
+            ?.Replace("\\", "/");
+
+        AssetSearchContext context =
+            new(
+                characterId,
+                displayName,
+                characterType,
+                definitionFolder);
 
         if (animatorProfile != null)
         {
-            animatorProfile.animatorController ??=
-                FindBestAsset<RuntimeAnimatorController>(
-                    searchTerms);
+            RuntimeAnimatorController controller =
+                ResolveAnimatorController(context);
 
-            animatorProfile.avatar ??=
-                FindBestAsset<Avatar>(
-                    searchTerms);
+            Avatar avatar =
+                ResolveCharacterAsset<Avatar>(
+                    context,
+                    GetExpectedAvatarNames());
+
+            AssignAsset(
+                ref animatorProfile.animatorController,
+                controller,
+                "Animator Controller");
+
+            AssignAsset(
+                ref animatorProfile.avatar,
+                avatar,
+                "Avatar");
         }
 
         if (presentationProfile != null)
         {
-            presentationProfile.characterModelPrefab ??=
-                FindBestAsset<GameObject>(
-                    searchTerms);
+            GameObject modelPrefab =
+                ResolveCharacterAsset<GameObject>(
+                    context,
+                    GetExpectedModelNames());
 
-            presentationProfile.jumpSound ??=
-                FindBestAudioClip("jump");
+            AssignAsset(
+                ref presentationProfile.characterModelPrefab,
+                modelPrefab,
+                "Character Model Prefab");
 
-            presentationProfile.rollSound ??=
-                FindBestAudioClip("roll");
+            AssignAsset(
+                ref presentationProfile.jumpSound,
+                ResolveAudioClip(context, "jump"),
+                "Jump Sound");
 
-            presentationProfile.brakeSound ??=
-                FindBestAudioClip("brake");
+            AssignAsset(
+                ref presentationProfile.rollSound,
+                ResolveAudioClip(context, "roll"),
+                "Roll Sound");
 
-            presentationProfile.hurtSound ??=
-                FindBestAudioClip("hurt");
+            AssignAsset(
+                ref presentationProfile.brakeSound,
+                ResolveAudioClip(context, "brake"),
+                "Brake Sound");
 
-            presentationProfile.homingAttackSound ??=
-                FindBestAudioClip("homing");
+            AssignAsset(
+                ref presentationProfile.hurtSound,
+                ResolveAudioClip(context, "hurt"),
+                "Hurt Sound");
+
+            AssignAsset(
+                ref presentationProfile.homingAttackSound,
+                ResolveAudioClip(context, "homing"),
+                "Homing Attack Sound");
         }
     }
 
-    private AudioClip FindBestAudioClip(
-        string actionTerm)
+    private RuntimeAnimatorController ResolveAnimatorController(
+        AssetSearchContext context)
     {
-        string[] searchTerms =
-            GetSearchTerms()
-                .Concat(
-                    new[] { actionTerm })
-                .ToArray();
+        string[] expectedNames =
+            GetExpectedAnimatorControllerNames();
 
-        return FindBestAsset<AudioClip>(
-            searchTerms);
+        RuntimeAnimatorController controller =
+            ResolveCharacterAsset<RuntimeAnimatorController>(
+                context,
+                expectedNames);
+
+        if (controller == null)
+        {
+            Debug.LogWarning(
+                $"CharacterDefinition '{name}' could not resolve an Animator Controller. " +
+                $"Expected one of: {string.Join(", ", expectedNames)}.",
+                this);
+
+            return null;
+        }
+
+        if (!IsAnimatorControllerValidForCharacter(
+                controller,
+                context))
+        {
+            Debug.LogError(
+                $"CharacterDefinition '{name}' rejected Animator Controller " +
+                $"'{controller.name}' because it belongs to another character or type.",
+                this);
+
+            return null;
+        }
+
+        return controller;
     }
 
-    private string[] GetSearchTerms()
+    private T ResolveCharacterAsset<T>(
+        AssetSearchContext context,
+        IReadOnlyList<string> expectedNames)
+        where T : UnityEngine.Object
+    {
+        List<AssetCandidate<T>> candidates =
+            CollectCandidates<T>();
+
+        if (candidates.Count == 0)
+            return null;
+
+        AssetCandidate<T> bestCandidate =
+            default;
+
+        int bestScore =
+            int.MinValue;
+
+        foreach (AssetCandidate<T> candidate in candidates)
+        {
+            int score =
+                ScoreCandidate(
+                    candidate,
+                    context,
+                    expectedNames);
+
+            if (score <= bestScore)
+                continue;
+
+            bestScore = score;
+            bestCandidate = candidate;
+        }
+
+        return bestScore > 0
+            ? bestCandidate.asset
+            : null;
+    }
+
+    private static List<AssetCandidate<T>> CollectCandidates<T>()
+        where T : UnityEngine.Object
+    {
+        string[] guids =
+            AssetDatabase.FindAssets(
+                $"t:{typeof(T).Name}");
+
+        List<AssetCandidate<T>> candidates =
+            new();
+
+        foreach (string guid in guids)
+        {
+            string path =
+                AssetDatabase.GUIDToAssetPath(guid);
+
+            T asset =
+                AssetDatabase.LoadAssetAtPath<T>(
+                    path);
+
+            if (asset == null)
+                continue;
+
+            candidates.Add(
+                new AssetCandidate<T>(
+                    asset,
+                    path));
+        }
+
+        return candidates;
+    }
+
+    private int ScoreCandidate<T>(
+        AssetCandidate<T> candidate,
+        AssetSearchContext context,
+        IReadOnlyList<string> expectedNames)
+        where T : UnityEngine.Object
+    {
+        string normalizedName =
+            NormalizeSearchText(
+                candidate.asset.name);
+
+        string normalizedPath =
+            NormalizeSearchText(
+                candidate.path);
+
+        if (IsRejectedCandidate(
+                normalizedName,
+                normalizedPath,
+                context))
+        {
+            return int.MinValue;
+        }
+
+        int score = 0;
+
+        for (int index = 0;
+             index < expectedNames.Count;
+             index++)
+        {
+            string expected =
+                NormalizeSearchText(
+                    expectedNames[index]);
+
+            if (normalizedName == expected)
+            {
+                score = Mathf.Max(
+                    score,
+                    10000 - index * 100);
+            }
+            else if (normalizedName.StartsWith(expected))
+            {
+                score = Mathf.Max(
+                    score,
+                    7000 - index * 100);
+            }
+            else if (normalizedName.Contains(expected))
+            {
+                score = Mathf.Max(
+                    score,
+                    5000 - index * 100);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(context.definitionFolder) &&
+            candidate.path.StartsWith(
+                context.definitionFolder,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            score += 2000;
+        }
+
+        string normalizedDisplayName =
+            NormalizeSearchText(
+                context.displayName);
+
+        string normalizedCharacterId =
+            NormalizeSearchText(
+                context.characterId);
+
+        if (!string.IsNullOrWhiteSpace(normalizedDisplayName) &&
+            normalizedName.Contains(normalizedDisplayName))
+        {
+            score += 1200;
+        }
+
+        if (!string.IsNullOrWhiteSpace(normalizedCharacterId) &&
+            normalizedName.Contains(normalizedCharacterId))
+        {
+            score += 1000;
+        }
+
+        if (MatchesCharacterTypeKeyword(
+                normalizedName,
+                context.characterType))
+        {
+            score += 800;
+        }
+
+        return score;
+    }
+
+    private bool IsRejectedCandidate(
+        string normalizedName,
+        string normalizedPath,
+        AssetSearchContext context)
+    {
+        if (context.characterId == "sonic")
+        {
+            if (normalizedName.Contains("supersonic") ||
+                normalizedPath.Contains("supersonic"))
+            {
+                return true;
+            }
+        }
+
+        if (context.characterId == "super-sonic")
+        {
+            if (!normalizedName.Contains("supersonic") &&
+                !normalizedPath.Contains("supersonic"))
+            {
+                return true;
+            }
+        }
+
+        string[] otherCharacterTokens =
+        {
+            "tails",
+            "milestailsprower",
+            "knuckles",
+            "shadow",
+            "rouge",
+            "omega",
+            "amy",
+            "cream",
+            "big",
+            "espio",
+            "charmy",
+            "vector"
+        };
+
+        string normalizedCharacterId =
+            NormalizeSearchText(
+                context.characterId);
+
+        foreach (string token in otherCharacterTokens)
+        {
+            if (token == normalizedCharacterId)
+                continue;
+
+            if (normalizedName.Contains(token))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsAnimatorControllerValidForCharacter(
+        RuntimeAnimatorController controller,
+        AssetSearchContext context)
+    {
+        if (controller == null)
+            return false;
+
+        string normalizedName =
+            NormalizeSearchText(
+                controller.name);
+
+        if (context.characterId == "sonic")
+        {
+            return
+                !normalizedName.Contains("supersonic") &&
+                (normalizedName.Contains("speed") ||
+                 normalizedName.Contains("sonic"));
+        }
+
+        if (context.characterId == "super-sonic")
+        {
+            return normalizedName.Contains("supersonic");
+        }
+
+        return !IsRejectedCandidate(
+            normalizedName,
+            string.Empty,
+            context);
+    }
+
+    private AudioClip ResolveAudioClip(
+        AssetSearchContext context,
+        string actionTerm)
+    {
+        List<string> expectedNames =
+            new();
+
+        foreach (string characterName in GetCharacterNameVariants())
+        {
+            expectedNames.Add(
+                $"{characterName} {actionTerm}");
+
+            expectedNames.Add(
+                $"{actionTerm} {characterName}");
+        }
+
+        expectedNames.Add(actionTerm);
+
+        return ResolveCharacterAsset<AudioClip>(
+            context,
+            expectedNames);
+    }
+
+    private void AssignAsset<T>(
+        ref T destination,
+        T resolvedAsset,
+        string displayLabel)
+        where T : UnityEngine.Object
+    {
+        if (resolvedAsset == null)
+            return;
+
+        bool shouldReplace =
+            destination == null ||
+            replaceInvalidAssignments &&
+            !IsExistingAssignmentValid(
+                destination);
+
+        if (!shouldReplace)
+            return;
+
+        if (destination == resolvedAsset)
+            return;
+
+        destination = resolvedAsset;
+
+        if (logAutomaticAssignments)
+        {
+            Debug.Log(
+                $"CharacterDefinition '{name}' assigned {displayLabel}: '{resolvedAsset.name}'.",
+                this);
+        }
+    }
+
+    private bool IsExistingAssignmentValid<T>(
+        T existingAsset)
+        where T : UnityEngine.Object
+    {
+        if (existingAsset == null)
+            return false;
+
+        if (existingAsset is RuntimeAnimatorController controller)
+        {
+            AssetSearchContext context =
+                new(
+                    characterId,
+                    displayName,
+                    characterType,
+                    GetDefinitionFolder());
+
+            return IsAnimatorControllerValidForCharacter(
+                controller,
+                context);
+        }
+
+        string normalizedName =
+            NormalizeSearchText(
+                existingAsset.name);
+
+        if (characterId == "sonic" &&
+            normalizedName.Contains("supersonic"))
+        {
+            return false;
+        }
+
+        if (characterId == "super-sonic" &&
+            !normalizedName.Contains("supersonic"))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    #endregion
+
+    #region Expected Asset Names
+
+    private string[] GetExpectedAnimatorControllerNames()
+    {
+        return characterId switch
+        {
+            "sonic" => new[]
+            {
+                "Speed Animator",
+                "Speed",
+                "Sonic Animator",
+                "Sonic"
+            },
+
+            "super-sonic" => new[]
+            {
+                "Super Sonic (Fly)",
+                "Super Sonic Fly",
+                "Super Sonic Animator",
+                "Super Sonic"
+            },
+
+            "tails" => new[]
+            {
+                "Fly Animator",
+                "Fly",
+                "Tails Animator",
+                "Miles Tails Prower Animator"
+            },
+
+            "knuckles" => new[]
+            {
+                "Power Animator",
+                "Power",
+                "Knuckles Animator",
+                "Knuckles the Echidna Animator"
+            },
+
+            _ => new[]
+            {
+                $"{displayName} Animator",
+                $"{characterType} Animator",
+                characterType.ToString(),
+                displayName
+            }
+        };
+    }
+
+    private string[] GetExpectedAvatarNames()
+    {
+        return GetCharacterNameVariants()
+            .SelectMany(
+                value => new[]
+                {
+                    $"{value} Avatar",
+                    value
+                })
+            .Distinct(
+                StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private string[] GetExpectedModelNames()
+    {
+        return GetCharacterNameVariants()
+            .SelectMany(
+                value => new[]
+                {
+                    $"{value} Model",
+                    $"{value} Prefab",
+                    value
+                })
+            .Distinct(
+                StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private string[] GetCharacterNameVariants()
     {
         return new[]
         {
@@ -571,7 +1188,8 @@ public sealed class CharacterDefinition : ScriptableObject
             characterId,
             name.Replace(
                 DefinitionSuffix,
-                string.Empty)
+                string.Empty),
+            characterId?.Replace("-", " ")
         }
         .Where(
             value =>
@@ -581,53 +1199,84 @@ public sealed class CharacterDefinition : ScriptableObject
         .ToArray();
     }
 
-    private static T FindBestAsset<T>(
-        string[] searchTerms)
-        where T : UnityEngine.Object
+    #endregion
+
+    #region Validation
+
+    private void ValidateAssignedAssets()
     {
-        string[] guids =
-            AssetDatabase.FindAssets(
-                $"t:{typeof(T).Name}");
+        bool valid = true;
 
-        foreach (string searchTerm in searchTerms)
+        if (movementProfile == null)
         {
-            string normalizedTerm =
-                NormalizeSearchText(searchTerm);
+            Debug.LogError(
+                $"CharacterDefinition '{name}' has no Movement Profile.",
+                this);
 
-            foreach (string guid in guids)
+            valid = false;
+        }
+
+        if (abilityProfile == null)
+        {
+            Debug.LogError(
+                $"CharacterDefinition '{name}' has no Ability Profile.",
+                this);
+
+            valid = false;
+        }
+
+        if (animatorProfile == null)
+        {
+            Debug.LogError(
+                $"CharacterDefinition '{name}' has no Animator Profile.",
+                this);
+
+            valid = false;
+        }
+        else if (animatorProfile.animatorController == null)
+        {
+            Debug.LogWarning(
+                $"CharacterDefinition '{name}' has no Animator Controller assigned.",
+                this);
+        }
+        else
+        {
+            AssetSearchContext context =
+                new(
+                    characterId,
+                    displayName,
+                    characterType,
+                    GetDefinitionFolder());
+
+            if (!IsAnimatorControllerValidForCharacter(
+                    animatorProfile.animatorController,
+                    context))
             {
-                string path =
-                    AssetDatabase.GUIDToAssetPath(guid);
+                Debug.LogError(
+                    $"CharacterDefinition '{name}' has an invalid Animator Controller: " +
+                    $"'{animatorProfile.animatorController.name}'.",
+                    this);
 
-                string fileName =
-                    NormalizeSearchText(
-                        Path.GetFileNameWithoutExtension(path));
-
-                if (!fileName.Contains(normalizedTerm))
-                    continue;
-
-                T asset =
-                    AssetDatabase.LoadAssetAtPath<T>(
-                        path);
-
-                if (asset != null)
-                {
-                    return asset;
-                }
+                valid = false;
             }
         }
 
-        return null;
-    }
+        if (presentationProfile == null)
+        {
+            Debug.LogError(
+                $"CharacterDefinition '{name}' has no Presentation Profile.",
+                this);
 
-    private static string NormalizeSearchText(
-        string value)
-    {
-        return value
-            .Replace("-", string.Empty)
-            .Replace("_", string.Empty)
-            .Replace(" ", string.Empty)
-            .ToLowerInvariant();
+            valid = false;
+        }
+
+        if (valid &&
+            logAutomaticAssignments)
+        {
+            Debug.Log(
+                $"CharacterDefinition '{name}' configured successfully.",
+                this);
+        }
     }
 
     #endregion
@@ -641,55 +1290,94 @@ public sealed class CharacterDefinition : ScriptableObject
         {
             case "sonic":
             case "sonic the hedgehog":
-                return new("sonic", "Sonic the Hedgehog", CharacterType.Speed);
+                return new(
+                    "sonic",
+                    "Sonic the Hedgehog",
+                    CharacterType.Speed);
 
             case "tails":
             case "miles tails prower":
-                return new("tails", "Miles Tails Prower", CharacterType.Fly);
+                return new(
+                    "tails",
+                    "Miles Tails Prower",
+                    CharacterType.Fly);
 
             case "knuckles":
             case "knuckles the echidna":
-                return new("knuckles", "Knuckles the Echidna", CharacterType.Power);
+                return new(
+                    "knuckles",
+                    "Knuckles the Echidna",
+                    CharacterType.Power);
 
             case "shadow":
             case "shadow the hedgehog":
-                return new("shadow", "Shadow the Hedgehog", CharacterType.Speed);
+                return new(
+                    "shadow",
+                    "Shadow the Hedgehog",
+                    CharacterType.Speed);
 
             case "rouge":
             case "rouge the bat":
-                return new("rouge", "Rouge the Bat", CharacterType.Fly);
+                return new(
+                    "rouge",
+                    "Rouge the Bat",
+                    CharacterType.Fly);
 
             case "omega":
             case "e-123 omega":
             case "e123 omega":
-                return new("omega", "E-123 Omega", CharacterType.Power);
+                return new(
+                    "omega",
+                    "E-123 Omega",
+                    CharacterType.Power);
 
             case "amy":
             case "amy rose":
-                return new("amy", "Amy Rose", CharacterType.Speed);
+                return new(
+                    "amy",
+                    "Amy Rose",
+                    CharacterType.Speed);
 
             case "cream":
             case "cream the rabbit":
-                return new("cream", "Cream the Rabbit", CharacterType.Fly);
+                return new(
+                    "cream",
+                    "Cream the Rabbit",
+                    CharacterType.Fly);
 
             case "big":
             case "big the cat":
-                return new("big", "Big the Cat", CharacterType.Power);
+                return new(
+                    "big",
+                    "Big the Cat",
+                    CharacterType.Power);
 
             case "espio":
             case "espio the chameleon":
-                return new("espio", "Espio the Chameleon", CharacterType.Speed);
+                return new(
+                    "espio",
+                    "Espio the Chameleon",
+                    CharacterType.Speed);
 
             case "charmy":
             case "charmy bee":
-                return new("charmy", "Charmy Bee", CharacterType.Fly);
+                return new(
+                    "charmy",
+                    "Charmy Bee",
+                    CharacterType.Fly);
 
             case "vector":
             case "vector the crocodile":
-                return new("vector", "Vector the Crocodile", CharacterType.Power);
+                return new(
+                    "vector",
+                    "Vector the Crocodile",
+                    CharacterType.Power);
 
             case "super sonic":
-                return new("super-sonic", "Super Sonic", CharacterType.Special);
+                return new(
+                    "super-sonic",
+                    "Super Sonic",
+                    CharacterType.Special);
 
             default:
                 return CreateFallbackSetupData(
@@ -717,24 +1405,21 @@ public sealed class CharacterDefinition : ScriptableObject
             fallbackName,
             CharacterType.Speed);
     }
-
-    private static string NormalizeAssetName(
-        string assetName)
-    {
-        return assetName
-            .Replace(
-                DefinitionSuffix,
-                string.Empty)
-            .Replace(
-                "Definition",
-                string.Empty)
-            .Trim()
-            .ToLowerInvariant();
-    }
+    
 
     #endregion
 
-    #region Asset Creation
+    #region Asset Utilities
+
+    private string GetDefinitionFolder()
+    {
+        string definitionPath =
+            AssetDatabase.GetAssetPath(this);
+
+        return Path.GetDirectoryName(
+                definitionPath)
+            ?.Replace("\\", "/");
+    }
 
     private static string EnsureFolder(
         string parentFolder,
@@ -766,9 +1451,7 @@ public sealed class CharacterDefinition : ScriptableObject
                 assetPath);
 
         if (existingAsset != null)
-        {
             return existingAsset;
-        }
 
         T newAsset =
             CreateInstance<T>();
@@ -783,33 +1466,60 @@ public sealed class CharacterDefinition : ScriptableObject
         return newAsset;
     }
 
+    private static bool MatchesCharacterTypeKeyword(
+        string normalizedName,
+        CharacterType type)
+    {
+        return type switch
+        {
+            CharacterType.Speed =>
+                normalizedName.Contains("speed"),
+
+            CharacterType.Fly =>
+                normalizedName.Contains("fly"),
+
+            CharacterType.Power =>
+                normalizedName.Contains("power"),
+
+            CharacterType.Special =>
+                normalizedName.Contains("special") ||
+                normalizedName.Contains("super"),
+
+            _ =>
+                false
+        };
+    }
+
+    private static string NormalizeSearchText(
+        string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        return value
+            .Replace("-", string.Empty)
+            .Replace("_", string.Empty)
+            .Replace(" ", string.Empty)
+            .Replace("(", string.Empty)
+            .Replace(")", string.Empty)
+            .ToLowerInvariant();
+    }
+
     private void MarkAssetsDirty()
     {
         EditorUtility.SetDirty(this);
 
         if (movementProfile != null)
-        {
-            EditorUtility.SetDirty(
-                movementProfile);
-        }
+            EditorUtility.SetDirty(movementProfile);
 
         if (abilityProfile != null)
-        {
-            EditorUtility.SetDirty(
-                abilityProfile);
-        }
+            EditorUtility.SetDirty(abilityProfile);
 
         if (animatorProfile != null)
-        {
-            EditorUtility.SetDirty(
-                animatorProfile);
-        }
+            EditorUtility.SetDirty(animatorProfile);
 
         if (presentationProfile != null)
-        {
-            EditorUtility.SetDirty(
-                presentationProfile);
-        }
+            EditorUtility.SetDirty(presentationProfile);
     }
 
     #endregion
@@ -864,14 +1574,44 @@ public sealed class CharacterDefinition : ScriptableObject
             string displayName,
             CharacterType characterType)
         {
-            this.characterId =
-                characterId;
+            this.characterId = characterId;
+            this.displayName = displayName;
+            this.characterType = characterType;
+        }
+    }
 
-            this.displayName =
-                displayName;
+    private readonly struct AssetSearchContext
+    {
+        public readonly string characterId;
+        public readonly string displayName;
+        public readonly CharacterType characterType;
+        public readonly string definitionFolder;
 
-            this.characterType =
-                characterType;
+        public AssetSearchContext(
+            string characterId,
+            string displayName,
+            CharacterType characterType,
+            string definitionFolder)
+        {
+            this.characterId = characterId;
+            this.displayName = displayName;
+            this.characterType = characterType;
+            this.definitionFolder = definitionFolder;
+        }
+    }
+
+    private readonly struct AssetCandidate<T>
+        where T : UnityEngine.Object
+    {
+        public readonly T asset;
+        public readonly string path;
+
+        public AssetCandidate(
+            T asset,
+            string path)
+        {
+            this.asset = asset;
+            this.path = path;
         }
     }
 

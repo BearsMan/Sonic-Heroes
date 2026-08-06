@@ -4,6 +4,7 @@ using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(CapsuleCollider))]
 public sealed class UltimatePlayerMovement : MonoBehaviour
 {
     #region Types
@@ -116,6 +117,9 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     [Header("Homing Targeting")]
     [SerializeField] private LayerMask homingTargetMask;
+
+    [Header("Rail Grinding")]
+    [SerializeField] private RailGrinding railGrinding;
 
     [Header("State")]
     [SerializeField]
@@ -340,6 +344,30 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     public bool SetCharacterDefinition(
     CharacterDefinition definition)
     {
+        if (!ValidateCharacterDefinition(
+                definition))
+        {
+            return false;
+        }
+
+        bool definitionChanged =
+            characterDefinition != definition;
+
+        characterDefinition =
+            definition;
+
+        if (!RefreshCharacterRuntime(
+                forceAnimatorResolution: definitionChanged))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool ValidateCharacterDefinition(
+    CharacterDefinition definition)
+    {
         if (definition == null)
         {
             Debug.LogError(
@@ -358,17 +386,143 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             return false;
         }
 
-        characterDefinition =
-            definition;
-
-        ApplyCharacterDefinition();
-
-        if (initialized)
+        if (definition.movementProfile == null)
         {
-            SetupAnimation();
-            UpdateAnimatorState();
-            UpdateAnimator();
+            Debug.LogError(
+                $"CharacterDefinition '{definition.name}' has no MovementProfile.",
+                definition);
+
+            return false;
         }
+
+        if (definition.abilityProfile == null)
+        {
+            Debug.LogError(
+                $"CharacterDefinition '{definition.name}' has no AbilityProfile.",
+                definition);
+
+            return false;
+        }
+
+        if (definition.animatorProfile == null)
+        {
+            Debug.LogError(
+                $"CharacterDefinition '{definition.name}' has no AnimatorProfile.",
+                definition);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool RefreshCharacterRuntime(
+    bool forceAnimatorResolution)
+    {
+        if (characterDefinition == null)
+            return false;
+
+        MovementState preservedState =
+            currentState;
+
+        bool preservedGrounded =
+            grounded;
+
+        bool preservedMovementEnabled =
+            movementEnabled;
+
+        float preservedStateTimer =
+            stateTimer;
+
+        Vector3 preservedVelocity =
+            playerRigidbody != null
+                ? playerRigidbody.linearVelocity
+                : Vector3.zero;
+
+        Vector3 preservedAngularVelocity =
+            playerRigidbody != null
+                ? playerRigidbody.angularVelocity
+                : Vector3.zero;
+
+        if (forceAnimatorResolution)
+        {
+            playerAnimator = null;
+            animatorParameters.Clear();
+        }
+
+        ResolveDependencies();
+
+        ApplyMovementProfile(
+            characterDefinition.movementProfile);
+
+        if (!RefreshAnimatorRuntime())
+        {
+            return false;
+        }
+
+        if (!initialized)
+        {
+            return true;
+        }
+
+        currentState =
+            preservedState;
+
+        grounded =
+            preservedGrounded;
+
+        movementEnabled =
+            preservedMovementEnabled;
+
+        stateTimer =
+            preservedStateTimer;
+
+        if (playerRigidbody != null &&
+            !playerRigidbody.isKinematic)
+        {
+            if (IsFiniteVector(preservedVelocity))
+            {
+                playerRigidbody.linearVelocity =
+                    preservedVelocity;
+            }
+
+            if (IsFiniteVector(preservedAngularVelocity))
+            {
+                playerRigidbody.angularVelocity =
+                    preservedAngularVelocity;
+            }
+
+            playerRigidbody.WakeUp();
+        }
+
+        UpdateAnimatorState();
+        UpdateAnimator();
+
+        return true;
+    }
+
+    private bool RefreshAnimatorRuntime()
+    {
+        ResolveAnimator();
+
+        if (playerAnimator == null)
+        {
+            Debug.LogError(
+                $"UltimatePlayerMovement could not resolve an Animator for '{characterDefinition.name}'.",
+                this);
+
+            return false;
+        }
+
+        ApplyAnimatorProfile();
+
+        playerAnimator.enabled = true;
+        playerAnimator.speed = 1f;
+
+        playerAnimator.Rebind();
+        playerAnimator.Update(0f);
+
+        CacheAnimatorParameters();
 
         return true;
     }
@@ -537,12 +691,12 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     public void SetupAnimation()
     {
-        ResolveAnimator();
-        ApplyAnimatorProfile();
-        CacheAnimatorParameters();
+        if (!RefreshAnimatorRuntime())
+            return;
+
+        UpdateAnimatorState();
         UpdateAnimator();
     }
-
     #endregion
 
     #region Unity Lifecycle
@@ -551,7 +705,11 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     {
         ResolveDependencies();
         ConfigureRigidbody();
-        ApplyCharacterDefinition();
+
+        if (characterDefinition != null)
+        {
+            ApplyCharacterDefinition();
+        }
     }
 
     private void Start()
@@ -638,47 +796,239 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         switch (currentState)
         {
             case MovementState.Ground:
-                UpdateGroundMovement(
+                UpdateGroundState(
                     movementInput);
                 break;
 
             case MovementState.Air:
-                UpdateAirMovement(
+                UpdateAirState(
                     movementInput);
                 break;
 
             case MovementState.Rolling:
-                UpdateRollingMovement(
+                UpdateRollingState(
                     movementInput);
                 break;
 
             case MovementState.HomingAttack:
-                UpdateHomingAttack();
+                UpdateHomingAttackState();
                 break;
 
             case MovementState.Grinding:
+                UpdateGrindingState();
                 break;
 
             case MovementState.Spring:
-                UpdateSpringMovement(
+                UpdateSpringState(
                     movementInput);
                 break;
 
             case MovementState.Hurt:
-                UpdateHurtMovement();
+                UpdateHurtState();
                 break;
 
             case MovementState.Flying:
-                UpdateFlyingMovement(
+                UpdateFlyingState(
                     movementInput);
                 break;
 
             case MovementState.PowerAction:
-                UpdatePowerActionMovement(
+                UpdatePowerActionState(
                     movementInput);
+                break;
+
+            default:
+                RecoverInvalidMovementState();
                 break;
         }
     }
+
+    #region State Updates
+
+    private void UpdateGroundState(
+        Vector3 movementInput)
+    {
+        if (playerRigidbody == null)
+            return;
+
+        if (!grounded)
+        {
+            ChangeState(
+                MovementState.Air);
+
+            return;
+        }
+
+        UpdateGroundMovement(
+            movementInput);
+    }
+
+    private void UpdateAirState(
+        Vector3 movementInput)
+    {
+        if (playerRigidbody == null)
+            return;
+
+        if (grounded)
+        {
+            ChangeState(
+                MovementState.Ground);
+
+            return;
+        }
+
+        UpdateAirMovement(
+            movementInput);
+    }
+
+    private void UpdateRollingState(
+        Vector3 movementInput)
+    {
+        if (!CanUseAbility(
+                profile => profile.canRoll))
+        {
+            StopRolling();
+            return;
+        }
+
+        UpdateRollingMovement(
+            movementInput);
+    }
+
+    private void UpdateHomingAttackState()
+    {
+        if (!CanUseAbility(
+                profile => profile.canHomingAttack))
+        {
+            ChangeState(
+                grounded
+                    ? MovementState.Ground
+                    : MovementState.Air);
+
+            return;
+        }
+
+        UpdateHomingAttack();
+    }
+
+    private void UpdateGrindingState()
+    {
+        if (!CanUseAbility(
+                profile => profile.canGrind))
+        {
+            ExitGrindingState();
+            return;
+        }
+
+        if (railGrinding == null)
+        {
+            ExitGrindingState();
+            return;
+        }
+
+        if (!railGrinding.IsGrinding)
+        {
+            ExitGrindingState();
+        }
+    }
+
+    private void UpdateSpringState(
+        Vector3 movementInput)
+    {
+        if (playerRigidbody == null)
+        {
+            ChangeState(
+                grounded
+                    ? MovementState.Ground
+                    : MovementState.Air);
+
+            return;
+        }
+
+        UpdateSpringMovement(
+            movementInput);
+    }
+
+    private void UpdateHurtState()
+    {
+        if (playerRigidbody == null)
+        {
+            ChangeState(
+                grounded
+                    ? MovementState.Ground
+                    : MovementState.Air);
+
+            return;
+        }
+
+        UpdateHurtMovement();
+    }
+
+    private void UpdateFlyingState(
+        Vector3 movementInput)
+    {
+        if (!CanUseAbility(
+                profile => profile.canFly))
+        {
+            StopFlying();
+            return;
+        }
+
+        if (playerRigidbody == null)
+        {
+            StopFlying();
+            return;
+        }
+
+        UpdateFlyingMovement(
+            movementInput);
+    }
+
+    private void UpdatePowerActionState(
+        Vector3 movementInput)
+    {
+        if (!CanUseAbility(
+                profile => profile.canPowerAction))
+        {
+            StopPowerAction();
+            return;
+        }
+
+        if (playerRigidbody == null)
+        {
+            StopPowerAction();
+            return;
+        }
+
+        UpdatePowerActionMovement(
+            movementInput);
+    }
+
+    private void RecoverInvalidMovementState()
+    {
+        MovementState recoveredState =
+            grounded
+                ? MovementState.Ground
+                : MovementState.Air;
+
+        currentState =
+            recoveredState;
+
+        stateTimer = 0f;
+        homingDirection =
+            Vector3.zero;
+
+        UpdateAnimatorState();
+
+        StateChanged?.Invoke(
+            currentState);
+
+        Debug.LogError(
+            $"UltimatePlayerMovement recovered an invalid movement state on '{name}' to {recoveredState}.",
+            this);
+    }
+
+    #endregion
 
     private void OnDisable()
     {
@@ -885,7 +1235,19 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
         ResolveDependencies();
         ConfigureRigidbody();
-        ApplyCharacterDefinition();
+
+        if (characterDefinition != null &&
+            !ApplyCharacterDefinition())
+        {
+            initialized = false;
+            movementEnabled = false;
+
+            Debug.LogError(
+                $"UltimatePlayerMovement could not apply the CharacterDefinition on '{name}'.",
+                this);
+
+            return false;
+        }
 
         if (!ValidateConfiguration())
         {
@@ -943,10 +1305,13 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     private void ResolveDependencies()
     {
         ResolveRigidbody();
+        ResolveRailGrinding();
         ResolveCollider();
         ResolveAnimator();
         ResolveCamera();
         ResolveGroundProbe();
+
+        ConfigureCollider();
     }
 
     private void ResolveAnimator()
@@ -999,39 +1364,37 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         if (groundProbe != null)
             return;
 
-        Transform[] children =
-            GetComponentsInChildren<Transform>(
-                includeInactive: true);
+        Transform existingProbe =
+            transform.Find(GroundProbeName);
 
-        foreach (Transform child in children)
+        if (existingProbe != null)
         {
-            if (child != null &&
-                child.name == GroundProbeName)
-            {
-                groundProbe = child;
-                return;
-            }
-        }
+            groundProbe =
+                existingProbe;
 
-        Transform root =
-            transform.root;
-
-        if (root == transform)
             return;
-
-        Transform[] rootChildren =
-            root.GetComponentsInChildren<Transform>(
-                includeInactive: true);
-
-        foreach (Transform child in rootChildren)
-        {
-            if (child != null &&
-                child.name == GroundProbeName)
-            {
-                groundProbe = child;
-                return;
-            }
         }
+
+        GameObject probeObject =
+            new(GroundProbeName);
+
+        groundProbe =
+            probeObject.transform;
+
+        groundProbe.SetParent(
+            transform,
+            worldPositionStays: false);
+
+        float probeHeight =
+            playerCollider != null
+                ? playerCollider.bounds.extents.y
+                : 0.5f;
+
+        groundProbe.localPosition =
+            Vector3.down *
+            Mathf.Max(
+                0.05f,
+                probeHeight - 0.05f);
     }
 
     private void ConfigureRigidbody()
@@ -1048,6 +1411,20 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         }
 
         ApplyPhysicsSettings();
+    }
+
+    private void ConfigureCollider()
+    {
+        ResolveCollider();
+
+        if (playerCollider == null)
+            return;
+
+        playerCollider.enabled =
+            true;
+
+        playerCollider.isTrigger =
+            false;
     }
 
     private void ApplyPhysicsSettings()
@@ -1070,47 +1447,54 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         playerRigidbody.WakeUp();
     }
 
+    private void ResolveRailGrinding()
+    {
+        railGrinding ??=
+            GetComponent<RailGrinding>();
+    }
+
     private void ResolveRigidbody()
     {
-        if (playerRigidbody != null)
+        if (playerRigidbody != null &&
+            playerRigidbody.gameObject == gameObject)
+        {
             return;
-
-        playerRigidbody = GetComponent<Rigidbody>();
-
-        if (playerRigidbody == null)
-        {
-            playerRigidbody = GetComponentInParent<Rigidbody>();
-
-            if (playerRigidbody == null)
-            {
-                playerRigidbody =
-                    GetComponentInChildren<Rigidbody>(
-                        includeInactive: true);
-            }
         }
 
-        if (playerRigidbody == null)
-        {
-            Debug.LogError(
-                $"{nameof(UltimatePlayerMovement)} requires a Rigidbody.",
-                this);
-        }
+        playerRigidbody =
+            GetComponent<Rigidbody>();
     }
 
     private void ResolveCollider()
     {
-        if (playerCollider != null)
+        if (playerCollider != null &&
+            playerCollider.gameObject == gameObject &&
+            !playerCollider.isTrigger)
+        {
             return;
+        }
+
+        Collider[] colliders =
+            GetComponents<Collider>();
 
         playerCollider =
-            GetComponent<Collider>();
+            null;
 
-        playerCollider ??=
-            GetComponentInChildren<Collider>(
-                includeInactive: true);
+        foreach (Collider candidate in colliders)
+        {
+            if (candidate == null ||
+                !candidate.enabled ||
+                candidate.isTrigger)
+            {
+                continue;
+            }
 
-        playerCollider ??=
-            GetComponentInParent<Collider>();
+            playerCollider =
+                candidate;
+
+            if (candidate is CapsuleCollider)
+                break;
+        }
     }
 
     private void ResetRuntimeState()
@@ -1135,15 +1519,19 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     #region Character Profiles
 
-    private void ApplyCharacterDefinition()
+    private bool ApplyCharacterDefinition()
     {
         if (characterDefinition == null)
-            return;
+            return false;
 
-        ApplyMovementProfile(
-            characterDefinition.movementProfile);
+        if (!ValidateCharacterDefinition(
+                characterDefinition))
+        {
+            return false;
+        }
 
-        ApplyAnimatorProfile();
+        return RefreshCharacterRuntime(
+            forceAnimatorResolution: false);
     }
 
     private void ApplyMovementProfile(
@@ -2376,6 +2764,18 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
             if (!ValidateRuntimeReferences())
             {
+                Debug.LogError(
+                    $"Runtime reference recovery failed on '{name}'.\n" +
+                    $"Rigidbody: {(playerRigidbody != null)}\n" +
+                    $"Collider: {(playerCollider != null)}\n" +
+                    $"Animator: {(playerAnimator != null)}\n" +
+                    $"Camera: {(cameraTransform != null)}\n" +
+                    $"Ground Probe: {(groundProbe != null)}\n" +
+                    $"Character Definition: {(characterDefinition != null)}\n" +
+                    $"Movement Profile: {(characterDefinition?.movementProfile != null)}\n" +
+                    $"Ability Profile: {(characterDefinition?.abilityProfile != null)}",
+                    this);
+
                 EnterSafetyShutdown(
                     "Required runtime references could not be restored.");
 
@@ -2414,6 +2814,17 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         return true;
     }
 
+    private bool HasValidPhysicsOwnership()
+    {
+        return
+            playerRigidbody != null &&
+            playerRigidbody.gameObject == gameObject &&
+            playerCollider != null &&
+            playerCollider.gameObject == gameObject &&
+            playerCollider.enabled &&
+            !playerCollider.isTrigger;
+    }
+
     private bool ValidateRuntimeReferences()
     {
         if (playerRigidbody == null ||
@@ -2421,6 +2832,11 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             characterDefinition == null ||
             characterDefinition.movementProfile == null ||
             characterDefinition.abilityProfile == null)
+        {
+            return false;
+        }
+
+        if (!HasValidPhysicsOwnership())
         {
             return false;
         }
@@ -2460,14 +2876,19 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     {
         ResolveDependencies();
 
+        ApplyPhysicsSettings();
+
+        ConfigureCollider();
+
         if (characterDefinition != null)
         {
             ApplyCharacterDefinition();
         }
 
-        if (playerAnimator == null)
+        if (playerAnimator != null &&
+            !playerAnimator.enabled)
         {
-            ResolveAnimator();
+            playerAnimator.enabled = true;
         }
 
         if (groundProbe == null)
