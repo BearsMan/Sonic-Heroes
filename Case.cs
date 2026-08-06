@@ -1,27 +1,325 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Collider))]
-[RequireComponent(typeof(AudioSource))]
 public sealed class Case : MonoBehaviour
 {
     #region Types
 
-    public enum SpawnMode
+    public enum CaseType
     {
-        RandomItem,
-        AllItems
+        Item,
+        GoalRing,
+        Chao,
+        Key,
+        MissionObject,
+        Progression,
+        Custom
+    }
+
+    public enum CaseRequirementType
+    {
+        None,
+        PlayerTouch,
+        AnySwitchActivated,
+        AllSwitchesActivated,
+        EnemyCountDefeated,
+        ObjectCountCollected,
+        TeamFormation,
+        CharacterType,
+        Timed,
+        ExternalSignal,
+        Custom
     }
 
     public enum CaseState
     {
         Uninitialized,
-        Closed,
+        Ready,
+        Locked,
+        Waiting,
         Opening,
-        Opened,
+        Open,
+        Empty,
+        Cooldown,
         Disabled
+    }
+
+    public enum SpawnMode
+    {
+        RandomItem,
+        AllItems,
+        WeightedRandom
+    }
+
+    public enum RewardType
+    {
+        None,
+        Ring,
+        ItemBox,
+        ExtraLife,
+        Shield,
+        Invincibility,
+        SpeedShoes,
+        Key,
+        Emerald,
+        Character,
+        GoalRing,
+        Custom
+    }
+
+    [Serializable]
+    public sealed class CaseReward
+    {
+        [SerializeField]
+        private RewardType rewardType =
+            RewardType.Custom;
+
+        [SerializeField] private GameObject prefab;
+
+        [SerializeField, Min(1)]
+        private int quantity = 1;
+
+        [SerializeField, Min(0f)]
+        private float weight = 1f;
+
+        [SerializeField] private bool launchAfterSpawn = true;
+
+        public RewardType Type =>
+            rewardType;
+
+        public GameObject Prefab =>
+            prefab;
+
+        public int Quantity =>
+            Mathf.Max(
+                1,
+                quantity);
+
+        public float Weight =>
+            Mathf.Max(
+                0f,
+                weight);
+
+        public bool LaunchAfterSpawn =>
+            launchAfterSpawn;
+
+        public bool IsValid =>
+            prefab != null;
+    }
+
+    [Serializable]
+    public sealed class CaseRequirement
+    {
+        [SerializeField]
+        private CaseRequirementType requirementType =
+            CaseRequirementType.None;
+
+        [SerializeField]
+        private Switch[] switches =
+            Array.Empty<Switch>();
+
+        [SerializeField, Min(0)]
+        private int requiredCount;
+
+        [SerializeField] private bool invertResult;
+
+        private int runtimeCount;
+        private bool externalSignalReceived;
+
+        public CaseRequirementType Type =>
+            requirementType;
+
+        public bool IsSatisfied(
+            Case owner,
+            UltimatePlayerMovement activator)
+        {
+            bool result =
+                requirementType switch
+                {
+                    CaseRequirementType.None =>
+                        true,
+
+                    CaseRequirementType.PlayerTouch =>
+                        activator != null,
+
+                    CaseRequirementType.AnySwitchActivated =>
+                        IsAnySwitchActivated(),
+
+                    CaseRequirementType.AllSwitchesActivated =>
+                        AreAllSwitchesActivated(),
+
+                    CaseRequirementType.EnemyCountDefeated =>
+                        runtimeCount >=
+                        requiredCount,
+
+                    CaseRequirementType.ObjectCountCollected =>
+                        runtimeCount >=
+                        requiredCount,
+
+                    CaseRequirementType.TeamFormation =>
+                        owner.ValidateTeamFormationRequirement(
+                            activator),
+
+                    CaseRequirementType.CharacterType =>
+                        owner.ValidateCharacterTypeRequirement(
+                            activator),
+
+                    CaseRequirementType.Timed =>
+                        owner.HasTimedRequirementCompleted,
+
+                    CaseRequirementType.ExternalSignal =>
+                        externalSignalReceived,
+
+                    CaseRequirementType.Custom =>
+                        owner.EvaluateCustomRequirement(
+                            this,
+                            activator),
+
+                    _ =>
+                        throw new ArgumentOutOfRangeException(
+                            nameof(requirementType),
+                            requirementType,
+                            null)
+                };
+
+            return invertResult
+                ? !result
+                : result;
+        }
+
+        public void AddProgress(
+            int amount)
+        {
+            runtimeCount =
+                Mathf.Max(
+                    0,
+                    runtimeCount +
+                    amount);
+        }
+
+        public void SetProgress(
+            int amount)
+        {
+            runtimeCount =
+                Mathf.Max(
+                    0,
+                    amount);
+        }
+
+        public void SetExternalSignal(
+            bool value)
+        {
+            externalSignalReceived =
+                value;
+        }
+
+        public void ResetRuntime()
+        {
+            runtimeCount =
+                0;
+
+            externalSignalReceived =
+                false;
+        }
+
+        public void ResolveSwitchesAutomatically(
+            Case owner,
+            float searchRadius,
+            bool includeInactive)
+        {
+            if (owner == null)
+                return;
+
+            if (switches != null &&
+                switches.Length > 0)
+            {
+                return;
+            }
+
+            Switch[] foundSwitches =
+                FindObjectsByType<Switch>(
+                    includeInactive
+                        ? FindObjectsInactive.Include
+                        : FindObjectsInactive.Exclude);
+
+            List<Switch> nearbySwitches =
+                new();
+
+            float maximumSqrDistance =
+                searchRadius *
+                searchRadius;
+
+            foreach (Switch candidate
+                     in foundSwitches)
+            {
+                if (candidate == null ||
+                    !candidate.gameObject.scene.IsValid())
+                {
+                    continue;
+                }
+
+                float sqrDistance =
+                    (candidate.transform.position -
+                     owner.transform.position)
+                    .sqrMagnitude;
+
+                if (sqrDistance <=
+                    maximumSqrDistance)
+                {
+                    nearbySwitches.Add(
+                        candidate);
+                }
+            }
+
+            switches =
+                nearbySwitches.ToArray();
+        }
+
+        private bool IsAnySwitchActivated()
+        {
+            if (switches == null ||
+                switches.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (Switch targetSwitch
+                     in switches)
+            {
+                if (targetSwitch != null &&
+                    targetSwitch.IsActivated)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool AreAllSwitchesActivated()
+        {
+            if (switches == null ||
+                switches.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (Switch targetSwitch
+                     in switches)
+            {
+                if (targetSwitch == null ||
+                    !targetSwitch.IsActivated)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
     }
 
     #endregion
@@ -31,102 +329,139 @@ public sealed class Case : MonoBehaviour
     private const string DefaultSpawnPointName =
         "Spawn Point";
 
-    private const string DefaultOpenTriggerName =
+    private const string DefaultOpenTrigger =
         "Open";
 
-    private const int MaximumTrackedItems =
-        64;
+    private const string DefaultLockedTrigger =
+        "Locked";
 
     #endregion
 
     #region Inspector
 
-    [Header("Contents")]
-    [SerializeField] private GameObject[] spawnableItems;
+    [Header("Case")]
+    [SerializeField]
+    private CaseType caseType =
+        CaseType.Item;
+
+    [SerializeField]
+    private CaseState currentState =
+        CaseState.Uninitialized;
+
+    [Header("Rewards")]
     [SerializeField]
     private SpawnMode spawnMode =
         SpawnMode.RandomItem;
+
+    [SerializeField]
+    private CaseReward[] rewards =
+        Array.Empty<CaseReward>();
+
     [SerializeField] private Transform spawnPoint;
 
-    [Header("Item Placement")]
-    [SerializeField, Min(0f)] private float itemSpacing = 0.35f;
-    [SerializeField, Min(0f)] private float spawnClearanceRadius = 0.2f;
-    [SerializeField, Min(1)] private int maximumSpawnAttempts = 4;
+    [SerializeField, Min(0f)]
+    private float itemSpacing = 0.35f;
+
+    [SerializeField, Min(0f)]
+    private float spawnClearanceRadius = 0.2f;
+
+    [SerializeField, Min(1)]
+    private int maximumSpawnAttempts = 4;
+
     [SerializeField] private LayerMask spawnBlockingLayers = ~0;
 
     [Header("Item Launch")]
     [SerializeField] private bool launchSpawnedItems = true;
-    [SerializeField, Min(0f)] private float itemLaunchSpeed = 5f;
+
+    [SerializeField, Min(0f)]
+    private float itemLaunchSpeed = 5f;
+
     [SerializeField]
     private Vector3 localLaunchDirection =
         Vector3.up;
+
     [SerializeField] private bool clearSpawnedVelocity = true;
 
-    [Header("Activation")]
-    [SerializeField] private bool requirePlayerTag = true;
-    [SerializeField] private string playerTag = "Player";
-    [SerializeField] private bool requirePlayerMovement = true;
-    [SerializeField] private bool openOnlyOnce = true;
+    [Header("Requirements")]
+    [SerializeField]
+    private CaseRequirement[] requirements =
+        Array.Empty<CaseRequirement>();
 
-    [Header("Switch Activation")]
-    [SerializeField] private bool activateSwitchWhenOpened;
-    [SerializeField] private Switch targetSwitch;
-    [SerializeField] private bool resolveSwitchAutomatically = true;
+    [SerializeField] private bool requireAllRequirements = true;
+    [SerializeField] private bool openAutomaticallyWhenRequirementsMet;
+    [SerializeField] private bool resolveSwitchRequirementsAutomatically = true;
     [SerializeField] private bool includeInactiveSwitches;
     [SerializeField, Min(0f)] private float switchSearchRadius = 20f;
 
-    [Header("Audio")]
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private AudioClip openSound;
-    [SerializeField] private AudioClip switchActivatedSound;
+    [Header("Timed Requirement")]
+    [SerializeField, Min(0f)] private float timedRequirementDuration;
+    [SerializeField] private bool startTimedRequirementOnEnable;
+
+    [Header("Activator")]
+    [SerializeField] private bool requirePlayerTag = true;
+    [SerializeField] private string playerTag = "Player";
+    [SerializeField] private bool requirePlayerMovement = true;
+    [SerializeField] private bool openOnPlayerTouch = true;
+
+    [Header("Behavior")]
+    [SerializeField] private bool openOnlyOnce = true;
+    [SerializeField] private bool destroyAfterOpening = true;
+    [SerializeField, Min(0f)] private float destroyDelay = 1.5f;
+    [SerializeField] private bool disableVisualsBeforeDestroy;
+    [SerializeField, Min(0f)] private float reopenCooldown = 1f;
 
     [Header("Animation")]
     [SerializeField] private Animator caseAnimator;
     [SerializeField]
     private string openTrigger =
-        DefaultOpenTriggerName;
+        DefaultOpenTrigger;
+
+    [SerializeField]
+    private string lockedTrigger =
+        DefaultLockedTrigger;
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+    [SerializeField] private AudioClip openSound;
+    [SerializeField] private AudioClip lockedSound;
 
     [Header("Effects")]
     [SerializeField] private ParticleSystem openEffect;
-
-    [Header("Lifetime")]
-    [SerializeField] private bool destroyAfterOpening = true;
-    [SerializeField, Min(0f)] private float destroyDelay = 1.5f;
-    [SerializeField] private bool disableVisualsBeforeDestroy;
+    [SerializeField] private ParticleSystem lockedEffect;
 
     [Header("Runtime Safety")]
     [SerializeField] private bool enableRuntimeSafety = true;
     [SerializeField] private bool restoreDisabledComponents = true;
-    [SerializeField] private bool validateBeforeOpening = true;
-    [SerializeField] private bool preventDuplicateSpawns = true;
-    [SerializeField, Min(0.1f)] private float referenceCheckInterval = 1f;
+    [SerializeField, Min(0.1f)] private float safetyCheckInterval = 1f;
+    [SerializeField, Min(0.01f)] private float minimumValidScale = 0.01f;
+    [SerializeField] private bool preventDuplicatePrefabSpawns = true;
 
     [Header("Debug")]
     [SerializeField] private bool logStateChanges;
-    [SerializeField]
-    private CaseState currentState =
-        CaseState.Uninitialized;
 
     #endregion
 
     #region Runtime State
 
-    private readonly List<GameObject> validSpawnableItems =
-        new();
-
     private readonly List<GameObject> spawnedItems =
         new();
 
     private Collider caseCollider;
-    private Renderer[] caseRenderers;
+    private Renderer[] caseRenderers =
+        Array.Empty<Renderer>();
 
-    private float referenceCheckTimer;
+    private float safetyTimer;
+    private float timedRequirementTimer;
+    private float cooldownTimer;
 
     private int openTriggerHash;
+    private int lockedTriggerHash;
 
     private bool initialized;
     private bool hasOpened;
-    private bool isOpening;
+    private bool opening;
+    private bool timedRequirementRunning;
+    private bool timedRequirementCompleted;
     private bool shuttingDown;
     private bool applicationQuitting;
 
@@ -135,12 +470,20 @@ public sealed class Case : MonoBehaviour
     #region Events
 
     public event Action<Case> Opened;
-    public event Action<Case, GameObject> ItemSpawned;
-    public event Action<Case, Switch> SwitchActivated;
+    public event Action<Case> LockedAttempted;
+    public event Action<Case, GameObject> RewardSpawned;
+    public event Action<Case, CaseState, CaseState> StateChanged;
+    public event Action<Case> ResetCompleted;
 
     #endregion
 
     #region Public API
+
+    public CaseType Type =>
+        caseType;
+
+    public CaseState CurrentState =>
+        currentState;
 
     public bool IsInitialized =>
         initialized;
@@ -149,109 +492,35 @@ public sealed class Case : MonoBehaviour
         hasOpened;
 
     public bool IsOpening =>
-        isOpening;
+        opening;
 
-    public CaseState CurrentState =>
-        currentState;
-
-    public Transform SpawnPoint =>
-        spawnPoint;
-
-    public Switch TargetSwitch =>
-        targetSwitch;
+    public bool HasTimedRequirementCompleted =>
+        timedRequirementCompleted;
 
     public IReadOnlyList<GameObject> SpawnedItems =>
         spawnedItems;
 
     public bool OpenCase()
     {
-        if (!CanOpen())
-            return false;
-
-        if (validateBeforeOpening &&
-            !ValidateRuntimeConfiguration())
-        {
-            Debug.LogError(
-                $"{nameof(Case)} on '{name}' failed runtime validation and could not open.",
-                this);
-
-            return false;
-        }
-
-        isOpening = true;
-        currentState = CaseState.Opening;
-
-        DisableCaseCollider();
-        PlayOpenPresentation();
-
-        int spawnedCount =
-            SpawnContents();
-
-        if (activateSwitchWhenOpened)
-        {
-            ActivateConfiguredSwitch();
-        }
-
-        hasOpened = true;
-        isOpening = false;
-        currentState = CaseState.Opened;
-
-        Opened?.Invoke(
-            this);
-
-        LogStateChange(
-            $"Opened '{name}' and spawned {spawnedCount} item(s).");
-
-        if (destroyAfterOpening)
-        {
-            ScheduleDestruction();
-        }
-
-        return true;
+        return OpenCase(
+            null);
     }
 
-    public bool SetSpawnPoint(
-        Transform newSpawnPoint)
+    public bool OpenCase(
+        UltimatePlayerMovement activator)
     {
-        if (!IsValidTransform(
-                newSpawnPoint))
+        if (!CanAttemptOpen())
+            return false;
+
+        if (!AreRequirementsSatisfied(
+                activator))
         {
+            HandleLockedAttempt();
+
             return false;
         }
 
-        spawnPoint =
-            newSpawnPoint;
-
-        return true;
-    }
-
-    public bool SetTargetSwitch(
-        Switch newTargetSwitch)
-    {
-        if (!IsValidSwitch(
-                newTargetSwitch,
-                allowInactive: true))
-        {
-            return false;
-        }
-
-        targetSwitch =
-            newTargetSwitch;
-
-        return true;
-    }
-
-    public void ClearTargetSwitch()
-    {
-        targetSwitch = null;
-    }
-
-    public bool ResolveNearestSwitch()
-    {
-        targetSwitch =
-            FindNearestSwitch();
-
-        return targetSwitch != null;
+        return PerformOpen();
     }
 
     public bool ResetCase()
@@ -265,15 +534,107 @@ public sealed class Case : MonoBehaviour
         CancelInvoke(
             nameof(DestroyCase));
 
-        hasOpened = false;
-        isOpening = false;
-        currentState = CaseState.Closed;
+        hasOpened =
+            false;
 
-        RestoreCaseCollider();
+        opening =
+            false;
+
+        cooldownTimer =
+            0f;
+
+        timedRequirementTimer =
+            timedRequirementDuration;
+
+        timedRequirementCompleted =
+            timedRequirementDuration <= 0f;
+
+        timedRequirementRunning =
+            startTimedRequirementOnEnable &&
+            !timedRequirementCompleted;
+
+        foreach (CaseRequirement requirement
+                 in requirements)
+        {
+            requirement?.ResetRuntime();
+        }
+
+        RestoreCollider();
         SetRenderersEnabled(
             true);
 
+        ChangeState(
+            AreRequirementsSatisfied(
+                null)
+                ? CaseState.Ready
+                : CaseState.Locked);
+
+        ResetCompleted?.Invoke(
+            this);
+
         return true;
+    }
+
+    public void AddRequirementProgress(
+        CaseRequirementType type,
+        int amount = 1)
+    {
+        foreach (CaseRequirement requirement
+                 in requirements)
+        {
+            if (requirement != null &&
+                requirement.Type ==
+                type)
+            {
+                requirement.AddProgress(
+                    amount);
+            }
+        }
+    }
+
+    public void SetRequirementProgress(
+        CaseRequirementType type,
+        int amount)
+    {
+        foreach (CaseRequirement requirement
+                 in requirements)
+        {
+            if (requirement != null &&
+                requirement.Type ==
+                type)
+            {
+                requirement.SetProgress(
+                    amount);
+            }
+        }
+    }
+
+    public void SetExternalSignal(
+        bool value)
+    {
+        foreach (CaseRequirement requirement
+                 in requirements)
+        {
+            if (requirement != null &&
+                requirement.Type ==
+                CaseRequirementType.ExternalSignal)
+            {
+                requirement.SetExternalSignal(
+                    value);
+            }
+        }
+    }
+
+    public void StartTimedRequirement()
+    {
+        timedRequirementTimer =
+            timedRequirementDuration;
+
+        timedRequirementCompleted =
+            timedRequirementDuration <= 0f;
+
+        timedRequirementRunning =
+            !timedRequirementCompleted;
     }
 
     #endregion
@@ -298,42 +659,48 @@ public sealed class Case : MonoBehaviour
             Initialize();
         }
 
-        if (initialized &&
-            !hasOpened)
+        if (startTimedRequirementOnEnable &&
+            !timedRequirementCompleted)
         {
-            currentState =
-                CaseState.Closed;
+            StartTimedRequirement();
         }
     }
 
     private void Update()
     {
         if (!initialized ||
-            !enableRuntimeSafety ||
             shuttingDown ||
             applicationQuitting)
         {
             return;
         }
 
-        referenceCheckTimer -=
-            Time.deltaTime;
+        UpdateTimedRequirement();
+        UpdateCooldown();
+        UpdateAutomaticOpening();
 
-        if (referenceCheckTimer > 0f)
+        if (!enableRuntimeSafety)
             return;
 
-        referenceCheckTimer =
-            referenceCheckInterval;
+        safetyTimer -=
+            Time.deltaTime;
+
+        if (safetyTimer > 0f)
+            return;
+
+        safetyTimer =
+            safetyCheckInterval;
 
         RunRuntimeSafetyChecks();
     }
 
     private void OnDisable()
     {
-        if (!shuttingDown)
+        if (!shuttingDown &&
+            !applicationQuitting)
         {
-            currentState =
-                CaseState.Disabled;
+            ChangeState(
+                CaseState.Disabled);
         }
     }
 
@@ -341,50 +708,61 @@ public sealed class Case : MonoBehaviour
         Collider other)
     {
         if (!initialized ||
-            hasOpened ||
-            isOpening ||
             shuttingDown ||
-            other == null)
+            applicationQuitting ||
+            other == null ||
+            !openOnPlayerTouch)
         {
             return;
         }
 
-        if (!IsValidActivator(
-                other))
+        UltimatePlayerMovement activator =
+            ResolveActivator(
+                other);
+
+        if (requirePlayerMovement &&
+            activator == null)
         {
             return;
         }
 
-        OpenCase();
+        OpenCase(
+            activator);
     }
 
     private void OnApplicationQuit()
     {
-        applicationQuitting = true;
+        applicationQuitting =
+            true;
     }
 
     private void OnDestroy()
     {
-        shuttingDown = true;
-        initialized = false;
-        isOpening = false;
+        shuttingDown =
+            true;
+
+        initialized =
+            false;
 
         CancelInvoke();
 
         Opened = null;
-        ItemSpawned = null;
-        SwitchActivated = null;
+        LockedAttempted = null;
+        RewardSpawned = null;
+        StateChanged = null;
+        ResetCompleted = null;
 
-        validSpawnableItems.Clear();
         spawnedItems.Clear();
 
         caseCollider = null;
         caseRenderers = null;
         spawnPoint = null;
-        targetSwitch = null;
-        audioSource = null;
         caseAnimator = null;
+        audioSource = null;
         openEffect = null;
+        lockedEffect = null;
+        requirements = null;
+        rewards = null;
 
         currentState =
             CaseState.Disabled;
@@ -417,15 +795,30 @@ public sealed class Case : MonoBehaviour
                 0f,
                 switchSearchRadius);
 
+        timedRequirementDuration =
+            Mathf.Max(
+                0f,
+                timedRequirementDuration);
+
         destroyDelay =
             Mathf.Max(
                 0f,
                 destroyDelay);
 
-        referenceCheckInterval =
+        reopenCooldown =
+            Mathf.Max(
+                0f,
+                reopenCooldown);
+
+        safetyCheckInterval =
             Mathf.Max(
                 0.1f,
-                referenceCheckInterval);
+                safetyCheckInterval);
+
+        minimumValidScale =
+            Mathf.Max(
+                0.01f,
+                minimumValidScale);
 
         if (!IsFiniteVector(
                 localLaunchDirection) ||
@@ -436,40 +829,43 @@ public sealed class Case : MonoBehaviour
                 Vector3.up;
         }
 
-        CacheOpenTriggerHash();
+        requirements ??=
+            Array.Empty<CaseRequirement>();
+
+        rewards ??=
+            Array.Empty<CaseReward>();
+
+        CacheAnimatorHashes();
 
 #if UNITY_EDITOR
         if (!Application.isPlaying)
         {
             ResolveReferences();
             ConfigureComponents();
-            CacheSpawnableItems();
+            ResolveRequirementSwitches();
         }
 #endif
     }
 
     private void OnDrawGizmosSelected()
     {
-        Transform resolvedPoint =
+        Transform point =
             spawnPoint != null
                 ? spawnPoint
                 : transform;
 
-        Vector3 launchDirection =
-            GetLaunchDirection();
-
         Gizmos.DrawWireSphere(
-            resolvedPoint.position,
+            point.position,
             spawnClearanceRadius);
 
         Gizmos.DrawRay(
-            resolvedPoint.position,
-            launchDirection *
+            point.position,
+            GetLaunchDirection() *
             Mathf.Max(
                 1f,
                 itemLaunchSpeed));
 
-        if (activateSwitchWhenOpened &&
+        if (resolveSwitchRequirementsAutomatically &&
             switchSearchRadius > 0f)
         {
             Gizmos.DrawWireSphere(
@@ -489,504 +885,508 @@ public sealed class Case : MonoBehaviour
 
         ResolveReferences();
         ConfigureComponents();
-        CacheOpenTriggerHash();
-        CacheSpawnableItems();
+        CacheAnimatorHashes();
+        ResolveRequirementSwitches();
 
-        referenceCheckTimer =
-            referenceCheckInterval;
+        safetyTimer =
+            safetyCheckInterval;
+
+        timedRequirementTimer =
+            timedRequirementDuration;
+
+        timedRequirementCompleted =
+            timedRequirementDuration <= 0f;
+
+        timedRequirementRunning =
+            startTimedRequirementOnEnable &&
+            !timedRequirementCompleted;
 
         if (!ValidateConfiguration())
         {
-            initialized = false;
+            initialized =
+                false;
+
             currentState =
                 CaseState.Uninitialized;
 
-            enabled = false;
+            enabled =
+                false;
 
             return false;
         }
 
-        initialized = true;
-        currentState =
-            hasOpened
-                ? CaseState.Opened
-                : CaseState.Closed;
+        initialized =
+            true;
+
+        ChangeState(
+            AreRequirementsSatisfied(
+                null)
+                ? CaseState.Ready
+                : CaseState.Locked);
 
         return true;
     }
 
     private void ResolveReferences()
     {
-        ResolveCollider();
-        ResolveAudioSource();
-        ResolveAnimator();
-        ResolveSpawnPoint();
-        ResolveRenderers();
-
-        if (activateSwitchWhenOpened &&
-            resolveSwitchAutomatically &&
-            !IsValidSwitch(
-                targetSwitch,
-                allowInactive: true))
-        {
-            targetSwitch =
-                FindNearestSwitch();
-        }
-    }
-
-    private void ResolveCollider()
-    {
         caseCollider ??=
             GetComponent<Collider>();
 
-        caseCollider ??=
-            GetComponentInChildren<Collider>(
-                includeInactive: true);
-    }
-
-    private void ResolveAudioSource()
-    {
-        audioSource ??=
-            GetComponent<AudioSource>();
-
-        audioSource ??=
-            GetComponentInChildren<AudioSource>(
-                includeInactive: true);
-    }
-
-    private void ResolveAnimator()
-    {
         caseAnimator ??=
             GetComponent<Animator>();
 
         caseAnimator ??=
             GetComponentInChildren<Animator>(
                 includeInactive: true);
-    }
 
-    private void ResolveSpawnPoint()
-    {
-        if (IsValidTransform(
-                spawnPoint))
-        {
-            return;
-        }
+        audioSource ??=
+            GetComponent<AudioSource>();
 
-        spawnPoint =
+        audioSource ??=
+            GetComponentInChildren<AudioSource>(
+                includeInactive: true);
+
+        spawnPoint ??=
             FindDescendantByName(
                 DefaultSpawnPointName);
 
         spawnPoint ??=
             transform;
-    }
 
-    private void ResolveRenderers()
-    {
-        if (caseRenderers != null &&
-            caseRenderers.Length > 0)
+        if (caseRenderers == null ||
+            caseRenderers.Length == 0)
         {
-            return;
+            caseRenderers =
+                GetComponentsInChildren<Renderer>(
+                    includeInactive: true);
         }
-
-        caseRenderers =
-            GetComponentsInChildren<Renderer>(
-                includeInactive: true);
     }
 
     private void ConfigureComponents()
     {
         if (caseCollider != null)
         {
-            caseCollider.isTrigger = true;
-
-            if (!hasOpened)
-            {
-                caseCollider.enabled = true;
-            }
+            caseCollider.isTrigger =
+                true;
         }
 
         if (audioSource != null)
         {
-            audioSource.playOnAwake = false;
+            audioSource.playOnAwake =
+                false;
         }
     }
 
-    private void CacheOpenTriggerHash()
+    private void CacheAnimatorHashes()
     {
         openTriggerHash =
-            string.IsNullOrWhiteSpace(
-                openTrigger)
-                ? 0
-                : Animator.StringToHash(
-                    openTrigger);
+            GetAnimatorHash(
+                openTrigger);
+
+        lockedTriggerHash =
+            GetAnimatorHash(
+                lockedTrigger);
     }
 
-    private void CacheSpawnableItems()
+    private void ResolveRequirementSwitches()
     {
-        validSpawnableItems.Clear();
-
-        if (spawnableItems == null)
+        if (!resolveSwitchRequirementsAutomatically)
             return;
 
-        foreach (GameObject itemPrefab
-                 in spawnableItems)
+        foreach (CaseRequirement requirement
+                 in requirements)
         {
-            if (itemPrefab == null ||
-                validSpawnableItems.Contains(
-                    itemPrefab))
-            {
-                continue;
-            }
-
-            validSpawnableItems.Add(
-                itemPrefab);
+            requirement?.ResolveSwitchesAutomatically(
+                this,
+                switchSearchRadius,
+                includeInactiveSwitches);
         }
     }
 
     #endregion
 
-    #region Runtime Safety
+    #region State Machine
 
-    private bool RunRuntimeSafetyChecks()
+    private void ChangeState(
+        CaseState newState)
     {
-        if (shuttingDown ||
-            applicationQuitting)
+        if (currentState ==
+            newState)
         {
-            return false;
+            return;
         }
 
-        bool referencesValid =
-            ValidateCoreReferences();
+        CaseState previousState =
+            currentState;
 
-        if (!referencesValid)
+        currentState =
+            newState;
+
+        StateChanged?.Invoke(
+            this,
+            previousState,
+            newState);
+
+        LogStateChange(
+            $"State changed from {previousState} to {newState}.");
+    }
+
+    private bool PerformOpen()
+    {
+        opening =
+            true;
+
+        ChangeState(
+            CaseState.Opening);
+
+        DisableCollider();
+        PlayOpenPresentation();
+
+        int spawnedCount =
+            SpawnRewards();
+
+        hasOpened =
+            true;
+
+        opening =
+            false;
+
+        ChangeState(
+            spawnedCount > 0
+                ? CaseState.Open
+                : CaseState.Empty);
+
+        Opened?.Invoke(
+            this);
+
+        if (destroyAfterOpening)
         {
-            ResolveReferences();
-            ConfigureComponents();
-
-            referencesValid =
-                ValidateCoreReferences();
+            ScheduleDestruction();
         }
-
-        if (!referencesValid)
+        else if (!openOnlyOnce)
         {
-            EnterSafetyShutdown(
-                "Required references could not be restored.");
+            cooldownTimer =
+                reopenCooldown;
 
-            return false;
-        }
-
-        if (!IsFiniteVector(
-                transform.position) ||
-            !IsFiniteQuaternion(
-                transform.rotation) ||
-            !IsValidScale(
-                transform.lossyScale))
-        {
-            EnterSafetyShutdown(
-                "The case Transform contains invalid values.");
-
-            return false;
-        }
-
-        if (restoreDisabledComponents)
-        {
-            RestoreRequiredComponents();
-        }
-
-        RemoveDestroyedSpawnedItems();
-
-        if (targetSwitch != null &&
-            !IsValidSwitch(
-                targetSwitch,
-                allowInactive: true))
-        {
-            targetSwitch = null;
-        }
-
-        if (activateSwitchWhenOpened &&
-            resolveSwitchAutomatically &&
-            targetSwitch == null &&
-            !hasOpened)
-        {
-            targetSwitch =
-                FindNearestSwitch();
+            ChangeState(
+                cooldownTimer > 0f
+                    ? CaseState.Cooldown
+                    : CaseState.Ready);
         }
 
         return true;
     }
 
-    private bool ValidateCoreReferences()
-    {
-        return
-            caseCollider != null &&
-            audioSource != null &&
-            IsValidTransform(
-                spawnPoint);
-    }
-
-    private bool ValidateRuntimeConfiguration()
-    {
-        RunRuntimeSafetyChecks();
-        CacheSpawnableItems();
-
-        if (!ValidateCoreReferences())
-            return false;
-
-        if (openOnlyOnce &&
-            hasOpened)
-        {
-            return false;
-        }
-
-        return
-            IsFiniteVector(
-                spawnPoint.position) &&
-            IsFiniteQuaternion(
-                spawnPoint.rotation);
-    }
-
-    private void RestoreRequiredComponents()
-    {
-        if (caseCollider != null &&
-            !caseCollider.enabled &&
-            !hasOpened &&
-            !isOpening)
-        {
-            caseCollider.enabled = true;
-        }
-
-        if (audioSource != null &&
-            !audioSource.enabled)
-        {
-            audioSource.enabled = true;
-        }
-
-        if (caseAnimator != null &&
-            !caseAnimator.enabled)
-        {
-            caseAnimator.enabled = true;
-        }
-    }
-
-    private void RemoveDestroyedSpawnedItems()
-    {
-        for (int index =
-                 spawnedItems.Count - 1;
-             index >= 0;
-             index--)
-        {
-            if (spawnedItems[index] == null)
-            {
-                spawnedItems.RemoveAt(
-                    index);
-            }
-        }
-    }
-
-    private void EnterSafetyShutdown(
-        string reason)
-    {
-        initialized = false;
-        isOpening = false;
-        currentState =
-            CaseState.Disabled;
-
-        if (caseCollider != null)
-        {
-            caseCollider.enabled = false;
-        }
-
-        Debug.LogError(
-            $"{nameof(Case)} entered safety shutdown on '{name}': {reason}",
-            this);
-
-        enabled = false;
-    }
-
     #endregion
 
-    #region Validation
+    #region Requirements
 
-    private bool ValidateConfiguration()
+    private bool AreRequirementsSatisfied(
+        UltimatePlayerMovement activator)
     {
-        bool valid = true;
-
-        valid &=
-            ValidateReference(
-                caseCollider,
-                nameof(Collider));
-
-        valid &=
-            ValidateReference(
-                audioSource,
-                nameof(AudioSource));
-
-        valid &=
-            ValidateReference(
-                spawnPoint,
-                "Spawn Point");
-
-        if (validSpawnableItems.Count == 0)
+        if (requirements == null ||
+            requirements.Length == 0)
         {
-            Debug.LogWarning(
-                $"{nameof(Case)} on '{name}' has no valid item prefabs.",
-                this);
+            return true;
         }
 
-        if (activateSwitchWhenOpened &&
-            targetSwitch == null &&
-            !resolveSwitchAutomatically)
+        bool anyValidRequirement =
+            false;
+
+        if (requireAllRequirements)
         {
-            Debug.LogWarning(
-                $"{nameof(Case)} on '{name}' is configured to activate a switch, but no switch is assigned.",
-                this);
+            foreach (CaseRequirement requirement
+                     in requirements)
+            {
+                if (requirement == null)
+                    continue;
+
+                anyValidRequirement =
+                    true;
+
+                if (!requirement.IsSatisfied(
+                        this,
+                        activator))
+                {
+                    return false;
+                }
+            }
+
+            return
+                !anyValidRequirement ||
+                true;
         }
 
-        return valid;
+        foreach (CaseRequirement requirement
+                 in requirements)
+        {
+            if (requirement == null)
+                continue;
+
+            anyValidRequirement =
+                true;
+
+            if (requirement.IsSatisfied(
+                    this,
+                    activator))
+            {
+                return true;
+            }
+        }
+
+        return
+            !anyValidRequirement;
     }
 
-    private bool ValidateReference(
-        UnityEngine.Object reference,
-        string displayName)
+    private void UpdateAutomaticOpening()
     {
-        if (reference != null)
-            return true;
+        if (!openAutomaticallyWhenRequirementsMet ||
+            hasOpened ||
+            opening ||
+            cooldownTimer > 0f)
+        {
+            return;
+        }
 
-        Debug.LogError(
-            $"{nameof(Case)} requires {displayName} on '{name}'.",
+        if (AreRequirementsSatisfied(
+                null))
+        {
+            OpenCase();
+        }
+        else if (currentState !=
+                 CaseState.Locked)
+        {
+            ChangeState(
+                CaseState.Locked);
+        }
+    }
+
+    private void UpdateTimedRequirement()
+    {
+        if (!timedRequirementRunning)
+            return;
+
+        timedRequirementTimer =
+            Mathf.Max(
+                0f,
+                timedRequirementTimer -
+                Time.deltaTime);
+
+        if (timedRequirementTimer > 0f)
+            return;
+
+        timedRequirementRunning =
+            false;
+
+        timedRequirementCompleted =
+            true;
+    }
+
+    private void HandleLockedAttempt()
+    {
+        ChangeState(
+            CaseState.Locked);
+
+        SetAnimatorTrigger(
+            lockedTriggerHash);
+
+        lockedEffect?.Play();
+
+        PlaySound(
+            lockedSound);
+
+        LockedAttempted?.Invoke(
             this);
+    }
 
+    internal bool ValidateTeamFormationRequirement(
+        UltimatePlayerMovement activator)
+    {
+        return activator != null;
+    }
+
+    internal bool ValidateCharacterTypeRequirement(
+        UltimatePlayerMovement activator)
+    {
+        return
+            activator != null &&
+            activator.CharacterDefinition != null;
+    }
+
+    internal bool EvaluateCustomRequirement(
+        CaseRequirement requirement,
+        UltimatePlayerMovement activator)
+    {
         return false;
     }
 
     #endregion
 
-    #region Activation
+    #region Reward Spawning
 
-    private bool CanOpen()
+    private int SpawnRewards()
     {
-        if (!initialized ||
-            shuttingDown ||
-            applicationQuitting ||
-            isOpening ||
-            !isActiveAndEnabled)
-        {
-            return false;
-        }
-
-        if (openOnlyOnce &&
-            hasOpened)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    private bool IsValidActivator(
-        Collider other)
-    {
-        if (other == null)
-            return false;
-
-        if (requirePlayerTag &&
-            !HasTagInHierarchy(
-                other.transform,
-                playerTag))
-        {
-            return false;
-        }
-
-        if (!requirePlayerMovement)
-            return true;
-
-        UltimatePlayerMovement movement =
-            other.GetComponent<UltimatePlayerMovement>();
-
-        movement ??=
-            other.GetComponentInParent<UltimatePlayerMovement>();
-
-        movement ??=
-            other.GetComponentInChildren<UltimatePlayerMovement>(
-                includeInactive: true);
-
-        return
-            movement != null &&
-            movement.isActiveAndEnabled &&
-            movement.IsInitialized &&
-            !movement.IsSafetyShutdown;
-    }
-
-    private void DisableCaseCollider()
-    {
-        if (caseCollider != null)
-        {
-            caseCollider.enabled = false;
-        }
-    }
-
-    private void RestoreCaseCollider()
-    {
-        if (caseCollider != null)
-        {
-            caseCollider.enabled = true;
-            caseCollider.isTrigger = true;
-        }
-    }
-
-    #endregion
-
-    #region Item Spawning
-
-    private int SpawnContents()
-    {
-        CacheSpawnableItems();
         RemoveDestroyedSpawnedItems();
 
-        if (validSpawnableItems.Count == 0)
+        List<CaseReward> validRewards =
+            GetValidRewards();
+
+        if (validRewards.Count == 0)
             return 0;
 
         return spawnMode switch
         {
             SpawnMode.RandomItem =>
-                SpawnRandomItem(),
+                SpawnRandomReward(
+                    validRewards),
 
             SpawnMode.AllItems =>
-                SpawnAllItems(),
+                SpawnAllRewards(
+                    validRewards),
 
-            _ => 0
+            SpawnMode.WeightedRandom =>
+                SpawnWeightedReward(
+                    validRewards),
+
+            _ =>
+                throw new ArgumentOutOfRangeException(
+                    nameof(spawnMode),
+                    spawnMode,
+                    null)
         };
     }
 
-    private int SpawnRandomItem()
+    private List<CaseReward> GetValidRewards()
     {
-        int randomIndex =
-            UnityEngine.Random.Range(
-                0,
-                validSpawnableItems.Count);
+        List<CaseReward> validRewards =
+            new();
 
-        return SpawnItem(
-                validSpawnableItems[randomIndex],
-                0,
-                1) != null
-            ? 1
-            : 0;
+        foreach (CaseReward reward
+                 in rewards)
+        {
+            if (reward != null &&
+                reward.IsValid)
+            {
+                validRewards.Add(
+                    reward);
+            }
+        }
+
+        return validRewards;
     }
 
-    private int SpawnAllItems()
+    private int SpawnRandomReward(
+        IReadOnlyList<CaseReward> validRewards)
     {
-        int spawnedCount = 0;
-        int itemCount =
-            validSpawnableItems.Count;
+        int index =
+            UnityEngine.Random.Range(
+                0,
+                validRewards.Count);
 
-        for (int index = 0;
-             index < itemCount;
-             index++)
+        return SpawnReward(
+            validRewards[index],
+            0,
+            1);
+    }
+
+    private int SpawnWeightedReward(
+        IReadOnlyList<CaseReward> validRewards)
+    {
+        float totalWeight =
+            0f;
+
+        foreach (CaseReward reward
+                 in validRewards)
         {
-            if (SpawnItem(
-                    validSpawnableItems[index],
-                    index,
-                    itemCount) != null)
+            totalWeight +=
+                reward.Weight;
+        }
+
+        if (totalWeight <= 0f)
+        {
+            return SpawnRandomReward(
+                validRewards);
+        }
+
+        float selection =
+            UnityEngine.Random.Range(
+                0f,
+                totalWeight);
+
+        foreach (CaseReward reward
+                 in validRewards)
+        {
+            selection -=
+                reward.Weight;
+
+            if (selection <= 0f)
+            {
+                return SpawnReward(
+                    reward,
+                    0,
+                    1);
+            }
+        }
+
+        return SpawnReward(
+            validRewards[
+                validRewards.Count - 1],
+            0,
+            1);
+    }
+
+    private int SpawnAllRewards(
+        IReadOnlyList<CaseReward> validRewards)
+    {
+        int count =
+            0;
+
+        int rewardIndex =
+            0;
+
+        foreach (CaseReward reward
+                 in validRewards)
+        {
+            count +=
+                SpawnReward(
+                    reward,
+                    rewardIndex,
+                    validRewards.Count);
+
+            rewardIndex++;
+        }
+
+        return count;
+    }
+
+    private int SpawnReward(
+        CaseReward reward,
+        int rewardIndex,
+        int rewardCount)
+    {
+        int spawnedCount =
+            0;
+
+        for (int quantityIndex = 0;
+             quantityIndex < reward.Quantity;
+             quantityIndex++)
+        {
+            int combinedIndex =
+                rewardIndex +
+                quantityIndex;
+
+            int combinedCount =
+                Mathf.Max(
+                    rewardCount,
+                    reward.Quantity);
+
+            GameObject spawned =
+                SpawnRewardObject(
+                    reward,
+                    combinedIndex,
+                    combinedCount);
+
+            if (spawned != null)
             {
                 spawnedCount++;
             }
@@ -995,80 +1395,71 @@ public sealed class Case : MonoBehaviour
         return spawnedCount;
     }
 
-    private GameObject SpawnItem(
-        GameObject itemPrefab,
-        int itemIndex,
-        int itemCount)
+    private GameObject SpawnRewardObject(
+        CaseReward reward,
+        int index,
+        int count)
     {
-        if (itemPrefab == null ||
-            !IsValidTransform(
-                spawnPoint) ||
-            shuttingDown ||
-            applicationQuitting)
+        if (reward == null ||
+            reward.Prefab == null ||
+            spawnPoint == null)
         {
             return null;
         }
 
-        if (preventDuplicateSpawns &&
+        if (preventDuplicatePrefabSpawns &&
             HasSpawnedPrefab(
-                itemPrefab))
+                reward.Prefab))
         {
             return null;
         }
 
-        if (!TryFindSafeSpawnPosition(
-                itemIndex,
-                itemCount,
-                out Vector3 safePosition))
-        {
-            Debug.LogWarning(
-                $"{nameof(Case)} on '{name}' could not find a clear position for '{itemPrefab.name}'.",
-                this);
+        TryFindSafeSpawnPosition(
+            index,
+            count,
+            out Vector3 position);
 
-            safePosition =
-                spawnPoint.position;
-        }
-
-        Quaternion spawnRotation =
+        Quaternion rotation =
             IsFiniteQuaternion(
                 spawnPoint.rotation)
                 ? spawnPoint.rotation
                 : Quaternion.identity;
 
-        GameObject spawnedItem =
+        GameObject spawned =
             Instantiate(
-                itemPrefab,
-                safePosition,
-                spawnRotation);
+                reward.Prefab,
+                position,
+                rotation);
 
-        if (spawnedItem == null)
+        if (spawned == null)
             return null;
 
         spawnedItems.Add(
-            spawnedItem);
+            spawned);
 
-        PrepareSpawnedItem(
-            spawnedItem);
+        if (launchSpawnedItems &&
+            reward.LaunchAfterSpawn)
+        {
+            LaunchSpawnedReward(
+                spawned);
+        }
 
-        ItemSpawned?.Invoke(
+        RewardSpawned?.Invoke(
             this,
-            spawnedItem);
+            spawned);
 
-        LogStateChange(
-            $"Spawned '{spawnedItem.name}'.");
-
-        return spawnedItem;
+        return spawned;
     }
 
     private bool TryFindSafeSpawnPosition(
-        int itemIndex,
-        int itemCount,
-        out Vector3 safePosition)
+        int index,
+        int count,
+        out Vector3 position)
     {
-        safePosition =
+        position =
             CalculateSpawnPosition(
-                itemIndex,
-                itemCount);
+                index,
+                count);
 
         if (spawnClearanceRadius <= 0f)
             return true;
@@ -1077,20 +1468,20 @@ public sealed class Case : MonoBehaviour
              attempt < maximumSpawnAttempts;
              attempt++)
         {
-            Vector3 attemptPosition =
-                safePosition +
+            Vector3 candidate =
+                position +
                 spawnPoint.up *
                 itemSpacing *
                 attempt;
 
             if (!Physics.CheckSphere(
-                    attemptPosition,
+                    candidate,
                     spawnClearanceRadius,
                     spawnBlockingLayers,
                     QueryTriggerInteraction.Ignore))
             {
-                safePosition =
-                    attemptPosition;
+                position =
+                    candidate;
 
                 return true;
             }
@@ -1100,84 +1491,74 @@ public sealed class Case : MonoBehaviour
     }
 
     private Vector3 CalculateSpawnPosition(
-        int itemIndex,
-        int itemCount)
+        int index,
+        int count)
     {
         Vector3 position =
             spawnPoint.position;
 
-        if (itemCount <= 1)
+        if (count <= 1)
             return position;
 
         float centeredIndex =
-            itemIndex -
-            (itemCount - 1) * 0.5f;
+            index -
+            (count - 1) *
+            0.5f;
 
-        position +=
-            spawnPoint.right *
-            centeredIndex *
-            itemSpacing;
-
-        return position;
+        return position +
+               spawnPoint.right *
+               centeredIndex *
+               itemSpacing;
     }
 
-    private void PrepareSpawnedItem(
-        GameObject spawnedItem)
+    private void LaunchSpawnedReward(
+        GameObject spawned)
     {
-        if (!launchSpawnedItems ||
-            spawnedItem == null)
-        {
-            return;
-        }
+        Rigidbody body =
+            spawned.GetComponent<Rigidbody>();
 
-        Rigidbody itemRigidbody =
-            spawnedItem.GetComponent<Rigidbody>();
-
-        itemRigidbody ??=
-            spawnedItem.GetComponentInChildren<Rigidbody>(
+        body ??=
+            spawned.GetComponentInChildren<Rigidbody>(
                 includeInactive: true);
 
-        if (itemRigidbody == null)
+        if (body == null)
             return;
-
-        Vector3 launchDirection =
-            GetLaunchDirection();
 
         if (clearSpawnedVelocity)
         {
-            itemRigidbody.linearVelocity =
+            body.linearVelocity =
                 Vector3.zero;
 
-            itemRigidbody.angularVelocity =
+            body.angularVelocity =
                 Vector3.zero;
         }
 
-        itemRigidbody.isKinematic = false;
-        itemRigidbody.useGravity = true;
+        body.isKinematic =
+            false;
 
-        itemRigidbody.AddForce(
-            launchDirection *
+        body.useGravity =
+            true;
+
+        body.AddForce(
+            GetLaunchDirection() *
             itemLaunchSpeed,
             ForceMode.VelocityChange);
 
-        itemRigidbody.WakeUp();
+        body.WakeUp();
     }
 
     private bool HasSpawnedPrefab(
-        GameObject itemPrefab)
+        GameObject prefab)
     {
-        if (itemPrefab == null)
-            return false;
-
         string expectedName =
-            $"{itemPrefab.name}(Clone)";
+            $"{prefab.name}(Clone)";
 
-        foreach (GameObject spawnedItem
+        foreach (GameObject spawned
                  in spawnedItems)
         {
-            if (spawnedItem != null &&
+            if (spawned != null &&
                 string.Equals(
-                    spawnedItem.name,
+                    spawned.name,
                     expectedName,
                     StringComparison.Ordinal))
             {
@@ -1191,8 +1572,7 @@ public sealed class Case : MonoBehaviour
     private Vector3 GetLaunchDirection()
     {
         Transform reference =
-            IsValidTransform(
-                spawnPoint)
+            spawnPoint != null
                 ? spawnPoint
                 : transform;
 
@@ -1214,119 +1594,59 @@ public sealed class Case : MonoBehaviour
 
     #endregion
 
-    #region Switch System
+    #region Activator
 
-    private bool ActivateConfiguredSwitch()
+    private UltimatePlayerMovement ResolveActivator(
+        Collider other)
     {
-        Switch resolvedSwitch =
-            ResolveSwitch();
-
-        if (resolvedSwitch == null)
-        {
-            Debug.LogWarning(
-                $"{nameof(Case)} on '{name}' could not resolve a switch.",
-                this);
-
-            return false;
-        }
-
-        resolvedSwitch.ActivateSwitch();
-
-        PlaySound(
-            switchActivatedSound);
-
-        SwitchActivated?.Invoke(
-            this,
-            resolvedSwitch);
-
-        LogStateChange(
-            $"Activated switch '{resolvedSwitch.name}'.");
-
-        return true;
-    }
-
-    private Switch ResolveSwitch()
-    {
-        if (IsValidSwitch(
-                targetSwitch,
-                includeInactiveSwitches))
-        {
-            return targetSwitch;
-        }
-
-        targetSwitch = null;
-
-        if (!resolveSwitchAutomatically)
+        if (other == null)
             return null;
 
-        targetSwitch =
-            FindNearestSwitch();
-
-        return targetSwitch;
-    }
-
-    private Switch FindNearestSwitch()
-    {
-        Switch[] switches =
-            FindObjectsByType<Switch>(
-                includeInactiveSwitches
-                    ? FindObjectsInactive.Include
-                    : FindObjectsInactive.Exclude);
-
-        Switch closestSwitch =
-            null;
-
-        float maximumSqrDistance =
-            switchSearchRadius *
-            switchSearchRadius;
-
-        float closestSqrDistance =
-            maximumSqrDistance;
-
-        foreach (Switch candidate
-                 in switches)
+        if (requirePlayerTag &&
+            !HasTagInHierarchy(
+                other.transform,
+                playerTag))
         {
-            if (!IsValidSwitch(
-                    candidate,
-                    includeInactiveSwitches))
-            {
-                continue;
-            }
-
-            float sqrDistance =
-                (candidate.transform.position -
-                 transform.position)
-                .sqrMagnitude;
-
-            if (sqrDistance >
-                closestSqrDistance)
-            {
-                continue;
-            }
-
-            closestSqrDistance =
-                sqrDistance;
-
-            closestSwitch =
-                candidate;
+            return null;
         }
 
-        return closestSwitch;
+        UltimatePlayerMovement movement =
+            other.GetComponent<UltimatePlayerMovement>();
+
+        movement ??=
+            other.GetComponentInParent<UltimatePlayerMovement>();
+
+        movement ??=
+            other.GetComponentInChildren<UltimatePlayerMovement>(
+                includeInactive: true);
+
+        if (movement == null)
+            return null;
+
+        return
+            movement.isActiveAndEnabled &&
+            movement.IsInitialized &&
+            !movement.IsSafetyShutdown
+                ? movement
+                : null;
     }
 
-    private static bool IsValidSwitch(
-        Switch candidate,
-        bool allowInactive)
+    private bool CanAttemptOpen()
     {
-        if (candidate == null ||
-            !candidate.gameObject.scene.IsValid())
+        if (!initialized ||
+            shuttingDown ||
+            applicationQuitting ||
+            opening ||
+            cooldownTimer > 0f ||
+            currentState ==
+                CaseState.Disabled)
         {
             return false;
         }
 
         return
-            allowInactive ||
-            candidate.gameObject.activeInHierarchy;
+            !openOnlyOnce ||
+            !hasOpened;
     }
 
     #endregion
@@ -1335,20 +1655,26 @@ public sealed class Case : MonoBehaviour
 
     private void PlayOpenPresentation()
     {
-        if (caseAnimator != null &&
-            openTriggerHash != 0)
-        {
-            caseAnimator.SetTrigger(
-                openTriggerHash);
-        }
+        SetAnimatorTrigger(
+            openTriggerHash);
 
-        if (openEffect != null)
-        {
-            openEffect.Play();
-        }
+        openEffect?.Play();
 
         PlaySound(
             openSound);
+    }
+
+    private void SetAnimatorTrigger(
+        int hash)
+    {
+        if (caseAnimator == null ||
+            hash == 0)
+        {
+            return;
+        }
+
+        caseAnimator.SetTrigger(
+            hash);
     }
 
     private void PlaySound(
@@ -1366,7 +1692,31 @@ public sealed class Case : MonoBehaviour
 
     #endregion
 
-    #region Lifetime
+    #region Timers And Lifetime
+
+    private void UpdateCooldown()
+    {
+        if (cooldownTimer <= 0f)
+            return;
+
+        cooldownTimer =
+            Mathf.Max(
+                0f,
+                cooldownTimer -
+                Time.deltaTime);
+
+        if (cooldownTimer <= 0f &&
+            !openOnlyOnce)
+        {
+            RestoreCollider();
+
+            ChangeState(
+                AreRequirementsSatisfied(
+                    null)
+                    ? CaseState.Ready
+                    : CaseState.Locked);
+        }
+    }
 
     private void ScheduleDestruction()
     {
@@ -1399,19 +1749,193 @@ public sealed class Case : MonoBehaviour
             gameObject);
     }
 
+    #endregion
+
+    #region Runtime Safety
+
+    private bool RunRuntimeSafetyChecks()
+    {
+        if (!ValidateCoreReferences())
+        {
+            ResolveReferences();
+            ConfigureComponents();
+
+            if (!ValidateCoreReferences())
+            {
+                EnterSafetyShutdown(
+                    "Required references could not be restored.");
+
+                return false;
+            }
+        }
+
+        if (!ValidateTransform(
+                transform))
+        {
+            EnterSafetyShutdown(
+                "Case Transform contains invalid values.");
+
+            return false;
+        }
+
+        if (restoreDisabledComponents)
+        {
+            RestoreRequiredComponents();
+        }
+
+        RemoveDestroyedSpawnedItems();
+
+        return true;
+    }
+
+    private void RestoreRequiredComponents()
+    {
+        if (caseCollider != null &&
+            !caseCollider.enabled &&
+            !hasOpened &&
+            !opening)
+        {
+            caseCollider.enabled =
+                true;
+        }
+
+        if (caseAnimator != null &&
+            !caseAnimator.enabled)
+        {
+            caseAnimator.enabled =
+                true;
+        }
+
+        if (audioSource != null &&
+            !audioSource.enabled)
+        {
+            audioSource.enabled =
+                true;
+        }
+    }
+
+    private void EnterSafetyShutdown(
+        string reason)
+    {
+        initialized =
+            false;
+
+        opening =
+            false;
+
+        ChangeState(
+            CaseState.Disabled);
+
+        DisableCollider();
+
+        Debug.LogError(
+            $"{nameof(Case)} entered safety shutdown on '{name}': {reason}",
+            this);
+
+        enabled =
+            false;
+    }
+
+    #endregion
+
+    #region Validation
+
+    private bool ValidateConfiguration()
+    {
+        bool valid =
+            ValidateCoreReferences();
+
+        if (!valid)
+        {
+            Debug.LogError(
+                $"{nameof(Case)} on '{name}' requires a Collider and Spawn Point.",
+                this);
+        }
+
+        return valid;
+    }
+
+    private bool ValidateCoreReferences()
+    {
+        return
+            caseCollider != null &&
+            spawnPoint != null;
+    }
+
+    private bool ValidateTransform(
+        Transform target)
+    {
+        if (target == null)
+            return false;
+
+        Vector3 scale =
+            target.lossyScale;
+
+        return
+            IsFiniteVector(
+                target.position) &&
+            IsFiniteQuaternion(
+                target.rotation) &&
+            IsFiniteVector(
+                scale) &&
+            Mathf.Abs(scale.x) >=
+                minimumValidScale &&
+            Mathf.Abs(scale.y) >=
+                minimumValidScale &&
+            Mathf.Abs(scale.z) >=
+                minimumValidScale;
+    }
+
+    #endregion
+
+    #region Collider And Visuals
+
+    private void DisableCollider()
+    {
+        if (caseCollider != null)
+        {
+            caseCollider.enabled =
+                false;
+        }
+    }
+
+    private void RestoreCollider()
+    {
+        if (caseCollider == null)
+            return;
+
+        caseCollider.enabled =
+            true;
+
+        caseCollider.isTrigger =
+            true;
+    }
+
     private void SetRenderersEnabled(
         bool value)
     {
-        if (caseRenderers == null)
-            return;
-
-        foreach (Renderer caseRenderer
+        foreach (Renderer targetRenderer
                  in caseRenderers)
         {
-            if (caseRenderer != null)
+            if (targetRenderer != null)
             {
-                caseRenderer.enabled =
+                targetRenderer.enabled =
                     value;
+            }
+        }
+    }
+
+    private void RemoveDestroyedSpawnedItems()
+    {
+        for (int index =
+                 spawnedItems.Count - 1;
+             index >= 0;
+             index--)
+        {
+            if (spawnedItems[index] == null)
+            {
+                spawnedItems.RemoveAt(
+                    index);
             }
         }
     }
@@ -1436,10 +1960,8 @@ public sealed class Case : MonoBehaviour
         foreach (Transform descendant
                  in descendants)
         {
-            if (descendant == null)
-                continue;
-
-            if (string.Equals(
+            if (descendant != null &&
+                string.Equals(
                     descendant.name,
                     targetName,
                     StringComparison.OrdinalIgnoreCase))
@@ -1482,29 +2004,15 @@ public sealed class Case : MonoBehaviour
         return false;
     }
 
-    private static bool IsValidTransform(
-        Transform value)
+    private static int GetAnimatorHash(
+        string parameterName)
     {
         return
-            value != null &&
-            value.gameObject.scene.IsValid() &&
-            IsFiniteVector(
-                value.position) &&
-            IsFiniteQuaternion(
-                value.rotation);
-    }
-
-    private static bool IsValidScale(
-        Vector3 scale)
-    {
-        return
-            IsFiniteVector(scale) &&
-            Mathf.Abs(scale.x) >
-                0.0001f &&
-            Mathf.Abs(scale.y) >
-                0.0001f &&
-            Mathf.Abs(scale.z) >
-                0.0001f;
+            string.IsNullOrWhiteSpace(
+                parameterName)
+                ? 0
+                : Animator.StringToHash(
+                    parameterName);
     }
 
     private static bool IsFiniteVector(
