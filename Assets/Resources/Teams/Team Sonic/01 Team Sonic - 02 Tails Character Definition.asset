@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bef732600fcc7c4089929a1d96902a8, type: 3}
+  m_Name: 01 Team Sonic - 02 Tails Character Definition
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterDefinition
+  characterId: sonic
+  displayName: Sonic the Hedgehog
+  characterType: 0
+  movementProfile: {fileID: 11400000, guid: efca56dff12c4e14cadbbf6a20192ff9, type: 2}
+  abilityProfile: {fileID: 11400000, guid: c1cd930c1bf84e34f83c3b590e504f2c, type: 2}
+  animatorProfile: {fileID: 11400000, guid: b07248ab14b8eb94c949464c2b02ecdb, type: 2}
+  presentationProfile: {fileID: 11400000, guid: 8f48ff72470a77045849df4b4828755a, type: 2}
+  automaticSetup: 1
+  createMissingProfiles: 1
+  applyTypePresets: 1
+  resolveProjectAssets: 1
+  logAutomaticSetup: 0

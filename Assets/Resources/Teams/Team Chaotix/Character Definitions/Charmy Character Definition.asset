@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bef732600fcc7c4089929a1d96902a8, type: 3}
+  m_Name: Charmy Character Definition
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterDefinition
+  characterId: charmy
+  displayName: Charmy Bee
+  characterType: 1
+  team: 3
+  movementProfile: {fileID: 11400000, guid: c984e7c487451c54483582d094ff883f, type: 2}
+  abilityProfile: {fileID: 11400000, guid: d635b852bc7116c49b335d176083c2b4, type: 2}
+  animatorProfile: {fileID: 11400000, guid: f01a8d14d4ec3414791d10b09b1d0b4a, type: 2}
+  presentationProfile: {fileID: 11400000, guid: 660dacab3a67d8b44a91634c1e84de57, type: 2}

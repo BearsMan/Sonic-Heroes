@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bef732600fcc7c4089929a1d96902a8, type: 3}
+  m_Name: Amy Character Definition
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterDefinition
+  characterId: amy
+  displayName: Amy Rose
+  characterType: 0
+  movementProfile: {fileID: 11400000, guid: 69fe9677af6740d4fb990ccf36f9193d, type: 2}
+  abilityProfile: {fileID: 11400000, guid: 55eaa60738f8d56488e55c72f46b1451, type: 2}
+  animatorProfile: {fileID: 11400000, guid: 287aa50cd7dc43a42b3c6b6d0dd8ba04, type: 2}
+  presentationProfile: {fileID: 11400000, guid: 758966bc601fc18488a79ea9af608034, type: 2}
+  automaticSetup: 1
+  createMissingProfiles: 1
+  applyTypePresets: 1
+  resolveProjectAssets: 1
+  logAutomaticSetup: 0

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bef732600fcc7c4089929a1d96902a8, type: 3}
+  m_Name: Super Sonic Character Definition
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterDefinition
+  characterId: super-sonic
+  displayName: Super Sonic
+  characterType: 3
+  team: 4
+  movementProfile: {fileID: 11400000, guid: 1ca284724b612fd4db96782468b72681, type: 2}
+  abilityProfile: {fileID: 11400000, guid: d84fdfd36bd5be944989a1060c8fc09b, type: 2}
+  animatorProfile: {fileID: 11400000, guid: 9f64f7272d2f36a4bb6e274a6f0d459e, type: 2}
+  presentationProfile: {fileID: 11400000, guid: e71f300610c585a4099ccf5bb6f70265, type: 2}

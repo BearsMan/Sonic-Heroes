@@ -15113,6 +15113,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5902868125436298692, guid: ada32812af2493843a62dabf9d6fc9dd, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5273166549229177788}
+    - targetCorrespondingSourceObject: {fileID: 5902868125436298692, guid: ada32812af2493843a62dabf9d6fc9dd, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5273166549229177796}
+    - targetCorrespondingSourceObject: {fileID: 5902868125436298692, guid: ada32812af2493843a62dabf9d6fc9dd, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5273166549229177797}
   m_SourcePrefab: {fileID: 100100000, guid: ada32812af2493843a62dabf9d6fc9dd, type: 3}
 --- !u!95 &4743487872056218500 stripped
 Animator:
@@ -15307,7 +15313,70 @@ MonoBehaviour:
   homingTargetMask:
     serializedVersion: 2
     m_Bits: 0
+  railGrinding: {fileID: 0}
   startingState: 0
+  logStateChanges: 0
+--- !u!114 &5273166549229177796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 878578301}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd5914e9e4fe7d942bb6205b4312f12c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HomingAttack
+  movement: {fileID: 0}
+  actionController: {fileID: 0}
+  playerRigidbody: {fileID: 0}
+  animator: {fileID: 0}
+  homingAttackKey: 32
+  readPlayerInput: 1
+  targetLayerMask:
+    serializedVersion: 2
+    m_Bits: 0
+  targetDetectionRadius: 18
+  targetDetectionAngle: 75
+  targetDetectionOffset: {x: 0, y: 1, z: 0}
+  homingSpeed: 32
+  fallbackDashSpeed: 22
+  rotationSmoothness: 18
+  targetReachDistance: 1.25
+  attackDuration: 0.8
+  resetOnGrounded: 1
+  logStateChanges: 0
+  characterSwitch: {fileID: 0}
+--- !u!114 &5273166549229177797
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 878578301}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 54993bcd1c89e034b862fef3d3efb4a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamActionController
+  currentFormation: 0
+  currentAction: 0
+  leftFollower: {fileID: 0}
+  rightFollower: {fileID: 0}
+  speedCharacter: {fileID: 0}
+  flyCharacter: {fileID: 0}
+  powerCharacter: {fileID: 0}
+  movement: {fileID: 0}
+  railGrinding: {fileID: 0}
+  characterSwitch: {fileID: 0}
+  cameraController: {fileID: 0}
+  hud: {fileID: 0}
+  teamBlast: {fileID: 0}
+  readFormationInput: 1
+  speedFormationKey: 49
+  flyFormationKey: 50
+  powerFormationKey: 51
   logStateChanges: 0
 --- !u!1001 &6314119744032867253
 PrefabInstance:
