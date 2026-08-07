@@ -1,0 +1,12 @@
+#
+# Mystic Mansion - Switch Off.mtl
+#
+
+newmtl material_0
+illum 2
+Kd 1.000000 1.000000 1.000000
+Ka 0.200000 0.200000 0.200000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ns 0.000000
+map_Kd m11_ob01.png

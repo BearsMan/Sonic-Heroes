@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3e6c530e335791468887e5c84c75afa, type: 3}
+  m_Name: Super Sonic Ability Profile
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAbilityProfile
+  canJump: 1
+  canRoll: 1
+  canHomingAttack: 1
+  canGrind: 1
+  canFly: 0
+  canGlide: 0
+  canPowerAction: 0
+  canBrake: 1
+  usesSlopeMomentum: 1
+  canLightDash: 1
+  canWallJump: 0
+  canTriangleJump: 0
+  canRocketAccel: 0
+  canInvisibility: 0
+  canThunderShoot: 0
+  canTeamFlight: 0
+  canFireDunk: 0
+  canBodySlam: 0
+  canHammerAttack: 0
+  canChaosControl: 1
+  canChaosAttack: 1
+  canSuperForm: 1
+  canTeamBlast: 1

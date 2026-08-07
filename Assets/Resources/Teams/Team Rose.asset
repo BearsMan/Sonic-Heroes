@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ef92c9281d63d941ac867ab8e5df336, type: 3}
+  m_Name: Team Rose
+  m_EditorClassIdentifier: 
+  playableTeam: 0
+  speedCharacterPrefab: {fileID: 4536657958949979390, guid: 3578a4f1fe9343846bfd96ab6957521b, type: 3}
+  flyingCharacterPrefab: {fileID: 868455505665049775, guid: cd6a59b0fb7c1474db481c0b7ab2792a, type: 3}
+  powerCharacterPrefab: {fileID: 145678956854715314, guid: 41ba6f101c68c3544aa6d73abb3c2998, type: 3}
+  superCharacterPrefab: {fileID: 0}
+  speedCharacterDefinition: {fileID: 11400000, guid: ffda293f93effa24a8f256c8d72f3f3a, type: 2}
+  flyingCharacterDefinition: {fileID: 11400000, guid: 471a2ae58fd15e448abfc5bc727a44e2, type: 2}
+  powerCharacterDefinition: {fileID: 11400000, guid: 9b05180f20b0bb34695fef0644024c08, type: 2}
+  superCharacterDefinition: {fileID: 0}
+  speedCharacterData: {fileID: 11400000, guid: 77b48d98e01f30344a667257abafa54d, type: 2}
+  flyingCharacterData: {fileID: 11400000, guid: 05d6d9a1c72482a46b6f8f5db11e7bbf, type: 2}
+  powerCharacterData: {fileID: 11400000, guid: f75c3a77e2007fc4aa90f625aafb47d9, type: 2}
+  superCharacterData: {fileID: 0}
+  teamIcon: {fileID: -1958199605116832168, guid: 79b62094f70e6df439f242adca055767, type: 3}
+  accentColor: {r: 0, g: 0, b: 0, a: 0}
+  teamBlast: {fileID: 32900000, guid: 4223a213864534f4c9627749d9138a9e, type: 3}

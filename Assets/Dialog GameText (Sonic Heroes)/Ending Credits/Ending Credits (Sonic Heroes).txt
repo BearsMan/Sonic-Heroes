@@ -1,0 +1,299 @@
+Executive Producer
+Hisao Oguchi
+Producer
+Yuji Naka
+Director
+Takashi Iizuka
+Art Director
+Kazuyuki Hoshino
+Main Programmer
+Tetsu Katano
+Main Game Designer
+Shiro Maekawa
+Sound Director
+Jun Senoue
+Player Designer
+Nobuhiko Honda
+Player Motion Designer
+Atsushi Saito
+Player Programmer
+Tetsu Katano
+Level Designers
+Takashi Iizuka
+Eitaro Toyoda
+Stage Programmers
+Takeshi Sakakibara
+Makiko Nishimura
+Tomoyuki Naito
+Field Art Director
+Hiroshi Nishiyama
+Field Artists
+Yoshitaka Miura
+Takahiro Kudo
+Michikazu Tamamura
+Daizo Kinoshita
+Enemy Game Designers
+Shiro Maekawa
+Enemy Designer
+Kazuyuki Hoshino
+Enemy Programmers
+Masato Nakazawa
+Makiko Nishimura
+Makoto Suzuki
+Tetsu Katano
+Special Stage Game Designer
+Kenjiro Morimoto
+Speical Stage Artists
+Kaori Hitsuda
+Michio Abe
+Speical Stage Programmers
+Shinya Matsunami
+Hiroshi Iwasaki
+Masatoshi Shitara
+Scenario Writer
+Shiro Maekawa
+Event Scene Artist
+Nobuhiko Honda
+Story Event Programmer
+Takeshi Sakakibara
+Menu Screen Programmer
+Makoto Suzuki
+Menu Screen Artists
+Yuji Uekawa
+Takeshi Ichimura
+Ryutaro Ishihara
+Medal Co. Ltd.
+Multi Platform Programmer
+Makoto Suzuki
+Multi Platform Artist
+Ryutaro Ishihara
+Development Support
+Yoshitaka Kawabata
+Shinya Matsunami
+Tomonori Fukazawa
+Shun Nakamura
+Soosa Kim
+CG Movie Producer
+Keith Palmer
+CG Movie Director
+Takashi Iizuka
+Story Board Designers
+Shiro Maekawa
+Kazuyuki Hoshino
+CG Movie Art Supports
+Nobuhiko Honda
+Hiroshi Nishiyama
+CG Movie Production
+Vision Scape Inc.
+Clayt Ratzlaff
+Tammy McDonald
+JS Lennox
+Michael J. Sherak
+Dave Riewald
+Andrew Wilson
+John Giordano
+Ryan Benjamin
+Bryan Pritchard
+Steve Lennox
+Paul Anderson
+Sound Designed b
+Wave Master Inc.
+Dolby Digital Pro Logic 2
+Executive Sound Coordinator
+Tatsuya Kousaki
+Lead Music Composer
+Jun Senoue
+Music Composers
+Naofumi Hataya
+Yutaka Minobe
+Tomoya Ohtani
+Keiichi Sugiyama
+Hideaki Kobayashi
+Mariko Nanba
+Teruhiko Nakagawa
+Fumie Kumatani
+Sound Effects
+Jun Senoue
+Takashi Endoh
+Tomonori Sawada
+Tatsuyuki Maeda
+Technical Supervisor
+Shigeharu Isoda
+Theme Songs
+SONIC HEROES: Crush 40
+WE CAN: Ted Poley, Tony Harnell
+THIS MACHINE: Julien-K
+FOLLOW ME: Kay Hanley
+TEAM CHAOTIX: Gunnar Nelson (from the NELSONS)
+WHAT I'M MADE OF: Crush 40
+Coordination Supervisor
+Kazuo Koizumi
+Recording Coordinators
+Jun Senoue
+Atsushi Kosugi (Beat on Beat inc.)
+Akinori Nishiyama
+Keith Palmer
+Recording Engineers
+Stan Katayama
+Masahiro Fukuhara
+Hirokazu Akashi
+Yoshitada Miya
+Surround Mixed at
+Wave Master Studio
+Japanese Voices
+Jun'ichi Kanemaru
+Ryo Hirohashi
+Nobutoshi Canna
+Kouji Yusa
+Rumi Ochiai
+Taiten Kusunoki
+Taeko Kawata
+Sayaka Aoki
+Takashi Nagasako
+Kenta Miyake
+Yuki Masuda
+Youko Teppouzuka
+Etsuko Kozakura
+Chikao Otsuka
+Voice Recording Producer
+Hiroyuki Inage (TOHOKUSHINSHA)
+Voice Recording Director
+Eriko Kimura (TOHOKUSHINSHA)
+Lani Minella
+Recording
+STUDIO UNI
+English Voices
+Ryan Drummond
+William Corkery
+Scott Dreier
+David Humphrey
+Lani Minella
+Jon St. John
+Jenny Douillard
+Sarah Wulfeck
+Marc Biagi
+Bill Corkery
+Emily Corkery
+Deem Bristow
+Voice Recording Editors
+Rick Bowman
+Lethal Sounds
+Voice Files Operation
+Attic Arcade Inc.
+Assistant Producers
+Takao Miyoshi
+Kenjiro Morimoto
+Product Support
+Akinori Nishiyama
+Yuji Uekawa
+Masanobu Yamamoto
+Multi Platform Library
+Criterion Software Ltd.
+Render Ware
+Middleware Support
+CRI Middleware Co. Ltd.
+Masao Oshimi
+Katsumi Yabuno
+ADX
+Sofdec
+Sega Corporation
+President
+Hisao Oguchi
+Consumer Division
+Hideki Okamura
+Masanao Maeda
+Development Division
+Toshihiro Nagoshi
+Toshiro Nakayama
+Yusuke Asano
+Marketing
+Naoko Ooka
+Mariko Takeda
+Hideki Youkaichiya
+Public Relations
+Yasushi Nagumo
+Yoko Nagasawa
+International Business
+Tatsuyuki Miyazaki
+Yusuke Sua
+Creative Center
+Takashi Ando
+Kazuyoshi Hara
+Ryo Suenaga
+Tooru Sasaki
+Yuki Kobayashi
+Noriyuki Tarumi
+Customer Relationship
+Yutaka Shoji
+Nobuyuki Inou
+TEST Department
+Junichi Shimizu
+Akira Nishikawa
+Akira Terasawa
+Satoshi Kuwano
+QC Department
+Kazuhiko Morii
+Yuji Nakamura
+Sega of America, Inc.
+President and COO
+Hideaki Irie
+Localization Producer
+Yosuke Moriya
+Director of PD
+Osamu Shibamiya
+Sr. Release Manager
+Andrei Belkin
+Product Manager
+Noah Musler
+Marketing Consultant
+Lori Von Rueden
+Advertising Manager
+Teri Higgins
+Creative Services
+Arianne McCarthy
+Public Relations Manager
+Bret Blount
+Director of QA
+Deborah Kirkham
+Offshore Project Manager
+Shawn Dobbins
+Sega Europe, Ltd.
+President and COO
+Naoya Tsurumi
+Executive Vice President
+Jin Shimazaki
+Mike Sherlock
+Senior Producer
+Matt O'Driscol
+Localization Producer
+Kuniyo Matsumoto
+Technical Producer
+Elliot Martin
+Marketing Director
+Matthew Woodley
+Marketing Manager
+Gary Knight
+Product Manager
+Mathew Quaeck
+Translators
+Giuseppe Rizzo
+Brigitte Nadesan
+Marta Lois González
+Zuzanna Zabkova
+Quality Assurance
+Darius Sadeghian
+David Smith
+Roy Boateng
+Chris Geiles
+Special Thanks
+Shinobu Toyoda
+Yukio Aoyama
+Atsushi Kanno
+Masaya Amano
+Mizuki Hosoyamada
+Sachiko Kawamura
+Yasuko Maruyama
+Tomomi Siverman
+Mizuki FriedMan
+ESP Guitars
+LINE 6

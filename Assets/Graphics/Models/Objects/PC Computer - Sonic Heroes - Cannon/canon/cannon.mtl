@@ -1,0 +1,30 @@
+# Created by Metasequoia
+
+newmtl Material_2
+Ka 0.35250 0.35250 0.35250
+Kd 0.47000 0.47000 0.47000
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd obj_a0.png
+
+newmtl Material_3
+Ka 0.35250 0.35250 0.35250
+Kd 0.47000 0.47000 0.47000
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd obj_bob1.png
+
+newmtl Material_4
+Ka 0.35250 0.35250 0.35250
+Kd 0.47000 0.47000 0.47000
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd obj_dshr.png
+
+newmtl mat1
+Ka 0.35250 0.35250 0.35250
+Kd 0.47000 0.47000 0.47000
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd obj_dsr2.png
+

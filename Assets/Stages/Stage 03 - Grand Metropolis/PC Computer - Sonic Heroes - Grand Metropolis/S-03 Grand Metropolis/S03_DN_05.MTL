@@ -1,0 +1,5 @@
+#Exported by HeroesModelTool
+newmtl s03_so2_m
+	map_Kd s03_so2.png
+newmtl s03_so3_m
+	map_Kd s03_so3.png

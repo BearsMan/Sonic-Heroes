@@ -1,0 +1,21 @@
+using UnityEngine;
+
+public class SplashScreen : MonoBehaviour
+{
+    public GameObject mainMenu;
+    // Start is called before the first frame update
+    void Start()
+    {
+
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (Input.anyKeyDown)
+        {
+            mainMenu.SetActive(true);
+            gameObject.SetActive(false);
+        }
+    }
+}

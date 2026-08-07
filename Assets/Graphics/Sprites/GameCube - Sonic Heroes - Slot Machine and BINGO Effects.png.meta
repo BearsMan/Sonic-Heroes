@@ -1,0 +1,985 @@
+fileFormatVersion: 2
+guid: cec4216a50a8d854ebaf78a87e6a4850
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 5132773109251443578
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_0
+  - first:
+      213: -8040124624591561099
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_1
+  - first:
+      213: 8867642765061359542
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_2
+  - first:
+      213: 6876200529451420006
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_3
+  - first:
+      213: -3922837961147881877
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_4
+  - first:
+      213: 4973962310881349917
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_5
+  - first:
+      213: -1987329829023044521
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_6
+  - first:
+      213: -7131586560220591283
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_7
+  - first:
+      213: -5783976167295138017
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_8
+  - first:
+      213: -4486458393407830081
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_9
+  - first:
+      213: -889671386554361409
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_10
+  - first:
+      213: 6313875887533402120
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_11
+  - first:
+      213: -5598791813454366049
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_12
+  - first:
+      213: -4559402884687957589
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_13
+  - first:
+      213: 2370319621451401154
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_14
+  - first:
+      213: 107080749103447656
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_15
+  - first:
+      213: 4635893655208519386
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_16
+  - first:
+      213: 5135162773426540154
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_17
+  - first:
+      213: -1049221492554839101
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_18
+  - first:
+      213: 8265859908265685340
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_19
+  - first:
+      213: -8995209996036875125
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_20
+  - first:
+      213: -8245106751602353046
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_21
+  - first:
+      213: -2471783967192323104
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_22
+  - first:
+      213: -758830094399697251
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_23
+  - first:
+      213: -5517407832439842258
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_24
+  - first:
+      213: -1235211402467721463
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_25
+  - first:
+      213: 1802141800204525352
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_26
+  - first:
+      213: -6984781680672738927
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_27
+  - first:
+      213: 3826047873480648015
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_28
+  - first:
+      213: -5404988570489014331
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_29
+  - first:
+      213: -432889447018663496
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_30
+  - first:
+      213: 8818552813081955046
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_31
+  - first:
+      213: 5690780708817419695
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_32
+  - first:
+      213: -5913442114829534852
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_33
+  - first:
+      213: -5041223961311290930
+    second: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_34
+  externalObjects: {}
+  serializedVersion: 11
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMasterTextureLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 0
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_0
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 307
+        width: 71
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a7b0c91c2f54b3740800000000000000
+      internalID: 5132773109251443578
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_1
+      rect:
+        serializedVersion: 2
+        x: 73
+        y: 307
+        width: 27
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 57e5959904dbb6090800000000000000
+      internalID: -8040124624591561099
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_2
+      rect:
+        serializedVersion: 2
+        x: 101
+        y: 307
+        width: 28
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6b78b8eac12301b70800000000000000
+      internalID: 8867642765061359542
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_3
+      rect:
+        serializedVersion: 2
+        x: 134
+        y: 307
+        width: 20
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6690e4a23fb2d6f50800000000000000
+      internalID: 6876200529451420006
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_4
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 270
+        width: 19
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b66ec5e88a74f89c0800000000000000
+      internalID: -3922837961147881877
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_5
+      rect:
+        serializedVersion: 2
+        x: 25
+        y: 270
+        width: 30
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d11934a5e50170540800000000000000
+      internalID: 4973962310881349917
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_6
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 270
+        width: 30
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 75c2b81cc069b64e0800000000000000
+      internalID: -1987329829023044521
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_7
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 233
+        width: 30
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d4b0a19eec3870d90800000000000000
+      internalID: -7131586560220591283
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_8
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 233
+        width: 29
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f174c0712503bbfa0800000000000000
+      internalID: -5783976167295138017
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_9
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 233
+        width: 30
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fb74b598cd5ecb1c0800000000000000
+      internalID: -4486458393407830081
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_10
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 233
+        width: 30
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fb9199d669047a3f0800000000000000
+      internalID: -889671386554361409
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_11
+      rect:
+        serializedVersion: 2
+        x: 127
+        y: 233
+        width: 29
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8082558daa46f9750800000000000000
+      internalID: 6313875887533402120
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_12
+      rect:
+        serializedVersion: 2
+        x: 159
+        y: 233
+        width: 29
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f9affa362881d42b0800000000000000
+      internalID: -5598791813454366049
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_13
+      rect:
+        serializedVersion: 2
+        x: 190
+        y: 233
+        width: 30
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ba1784eab3fb9b0c0800000000000000
+      internalID: -4559402884687957589
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_14
+      rect:
+        serializedVersion: 2
+        x: 225
+        y: 233
+        width: 20
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2c7cfb0232115e020800000000000000
+      internalID: 2370319621451401154
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_15
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 198
+        width: 30
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 86ef79cbf5d6c7100800000000000000
+      internalID: 107080749103447656
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_16
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 198
+        width: 17
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ad6e037a7b0065040800000000000000
+      internalID: 4635893655208519386
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_17
+      rect:
+        serializedVersion: 2
+        x: 58
+        y: 198
+        width: 28
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a7e06edc553c34740800000000000000
+      internalID: 5135162773426540154
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_18
+      rect:
+        serializedVersion: 2
+        x: 91
+        y: 198
+        width: 29
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3cb409d8c9a6071f0800000000000000
+      internalID: -1049221492554839101
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_19
+      rect:
+        serializedVersion: 2
+        x: 125
+        y: 198
+        width: 29
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c51b15bcacb36b270800000000000000
+      internalID: 8265859908265685340
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_20
+      rect:
+        serializedVersion: 2
+        x: 159
+        y: 198
+        width: 28
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b8cdd22da289a2380800000000000000
+      internalID: -8995209996036875125
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_21
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 198
+        width: 29
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a6c1197081f739d80800000000000000
+      internalID: -8245106751602353046
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_22
+      rect:
+        serializedVersion: 2
+        x: 226
+        y: 198
+        width: 28
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0ebeef1f39572bdd0800000000000000
+      internalID: -2471783967192323104
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_23
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 163
+        width: 30
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d9e0e62bc081875f0800000000000000
+      internalID: -758830094399697251
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_24
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 163
+        width: 17
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e2a17721fca3e63b0800000000000000
+      internalID: -5517407832439842258
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_25
+      rect:
+        serializedVersion: 2
+        x: 58
+        y: 163
+        width: 28
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 90f366d16c5abdee0800000000000000
+      internalID: -1235211402467721463
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_26
+      rect:
+        serializedVersion: 2
+        x: 91
+        y: 163
+        width: 28
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 82fd21c4b6e720910800000000000000
+      internalID: 1802141800204525352
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_27
+      rect:
+        serializedVersion: 2
+        x: 124
+        y: 171
+        width: 25
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 19178d18112111f90800000000000000
+      internalID: -6984781680672738927
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_28
+      rect:
+        serializedVersion: 2
+        x: 157
+        y: 161
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f45e378054ad81530800000000000000
+      internalID: 3826047873480648015
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_29
+      rect:
+        serializedVersion: 2
+        x: 193
+        y: 133
+        width: 61
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5c7b4f0388f9df4b0800000000000000
+      internalID: -5404988570489014331
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_30
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 126
+        width: 28
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8b1ff6b67511ef9f0800000000000000
+      internalID: -432889447018663496
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_31
+      rect:
+        serializedVersion: 2
+        x: 35
+        y: 126
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6ea85c09f0bc16a70800000000000000
+      internalID: 8818552813081955046
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_32
+      rect:
+        serializedVersion: 2
+        x: 72
+        y: 126
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fad35b357e6b9fe40800000000000000
+      internalID: 5690780708817419695
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_33
+      rect:
+        serializedVersion: 2
+        x: 109
+        y: 126
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c7930c13abb3feda0800000000000000
+      internalID: -5913442114829534852
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Slot Machine and BINGO Effects_34
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 0
+        width: 158
+        height: 121
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ec95ad84489f90ab0800000000000000
+      internalID: -5041223961311290930
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_17: 5135162773426540154
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_25: -1235211402467721463
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_0: 5132773109251443578
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_11: 6313875887533402120
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_3: 6876200529451420006
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_15: 107080749103447656
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_18: -1049221492554839101
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_20: -8995209996036875125
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_10: -889671386554361409
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_23: -758830094399697251
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_29: -5404988570489014331
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_1: -8040124624591561099
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_14: 2370319621451401154
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_31: 8818552813081955046
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_9: -4486458393407830081
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_5: 4973962310881349917
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_28: 3826047873480648015
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_6: -1987329829023044521
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_32: 5690780708817419695
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_24: -5517407832439842258
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_16: 4635893655208519386
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_7: -7131586560220591283
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_27: -6984781680672738927
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_22: -2471783967192323104
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_2: 8867642765061359542
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_33: -5913442114829534852
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_26: 1802141800204525352
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_13: -4559402884687957589
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_4: -3922837961147881877
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_21: -8245106751602353046
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_8: -5783976167295138017
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_30: -432889447018663496
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_19: 8265859908265685340
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_12: -5598791813454366049
+      GameCube - Sonic Heroes - Slot Machine and BINGO Effects_34: -5041223961311290930
+  spritePackingTag: 
+  pSDRemoveMatte: 0
+  pSDShowRemoveMatteOption: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

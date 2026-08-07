@@ -1,0 +1,5160 @@
+fileFormatVersion: 2
+guid: c475aa33e01f4034ebe656e6f751ac71
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -2380982172168434709
+    second: GameCube - Sonic Heroes - PC Cursors_0
+  - first:
+      213: -8886895105669781431
+    second: GameCube - Sonic Heroes - PC Cursors_1
+  - first:
+      213: 8545899396148057320
+    second: GameCube - Sonic Heroes - PC Cursors_2
+  - first:
+      213: 2713944944743626993
+    second: GameCube - Sonic Heroes - PC Cursors_3
+  - first:
+      213: -7981520141598533047
+    second: GameCube - Sonic Heroes - PC Cursors_4
+  - first:
+      213: 7535695219461308589
+    second: GameCube - Sonic Heroes - PC Cursors_5
+  - first:
+      213: 9188683256314385442
+    second: GameCube - Sonic Heroes - PC Cursors_6
+  - first:
+      213: 6923672699935146948
+    second: GameCube - Sonic Heroes - PC Cursors_7
+  - first:
+      213: 1361851855867744836
+    second: GameCube - Sonic Heroes - PC Cursors_8
+  - first:
+      213: -8625144178782141496
+    second: GameCube - Sonic Heroes - PC Cursors_9
+  - first:
+      213: -5061504171391711142
+    second: GameCube - Sonic Heroes - PC Cursors_10
+  - first:
+      213: -326695013312545299
+    second: GameCube - Sonic Heroes - PC Cursors_11
+  - first:
+      213: 730142635480126237
+    second: GameCube - Sonic Heroes - PC Cursors_12
+  - first:
+      213: -8411371067503547792
+    second: GameCube - Sonic Heroes - PC Cursors_13
+  - first:
+      213: 5753700636922174917
+    second: GameCube - Sonic Heroes - PC Cursors_14
+  - first:
+      213: -3794790480850517027
+    second: GameCube - Sonic Heroes - PC Cursors_15
+  - first:
+      213: 6526877106571659719
+    second: GameCube - Sonic Heroes - PC Cursors_16
+  - first:
+      213: -3818962596722388238
+    second: GameCube - Sonic Heroes - PC Cursors_17
+  - first:
+      213: -5702319375946645182
+    second: GameCube - Sonic Heroes - PC Cursors_18
+  - first:
+      213: -4903841351036790019
+    second: GameCube - Sonic Heroes - PC Cursors_19
+  - first:
+      213: 2879048637981368146
+    second: GameCube - Sonic Heroes - PC Cursors_20
+  - first:
+      213: -8607874307696969804
+    second: GameCube - Sonic Heroes - PC Cursors_21
+  - first:
+      213: -2089022276199281838
+    second: GameCube - Sonic Heroes - PC Cursors_22
+  - first:
+      213: -1561681913564517712
+    second: GameCube - Sonic Heroes - PC Cursors_23
+  - first:
+      213: -5045841002185128680
+    second: GameCube - Sonic Heroes - PC Cursors_24
+  - first:
+      213: 4304504372581155896
+    second: GameCube - Sonic Heroes - PC Cursors_25
+  - first:
+      213: 8600460833911801793
+    second: GameCube - Sonic Heroes - PC Cursors_26
+  - first:
+      213: 9135486419328060638
+    second: GameCube - Sonic Heroes - PC Cursors_27
+  - first:
+      213: -4560624988037293759
+    second: GameCube - Sonic Heroes - PC Cursors_28
+  - first:
+      213: -6670840680289298016
+    second: GameCube - Sonic Heroes - PC Cursors_29
+  - first:
+      213: 1584929628252646522
+    second: GameCube - Sonic Heroes - PC Cursors_30
+  - first:
+      213: -8800173635157977881
+    second: GameCube - Sonic Heroes - PC Cursors_31
+  - first:
+      213: 2748153058795074888
+    second: GameCube - Sonic Heroes - PC Cursors_32
+  - first:
+      213: 8906926888431463826
+    second: GameCube - Sonic Heroes - PC Cursors_33
+  - first:
+      213: 2714302085734963614
+    second: GameCube - Sonic Heroes - PC Cursors_34
+  - first:
+      213: 4012930979658830954
+    second: GameCube - Sonic Heroes - PC Cursors_35
+  - first:
+      213: -5423964581966415720
+    second: GameCube - Sonic Heroes - PC Cursors_36
+  - first:
+      213: 4702410940851000572
+    second: GameCube - Sonic Heroes - PC Cursors_37
+  - first:
+      213: 1265130588608281981
+    second: GameCube - Sonic Heroes - PC Cursors_38
+  - first:
+      213: 5725438234922118991
+    second: GameCube - Sonic Heroes - PC Cursors_39
+  - first:
+      213: 8867376994961026983
+    second: GameCube - Sonic Heroes - PC Cursors_40
+  - first:
+      213: 7252285843262668910
+    second: GameCube - Sonic Heroes - PC Cursors_41
+  - first:
+      213: -5503576862644585240
+    second: GameCube - Sonic Heroes - PC Cursors_42
+  - first:
+      213: -1526625655666574633
+    second: GameCube - Sonic Heroes - PC Cursors_43
+  - first:
+      213: -1188663195477533898
+    second: GameCube - Sonic Heroes - PC Cursors_44
+  - first:
+      213: 6298015689486665061
+    second: GameCube - Sonic Heroes - PC Cursors_45
+  - first:
+      213: -6609475547168405885
+    second: GameCube - Sonic Heroes - PC Cursors_46
+  - first:
+      213: -6977853370904003272
+    second: GameCube - Sonic Heroes - PC Cursors_47
+  - first:
+      213: 3790248540781617796
+    second: GameCube - Sonic Heroes - PC Cursors_48
+  - first:
+      213: -4539731406011473519
+    second: GameCube - Sonic Heroes - PC Cursors_49
+  - first:
+      213: 7343526351470603556
+    second: GameCube - Sonic Heroes - PC Cursors_50
+  - first:
+      213: -1420168755907648887
+    second: GameCube - Sonic Heroes - PC Cursors_51
+  - first:
+      213: -4847472743604710748
+    second: GameCube - Sonic Heroes - PC Cursors_52
+  - first:
+      213: 1679579947668949533
+    second: GameCube - Sonic Heroes - PC Cursors_53
+  - first:
+      213: 3140525071774430095
+    second: GameCube - Sonic Heroes - PC Cursors_54
+  - first:
+      213: -6808073972456091059
+    second: GameCube - Sonic Heroes - PC Cursors_55
+  - first:
+      213: 4858859963315612302
+    second: GameCube - Sonic Heroes - PC Cursors_56
+  - first:
+      213: 1968895492834517678
+    second: GameCube - Sonic Heroes - PC Cursors_57
+  - first:
+      213: -1823472679396565326
+    second: GameCube - Sonic Heroes - PC Cursors_58
+  - first:
+      213: 5018318993206316213
+    second: GameCube - Sonic Heroes - PC Cursors_59
+  - first:
+      213: -3794672993796530441
+    second: GameCube - Sonic Heroes - PC Cursors_60
+  - first:
+      213: -7053236854984829020
+    second: GameCube - Sonic Heroes - PC Cursors_61
+  - first:
+      213: 7830321067451872143
+    second: GameCube - Sonic Heroes - PC Cursors_62
+  - first:
+      213: 294624318567603033
+    second: GameCube - Sonic Heroes - PC Cursors_63
+  - first:
+      213: -7494958471036479147
+    second: GameCube - Sonic Heroes - PC Cursors_64
+  - first:
+      213: 1371897127806887018
+    second: GameCube - Sonic Heroes - PC Cursors_65
+  - first:
+      213: 8186396175377249120
+    second: GameCube - Sonic Heroes - PC Cursors_66
+  - first:
+      213: 2836300312554964097
+    second: GameCube - Sonic Heroes - PC Cursors_67
+  - first:
+      213: 2902342871906149322
+    second: GameCube - Sonic Heroes - PC Cursors_68
+  - first:
+      213: 1895919978743936663
+    second: GameCube - Sonic Heroes - PC Cursors_69
+  - first:
+      213: 7655276750204423569
+    second: GameCube - Sonic Heroes - PC Cursors_70
+  - first:
+      213: -899411987581745182
+    second: GameCube - Sonic Heroes - PC Cursors_71
+  - first:
+      213: 6626029447514685652
+    second: GameCube - Sonic Heroes - PC Cursors_72
+  - first:
+      213: -310381364677717973
+    second: GameCube - Sonic Heroes - PC Cursors_73
+  - first:
+      213: -1017883816823122336
+    second: GameCube - Sonic Heroes - PC Cursors_74
+  - first:
+      213: 343465245733697044
+    second: GameCube - Sonic Heroes - PC Cursors_75
+  - first:
+      213: 6341698183175219898
+    second: GameCube - Sonic Heroes - PC Cursors_76
+  - first:
+      213: -38819034883388789
+    second: GameCube - Sonic Heroes - PC Cursors_77
+  - first:
+      213: -256982220557348064
+    second: GameCube - Sonic Heroes - PC Cursors_78
+  - first:
+      213: -3981180632355959376
+    second: GameCube - Sonic Heroes - PC Cursors_79
+  - first:
+      213: 484777502162898510
+    second: GameCube - Sonic Heroes - PC Cursors_80
+  - first:
+      213: -419790448722952693
+    second: GameCube - Sonic Heroes - PC Cursors_81
+  - first:
+      213: 6690794999043937156
+    second: GameCube - Sonic Heroes - PC Cursors_82
+  - first:
+      213: 733480126549572317
+    second: GameCube - Sonic Heroes - PC Cursors_83
+  - first:
+      213: -4420008149619296836
+    second: GameCube - Sonic Heroes - PC Cursors_84
+  - first:
+      213: -6743144637690338162
+    second: GameCube - Sonic Heroes - PC Cursors_85
+  - first:
+      213: -8234631802364125062
+    second: GameCube - Sonic Heroes - PC Cursors_86
+  - first:
+      213: -8974235620275655003
+    second: GameCube - Sonic Heroes - PC Cursors_87
+  - first:
+      213: -7646782269048758411
+    second: GameCube - Sonic Heroes - PC Cursors_88
+  - first:
+      213: -8689914617717299910
+    second: GameCube - Sonic Heroes - PC Cursors_89
+  - first:
+      213: -8256702822437415164
+    second: GameCube - Sonic Heroes - PC Cursors_90
+  - first:
+      213: -1080987607624708511
+    second: GameCube - Sonic Heroes - PC Cursors_91
+  - first:
+      213: -6112299289672113194
+    second: GameCube - Sonic Heroes - PC Cursors_92
+  - first:
+      213: -4278688281973629594
+    second: GameCube - Sonic Heroes - PC Cursors_93
+  - first:
+      213: 7519576298126387375
+    second: GameCube - Sonic Heroes - PC Cursors_94
+  - first:
+      213: -7180861825865268948
+    second: GameCube - Sonic Heroes - PC Cursors_95
+  - first:
+      213: 836518467953920669
+    second: GameCube - Sonic Heroes - PC Cursors_96
+  - first:
+      213: -5242081669228572635
+    second: GameCube - Sonic Heroes - PC Cursors_97
+  - first:
+      213: 7821696420098077740
+    second: GameCube - Sonic Heroes - PC Cursors_98
+  - first:
+      213: -7978714201115909190
+    second: GameCube - Sonic Heroes - PC Cursors_99
+  - first:
+      213: 5982610849061775882
+    second: GameCube - Sonic Heroes - PC Cursors_100
+  - first:
+      213: 2518826846887200792
+    second: GameCube - Sonic Heroes - PC Cursors_101
+  - first:
+      213: -5450709276385687112
+    second: GameCube - Sonic Heroes - PC Cursors_102
+  - first:
+      213: 6157520591211928489
+    second: GameCube - Sonic Heroes - PC Cursors_103
+  - first:
+      213: -3849379160345070966
+    second: GameCube - Sonic Heroes - PC Cursors_104
+  - first:
+      213: -8583692611018274376
+    second: GameCube - Sonic Heroes - PC Cursors_105
+  - first:
+      213: -8949924793513575113
+    second: GameCube - Sonic Heroes - PC Cursors_106
+  - first:
+      213: 6736900847290153641
+    second: GameCube - Sonic Heroes - PC Cursors_107
+  - first:
+      213: -7614554150565898945
+    second: GameCube - Sonic Heroes - PC Cursors_108
+  - first:
+      213: -8399945338005237435
+    second: GameCube - Sonic Heroes - PC Cursors_109
+  - first:
+      213: -704839688600340775
+    second: GameCube - Sonic Heroes - PC Cursors_110
+  - first:
+      213: -1405914666134932153
+    second: GameCube - Sonic Heroes - PC Cursors_111
+  - first:
+      213: -7824605958077114567
+    second: GameCube - Sonic Heroes - PC Cursors_112
+  - first:
+      213: 7943042897556751149
+    second: GameCube - Sonic Heroes - PC Cursors_113
+  - first:
+      213: 8959932286936716166
+    second: GameCube - Sonic Heroes - PC Cursors_114
+  - first:
+      213: 5881759517535401607
+    second: GameCube - Sonic Heroes - PC Cursors_115
+  - first:
+      213: 6983381863684732768
+    second: GameCube - Sonic Heroes - PC Cursors_116
+  - first:
+      213: 2211202444872561907
+    second: GameCube - Sonic Heroes - PC Cursors_117
+  - first:
+      213: 6882933207320036020
+    second: GameCube - Sonic Heroes - PC Cursors_118
+  - first:
+      213: 1515644661909348392
+    second: GameCube - Sonic Heroes - PC Cursors_119
+  - first:
+      213: -7391553568628354880
+    second: GameCube - Sonic Heroes - PC Cursors_120
+  - first:
+      213: -8941204072170352479
+    second: GameCube - Sonic Heroes - PC Cursors_121
+  - first:
+      213: 2594536894050909979
+    second: GameCube - Sonic Heroes - PC Cursors_122
+  - first:
+      213: -2693426924243105530
+    second: GameCube - Sonic Heroes - PC Cursors_123
+  - first:
+      213: 605567469910467923
+    second: GameCube - Sonic Heroes - PC Cursors_124
+  - first:
+      213: -3836452786137708923
+    second: GameCube - Sonic Heroes - PC Cursors_125
+  - first:
+      213: 5731542930654308418
+    second: GameCube - Sonic Heroes - PC Cursors_126
+  - first:
+      213: 4306018793103115423
+    second: GameCube - Sonic Heroes - PC Cursors_127
+  - first:
+      213: 3922488557967454094
+    second: GameCube - Sonic Heroes - PC Cursors_128
+  - first:
+      213: -1626949320768110082
+    second: GameCube - Sonic Heroes - PC Cursors_129
+  - first:
+      213: 3470209660627247512
+    second: GameCube - Sonic Heroes - PC Cursors_130
+  - first:
+      213: -6864667395799415937
+    second: GameCube - Sonic Heroes - PC Cursors_131
+  - first:
+      213: -3861293307869306747
+    second: GameCube - Sonic Heroes - PC Cursors_132
+  - first:
+      213: -32577022766169716
+    second: GameCube - Sonic Heroes - PC Cursors_133
+  - first:
+      213: 7692696302896823790
+    second: GameCube - Sonic Heroes - PC Cursors_134
+  - first:
+      213: 1182984282572756341
+    second: GameCube - Sonic Heroes - PC Cursors_135
+  - first:
+      213: -6953629547243969821
+    second: GameCube - Sonic Heroes - PC Cursors_136
+  - first:
+      213: 6344815755383849717
+    second: GameCube - Sonic Heroes - PC Cursors_137
+  - first:
+      213: 3168513890258286153
+    second: GameCube - Sonic Heroes - PC Cursors_138
+  - first:
+      213: -3875222416713878598
+    second: GameCube - Sonic Heroes - PC Cursors_139
+  - first:
+      213: 4135987581978513773
+    second: GameCube - Sonic Heroes - PC Cursors_140
+  - first:
+      213: 6691831355473878443
+    second: GameCube - Sonic Heroes - PC Cursors_141
+  - first:
+      213: -6000941231472899214
+    second: GameCube - Sonic Heroes - PC Cursors_142
+  - first:
+      213: 3381295810320556249
+    second: GameCube - Sonic Heroes - PC Cursors_143
+  - first:
+      213: 6823379642940920692
+    second: GameCube - Sonic Heroes - PC Cursors_144
+  - first:
+      213: -287917718222347287
+    second: GameCube - Sonic Heroes - PC Cursors_145
+  - first:
+      213: 2469551235046337708
+    second: GameCube - Sonic Heroes - PC Cursors_146
+  - first:
+      213: 1668718192389878994
+    second: GameCube - Sonic Heroes - PC Cursors_147
+  - first:
+      213: 6595889514899540588
+    second: GameCube - Sonic Heroes - PC Cursors_148
+  - first:
+      213: 4291635143770738964
+    second: GameCube - Sonic Heroes - PC Cursors_149
+  - first:
+      213: -4418249796302426987
+    second: GameCube - Sonic Heroes - PC Cursors_150
+  - first:
+      213: -6788808530002701461
+    second: GameCube - Sonic Heroes - PC Cursors_151
+  - first:
+      213: -7140524103476664320
+    second: GameCube - Sonic Heroes - PC Cursors_152
+  - first:
+      213: -2048200863344445192
+    second: GameCube - Sonic Heroes - PC Cursors_153
+  - first:
+      213: 6290457851533087346
+    second: GameCube - Sonic Heroes - PC Cursors_154
+  - first:
+      213: 1628160615329456437
+    second: GameCube - Sonic Heroes - PC Cursors_155
+  - first:
+      213: -54091319430222852
+    second: GameCube - Sonic Heroes - PC Cursors_156
+  - first:
+      213: 7239491272172265438
+    second: GameCube - Sonic Heroes - PC Cursors_157
+  - first:
+      213: 8313932499958914983
+    second: GameCube - Sonic Heroes - PC Cursors_158
+  - first:
+      213: 2741135823240958344
+    second: GameCube - Sonic Heroes - PC Cursors_159
+  - first:
+      213: 5244893648817143739
+    second: GameCube - Sonic Heroes - PC Cursors_160
+  - first:
+      213: 3351808727956615125
+    second: GameCube - Sonic Heroes - PC Cursors_161
+  - first:
+      213: -6394141936919743187
+    second: GameCube - Sonic Heroes - PC Cursors_162
+  - first:
+      213: 3758674103948054983
+    second: GameCube - Sonic Heroes - PC Cursors_163
+  - first:
+      213: 4462926981586839911
+    second: GameCube - Sonic Heroes - PC Cursors_164
+  - first:
+      213: 324054773136535014
+    second: GameCube - Sonic Heroes - PC Cursors_165
+  - first:
+      213: -7312877413160986864
+    second: GameCube - Sonic Heroes - PC Cursors_166
+  - first:
+      213: 4536570281724804834
+    second: GameCube - Sonic Heroes - PC Cursors_167
+  - first:
+      213: 4090481923580043610
+    second: GameCube - Sonic Heroes - PC Cursors_168
+  - first:
+      213: 758383813847444220
+    second: GameCube - Sonic Heroes - PC Cursors_169
+  - first:
+      213: -5991586552375652325
+    second: GameCube - Sonic Heroes - PC Cursors_170
+  - first:
+      213: -5190880662943916538
+    second: GameCube - Sonic Heroes - PC Cursors_171
+  - first:
+      213: 184395290876300635
+    second: GameCube - Sonic Heroes - PC Cursors_172
+  - first:
+      213: -5353203361448847624
+    second: GameCube - Sonic Heroes - PC Cursors_173
+  - first:
+      213: -840612190258598265
+    second: GameCube - Sonic Heroes - PC Cursors_174
+  - first:
+      213: 7419553222845630215
+    second: GameCube - Sonic Heroes - PC Cursors_175
+  - first:
+      213: 8302101459035000220
+    second: GameCube - Sonic Heroes - PC Cursors_176
+  - first:
+      213: -5147841036744744868
+    second: GameCube - Sonic Heroes - PC Cursors_177
+  - first:
+      213: 1999729230290960868
+    second: GameCube - Sonic Heroes - PC Cursors_178
+  - first:
+      213: -7018865534824732892
+    second: GameCube - Sonic Heroes - PC Cursors_179
+  - first:
+      213: 5065026304814267705
+    second: GameCube - Sonic Heroes - PC Cursors_180
+  - first:
+      213: -5095121403379383748
+    second: GameCube - Sonic Heroes - PC Cursors_181
+  - first:
+      213: 4221189017223032631
+    second: GameCube - Sonic Heroes - PC Cursors_182
+  - first:
+      213: 8227495002662106583
+    second: GameCube - Sonic Heroes - PC Cursors_183
+  - first:
+      213: -8433493885364760626
+    second: GameCube - Sonic Heroes - PC Cursors_184
+  - first:
+      213: 4344940762986703356
+    second: GameCube - Sonic Heroes - PC Cursors_185
+  - first:
+      213: -7626168478657708410
+    second: GameCube - Sonic Heroes - PC Cursors_186
+  - first:
+      213: 3270017675708941554
+    second: GameCube - Sonic Heroes - PC Cursors_187
+  - first:
+      213: 8276101047313202145
+    second: GameCube - Sonic Heroes - PC Cursors_188
+  - first:
+      213: 7268978861541414703
+    second: GameCube - Sonic Heroes - PC Cursors_189
+  - first:
+      213: -8252980222571916511
+    second: GameCube - Sonic Heroes - PC Cursors_190
+  - first:
+      213: 5951704102544651401
+    second: GameCube - Sonic Heroes - PC Cursors_191
+  - first:
+      213: 1023161114334811962
+    second: GameCube - Sonic Heroes - PC Cursors_192
+  - first:
+      213: 6231482289748371774
+    second: GameCube - Sonic Heroes - PC Cursors_193
+  - first:
+      213: 994824921267076671
+    second: GameCube - Sonic Heroes - PC Cursors_194
+  - first:
+      213: -6477014414834996318
+    second: GameCube - Sonic Heroes - PC Cursors_195
+  - first:
+      213: -2089627791032473985
+    second: GameCube - Sonic Heroes - PC Cursors_196
+  - first:
+      213: -1965739714421420795
+    second: GameCube - Sonic Heroes - PC Cursors_197
+  - first:
+      213: 3641911964159683000
+    second: GameCube - Sonic Heroes - PC Cursors_198
+  - first:
+      213: 7909948117002078862
+    second: GameCube - Sonic Heroes - PC Cursors_199
+  - first:
+      213: 8003184769850482975
+    second: GameCube - Sonic Heroes - PC Cursors_200
+  - first:
+      213: -3573650753982502880
+    second: GameCube - Sonic Heroes - PC Cursors_201
+  externalObjects: {}
+  serializedVersion: 11
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMasterTextureLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 0
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 360
+        width: 19
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bebcc53545d05fed0800000000000000
+      internalID: -2380982172168434709
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_1
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 361
+        width: 21
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 94825667cf76ba480800000000000000
+      internalID: -8886895105669781431
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_2
+      rect:
+        serializedVersion: 2
+        x: 42
+        y: 360
+        width: 20
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8e451a10932299670800000000000000
+      internalID: 8545899396148057320
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_3
+      rect:
+        serializedVersion: 2
+        x: 63
+        y: 360
+        width: 20
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1f839635c8ed9a520800000000000000
+      internalID: 2713944944743626993
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_4
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 360
+        width: 19
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 94ad46818b1fb3190800000000000000
+      internalID: -7981520141598533047
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_5
+      rect:
+        serializedVersion: 2
+        x: 104
+        y: 361
+        width: 21
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: da0c99350ea249860800000000000000
+      internalID: 7535695219461308589
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_6
+      rect:
+        serializedVersion: 2
+        x: 126
+        y: 358
+        width: 20
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 224d236ecb2c48f70800000000000000
+      internalID: 9188683256314385442
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_7
+      rect:
+        serializedVersion: 2
+        x: 147
+        y: 358
+        width: 20
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4c344bc23a3d51060800000000000000
+      internalID: 6923672699935146948
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_8
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 371
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 44214b92c0546e210800000000000000
+      internalID: 1361851855867744836
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_9
+      rect:
+        serializedVersion: 2
+        x: 177
+        y: 371
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8c3892f31155d4880800000000000000
+      internalID: -8625144178782141496
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_10
+      rect:
+        serializedVersion: 2
+        x: 182
+        y: 371
+        width: 10
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a580a0be5cce1c9b0800000000000000
+      internalID: -5061504171391711142
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_11
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 334
+        width: 26
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ded3d95cd98577bf0800000000000000
+      internalID: -326695013312545299
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_12
+      rect:
+        serializedVersion: 2
+        x: 27
+        y: 333
+        width: 30
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d131927cbdcf12a00800000000000000
+      internalID: 730142635480126237
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_13
+      rect:
+        serializedVersion: 2
+        x: 58
+        y: 334
+        width: 27
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 07ae377549ec44b80800000000000000
+      internalID: -8411371067503547792
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_14
+      rect:
+        serializedVersion: 2
+        x: 86
+        y: 336
+        width: 25
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5cd5fafae3049df40800000000000000
+      internalID: 5753700636922174917
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_15
+      rect:
+        serializedVersion: 2
+        x: 118
+        y: 346
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: dd30fdfc922365bc0800000000000000
+      internalID: -3794790480850517027
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_16
+      rect:
+        serializedVersion: 2
+        x: 124
+        y: 346
+        width: 12
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7c945d5c520249a50800000000000000
+      internalID: 6526877106571659719
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_17
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 309
+        width: 19
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2f2dbd380c1500bc0800000000000000
+      internalID: -3818962596722388238
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_18
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 310
+        width: 20
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2418fd06dba4dd0b0800000000000000
+      internalID: -5702319375946645182
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_19
+      rect:
+        serializedVersion: 2
+        x: 41
+        y: 309
+        width: 20
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: dfa949cd54e02fbb0800000000000000
+      internalID: -4903841351036790019
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_20
+      rect:
+        serializedVersion: 2
+        x: 62
+        y: 309
+        width: 19
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 25f93fd7b7f64f720800000000000000
+      internalID: 2879048637981368146
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_21
+      rect:
+        serializedVersion: 2
+        x: 82
+        y: 309
+        width: 19
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4b7b2827cefaa8880800000000000000
+      internalID: -8607874307696969804
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_22
+      rect:
+        serializedVersion: 2
+        x: 102
+        y: 310
+        width: 20
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 25b8343de4d4203e0800000000000000
+      internalID: -2089022276199281838
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_23
+      rect:
+        serializedVersion: 2
+        x: 123
+        y: 309
+        width: 20
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0baa5d1e29ac35ae0800000000000000
+      internalID: -1561681913564517712
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_24
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 309
+        width: 19
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 81587afa75299f9b0800000000000000
+      internalID: -5045841002185128680
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_25
+      rect:
+        serializedVersion: 2
+        x: 167
+        y: 318
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 834c0ddabebacbb30800000000000000
+      internalID: 4304504372581155896
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_26
+      rect:
+        serializedVersion: 2
+        x: 173
+        y: 318
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1c709fdaf89fa5770800000000000000
+      internalID: 8600460833911801793
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_27
+      rect:
+        serializedVersion: 2
+        x: 178
+        y: 318
+        width: 8
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: edc447a1f74c7ce70800000000000000
+      internalID: 9135486419328060638
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_28
+      rect:
+        serializedVersion: 2
+        x: 187
+        y: 318
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 14954429cb765b0c0800000000000000
+      internalID: -4560624988037293759
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_29
+      rect:
+        serializedVersion: 2
+        x: 194
+        y: 318
+        width: 8
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0a99122beb96c63a0800000000000000
+      internalID: -6670840680289298016
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_30
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 283
+        width: 27
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a7cadfd791dcef510800000000000000
+      internalID: 1584929628252646522
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_31
+      rect:
+        serializedVersion: 2
+        x: 28
+        y: 282
+        width: 25
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7e496a244b08fd580800000000000000
+      internalID: -8800173635157977881
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_32
+      rect:
+        serializedVersion: 2
+        x: 54
+        y: 283
+        width: 18
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 84532e985a6632620800000000000000
+      internalID: 2748153058795074888
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_33
+      rect:
+        serializedVersion: 2
+        x: 73
+        y: 283
+        width: 27
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 29d255960d2cb9b70800000000000000
+      internalID: 8906926888431463826
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_34
+      rect:
+        serializedVersion: 2
+        x: 101
+        y: 282
+        width: 27
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e999551bd532ba520800000000000000
+      internalID: 2714302085734963614
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_35
+      rect:
+        serializedVersion: 2
+        x: 129
+        y: 282
+        width: 27
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a6499bee67bc0b730800000000000000
+      internalID: 4012930979658830954
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_36
+      rect:
+        serializedVersion: 2
+        x: 157
+        y: 284
+        width: 23
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 898779933f43ab4b0800000000000000
+      internalID: -5423964581966415720
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_37
+      rect:
+        serializedVersion: 2
+        x: 181
+        y: 282
+        width: 26
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cf4955516d1524140800000000000000
+      internalID: 4702410940851000572
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_38
+      rect:
+        serializedVersion: 2
+        x: 211
+        y: 293
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d7d3a704195ae8110800000000000000
+      internalID: 1265130588608281981
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_39
+      rect:
+        serializedVersion: 2
+        x: 217
+        y: 293
+        width: 4
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f4fe8ff6db7d47f40800000000000000
+      internalID: 5725438234922118991
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_40
+      rect:
+        serializedVersion: 2
+        x: 222
+        y: 293
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7af6f1245604f0b70800000000000000
+      internalID: 8867376994961026983
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_41
+      rect:
+        serializedVersion: 2
+        x: 227
+        y: 293
+        width: 4
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e600449dc8b45a460800000000000000
+      internalID: 7252285843262668910
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_42
+      rect:
+        serializedVersion: 2
+        x: 232
+        y: 293
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8ecb20ca00e5f93b0800000000000000
+      internalID: -5503576862644585240
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_43
+      rect:
+        serializedVersion: 2
+        x: 237
+        y: 293
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7dafef8fd0650dae0800000000000000
+      internalID: -1526625655666574633
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_44
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 257
+        width: 21
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 63b1bfb1f15018fe0800000000000000
+      internalID: -1188663195477533898
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_45
+      rect:
+        serializedVersion: 2
+        x: 22
+        y: 256
+        width: 24
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 56580b9b6eb076750800000000000000
+      internalID: 6298015689486665061
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_46
+      rect:
+        serializedVersion: 2
+        x: 47
+        y: 256
+        width: 21
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3868563220d6644a0800000000000000
+      internalID: -6609475547168405885
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_47
+      rect:
+        serializedVersion: 2
+        x: 69
+        y: 256
+        width: 20
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 83d3184545fa92f90800000000000000
+      internalID: -6977853370904003272
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_48
+      rect:
+        serializedVersion: 2
+        x: 90
+        y: 257
+        width: 21
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4822bbb57faa99430800000000000000
+      internalID: 3790248540781617796
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_49
+      rect:
+        serializedVersion: 2
+        x: 112
+        y: 257
+        width: 21
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1916009b652aff0c0800000000000000
+      internalID: -4539731406011473519
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_50
+      rect:
+        serializedVersion: 2
+        x: 137
+        y: 267
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 42d202a1f4279e560800000000000000
+      internalID: 7343526351470603556
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_51
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 267
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 98224077a0c8a4ce0800000000000000
+      internalID: -1420168755907648887
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_52
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 267
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4a29d0309315abcb0800000000000000
+      internalID: -4847472743604710748
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_53
+      rect:
+        serializedVersion: 2
+        x: 153
+        y: 265
+        width: 4
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d1a4da840111f4710800000000000000
+      internalID: 1679579947668949533
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_54
+      rect:
+        serializedVersion: 2
+        x: 158
+        y: 267
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f83b25fd9e2659b20800000000000000
+      internalID: 3140525071774430095
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_55
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 226
+        width: 25
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d421c23faccd481a0800000000000000
+      internalID: -6808073972456091059
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_56
+      rect:
+        serializedVersion: 2
+        x: 26
+        y: 226
+        width: 19
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e8a6bcea4632e6340800000000000000
+      internalID: 4858859963315612302
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_57
+      rect:
+        serializedVersion: 2
+        x: 46
+        y: 226
+        width: 19
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ea2e442e40ce25b10800000000000000
+      internalID: 1968895492834517678
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_58
+      rect:
+        serializedVersion: 2
+        x: 66
+        y: 226
+        width: 19
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2be10fe5249b1b6e0800000000000000
+      internalID: -1823472679396565326
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_59
+      rect:
+        serializedVersion: 2
+        x: 86
+        y: 226
+        width: 20
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5bc88af3986a4a540800000000000000
+      internalID: 5018318993206316213
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_60
+      rect:
+        serializedVersion: 2
+        x: 107
+        y: 226
+        width: 19
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7fe5df5640d965bc0800000000000000
+      internalID: -3794672993796530441
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_61
+      rect:
+        serializedVersion: 2
+        x: 127
+        y: 226
+        width: 19
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4a79fe5337edd1e90800000000000000
+      internalID: -7053236854984829020
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_62
+      rect:
+        serializedVersion: 2
+        x: 147
+        y: 226
+        width: 19
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f83f9b62683eaac60800000000000000
+      internalID: 7830321067451872143
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_63
+      rect:
+        serializedVersion: 2
+        x: 174
+        y: 240
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 95bd96ab147b61400800000000000000
+      internalID: 294624318567603033
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_64
+      rect:
+        serializedVersion: 2
+        x: 182
+        y: 240
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 559d0970bfe8cf790800000000000000
+      internalID: -7494958471036479147
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_65
+      rect:
+        serializedVersion: 2
+        x: 190
+        y: 240
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a64ee4b4b25f90310800000000000000
+      internalID: 1371897127806887018
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_66
+      rect:
+        serializedVersion: 2
+        x: 195
+        y: 238
+        width: 4
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0633af7b2fbeb9170800000000000000
+      internalID: 8186396175377249120
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_67
+      rect:
+        serializedVersion: 2
+        x: 200
+        y: 240
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1840b2e5b109c5720800000000000000
+      internalID: 2836300312554964097
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_68
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 204
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ac36a58f671374820800000000000000
+      internalID: 2902342871906149322
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_69
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 202
+        width: 17
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7963997fc29af4a10800000000000000
+      internalID: 1895919978743936663
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_70
+      rect:
+        serializedVersion: 2
+        x: 38
+        y: 202
+        width: 16
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 19dcd3915a10d3a60800000000000000
+      internalID: 7655276750204423569
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_71
+      rect:
+        serializedVersion: 2
+        x: 55
+        y: 202
+        width: 13
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2e746750095a483f0800000000000000
+      internalID: -899411987581745182
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_72
+      rect:
+        serializedVersion: 2
+        x: 69
+        y: 204
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4d004622da264fb50800000000000000
+      internalID: 6626029447514685652
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_73
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 202
+        width: 17
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b20db751bcd41bbf0800000000000000
+      internalID: -310381364677717973
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_74
+      rect:
+        serializedVersion: 2
+        x: 106
+        y: 202
+        width: 15
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 06693a3cf00cfd1f0800000000000000
+      internalID: -1017883816823122336
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_75
+      rect:
+        serializedVersion: 2
+        x: 122
+        y: 202
+        width: 13
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 41636ac32db34c400800000000000000
+      internalID: 343465245733697044
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_76
+      rect:
+        serializedVersion: 2
+        x: 139
+        y: 209
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: aba26e8d5ec320850800000000000000
+      internalID: 6341698183175219898
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_77
+      rect:
+        serializedVersion: 2
+        x: 146
+        y: 209
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b8a804f1b46167ff0800000000000000
+      internalID: -38819034883388789
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_78
+      rect:
+        serializedVersion: 2
+        x: 154
+        y: 207
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 023961e28040f6cf0800000000000000
+      internalID: -256982220557348064
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_79
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 176
+        width: 18
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0bd02cdde4100c8c0800000000000000
+      internalID: -3981180632355959376
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_80
+      rect:
+        serializedVersion: 2
+        x: 19
+        y: 176
+        width: 16
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e4e458bd1964ab600800000000000000
+      internalID: 484777502162898510
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_81
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 175
+        width: 24
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b0e34cf9fca9c2af0800000000000000
+      internalID: -419790448722952693
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_82
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 175
+        width: 18
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 48359fe2a9a7adc50800000000000000
+      internalID: 6690794999043937156
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_83
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 176
+        width: 13
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ddabbc8f948dd2a00800000000000000
+      internalID: 733480126549572317
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_84
+      rect:
+        serializedVersion: 2
+        x: 94
+        y: 176
+        width: 17
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cb53c91910af8a2c0800000000000000
+      internalID: -4420008149619296836
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_85
+      rect:
+        serializedVersion: 2
+        x: 112
+        y: 176
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e842361cda98b62a0800000000000000
+      internalID: -6743144637690338162
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_86
+      rect:
+        serializedVersion: 2
+        x: 136
+        y: 182
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a70a3f33106b8bd80800000000000000
+      internalID: -8234631802364125062
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_87
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 182
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5aeefca304c157380800000000000000
+      internalID: -8974235620275655003
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_88
+      rect:
+        serializedVersion: 2
+        x: 151
+        y: 182
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 57fd79a6a0c21e590800000000000000
+      internalID: -7646782269048758411
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_89
+      rect:
+        serializedVersion: 2
+        x: 156
+        y: 182
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a356c7242b8376780800000000000000
+      internalID: -8689914617717299910
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_90
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 145
+        width: 29
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 40717a4678c4a6d80800000000000000
+      internalID: -8256702822437415164
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_91
+      rect:
+        serializedVersion: 2
+        x: 30
+        y: 144
+        width: 26
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 16e0ee88f7f8ff0f0800000000000000
+      internalID: -1080987607624708511
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_92
+      rect:
+        serializedVersion: 2
+        x: 57
+        y: 144
+        width: 26
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6d3a83e2e20cc2ba0800000000000000
+      internalID: -6112299289672113194
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_93
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 144
+        width: 26
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 66dd5505dab0f94c0800000000000000
+      internalID: -4278688281973629594
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_94
+      rect:
+        serializedVersion: 2
+        x: 111
+        y: 144
+        width: 28
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fa8254f7dc6ea5860800000000000000
+      internalID: 7519576298126387375
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_95
+      rect:
+        serializedVersion: 2
+        x: 140
+        y: 144
+        width: 26
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c2143281734785c90800000000000000
+      internalID: -7180861825865268948
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_96
+      rect:
+        serializedVersion: 2
+        x: 167
+        y: 144
+        width: 26
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d9a82725d19eb9b00800000000000000
+      internalID: 836518467953920669
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_97
+      rect:
+        serializedVersion: 2
+        x: 194
+        y: 144
+        width: 27
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5205b0ede726047b0800000000000000
+      internalID: -5242081669228572635
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_98
+      rect:
+        serializedVersion: 2
+        x: 224
+        y: 157
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c24f3e4f37f3c8c60800000000000000
+      internalID: 7821696420098077740
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_99
+      rect:
+        serializedVersion: 2
+        x: 232
+        y: 155
+        width: 4
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ab32f1605b9e54190800000000000000
+      internalID: -7978714201115909190
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_100
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 118
+        width: 24
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a0aa9b7bed0860350800000000000000
+      internalID: 5982610849061775882
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_101
+      rect:
+        serializedVersion: 2
+        x: 25
+        y: 118
+        width: 22
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 818cd630caba4f220800000000000000
+      internalID: 2518826846887200792
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_102
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 118
+        width: 21
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8b9ca1fcac03b54b0800000000000000
+      internalID: -5450709276385687112
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_103
+      rect:
+        serializedVersion: 2
+        x: 70
+        y: 118
+        width: 22
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9ab17509a58e37550800000000000000
+      internalID: 6157520591211928489
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_104
+      rect:
+        serializedVersion: 2
+        x: 93
+        y: 118
+        width: 23
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a8237dd6c02449ac0800000000000000
+      internalID: -3849379160345070966
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_105
+      rect:
+        serializedVersion: 2
+        x: 117
+        y: 118
+        width: 22
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8b94c137c0990e880800000000000000
+      internalID: -8583692611018274376
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_106
+      rect:
+        serializedVersion: 2
+        x: 140
+        y: 118
+        width: 21
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 73d792ca1da7bc380800000000000000
+      internalID: -8949924793513575113
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_107
+      rect:
+        serializedVersion: 2
+        x: 162
+        y: 118
+        width: 22
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9aaf1c180a74e7d50800000000000000
+      internalID: 6736900847290153641
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_108
+      rect:
+        serializedVersion: 2
+        x: 190
+        y: 126
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f351b8cf75ba35690800000000000000
+      internalID: -7614554150565898945
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_109
+      rect:
+        serializedVersion: 2
+        x: 196
+        y: 124
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 541df7b48366d6b80800000000000000
+      internalID: -8399945338005237435
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_110
+      rect:
+        serializedVersion: 2
+        x: 207
+        y: 126
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9d63161a908e736f0800000000000000
+      internalID: -704839688600340775
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_111
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 91
+        width: 19
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 745f38c5f003d7ce0800000000000000
+      internalID: -1405914666134932153
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_112
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 93
+        width: 21
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9379861765a696390800000000000000
+      internalID: -7824605958077114567
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_113
+      rect:
+        serializedVersion: 2
+        x: 42
+        y: 93
+        width: 19
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d234f886e6b5b3e60800000000000000
+      internalID: 7943042897556751149
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_114
+      rect:
+        serializedVersion: 2
+        x: 62
+        y: 93
+        width: 21
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6839a6671f2185c70800000000000000
+      internalID: 8959932286936716166
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_115
+      rect:
+        serializedVersion: 2
+        x: 87
+        y: 100
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 78678f84e1530a150800000000000000
+      internalID: 5881759517535401607
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_116
+      rect:
+        serializedVersion: 2
+        x: 94
+        y: 100
+        width: 4
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 06775d33ec4f9e060800000000000000
+      internalID: 6983381863684732768
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_117
+      rect:
+        serializedVersion: 2
+        x: 99
+        y: 100
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3f4ba1d78e4cfae10800000000000000
+      internalID: 2211202444872561907
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_118
+      rect:
+        serializedVersion: 2
+        x: 104
+        y: 100
+        width: 10
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4b20d03e847158f50800000000000000
+      internalID: 6882933207320036020
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_119
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 98
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 820e2de2ac6a80510800000000000000
+      internalID: 1515644661909348392
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_120
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 45
+        width: 283
+        height: 45
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0c0d2a3013deb6990800000000000000
+      internalID: -7391553568628354880
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_121
+      rect:
+        serializedVersion: 2
+        x: 6
+        y: 54
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1a09206d4467ae380800000000000000
+      internalID: -8941204072170352479
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_122
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 54
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b1fbc860f85a10420800000000000000
+      internalID: 2594536894050909979
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_123
+      rect:
+        serializedVersion: 2
+        x: 25
+        y: 54
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 60944089b760f9ad0800000000000000
+      internalID: -2693426924243105530
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_124
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 54
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 355ab8bc768676800800000000000000
+      internalID: 605567469910467923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_125
+      rect:
+        serializedVersion: 2
+        x: 37
+        y: 54
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 58644b4748e22cac0800000000000000
+      internalID: -3836452786137708923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_126
+      rect:
+        serializedVersion: 2
+        x: 45
+        y: 54
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2482d8cade78a8f40800000000000000
+      internalID: 5731542930654308418
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_127
+      rect:
+        serializedVersion: 2
+        x: 57
+        y: 54
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f94411f274d02cb30800000000000000
+      internalID: 4306018793103115423
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_128
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 54
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e8f2f2daf8a7f6630800000000000000
+      internalID: 3922488557967454094
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_129
+      rect:
+        serializedVersion: 2
+        x: 69
+        y: 54
+        width: 6
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ef1cd04763aeb69e0800000000000000
+      internalID: -1626949320768110082
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_130
+      rect:
+        serializedVersion: 2
+        x: 76
+        y: 54
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 891e0d5ec49a82030800000000000000
+      internalID: 3470209660627247512
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_131
+      rect:
+        serializedVersion: 2
+        x: 81
+        y: 54
+        width: 6
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f738b24cf5dcbb0a0800000000000000
+      internalID: -6864667395799415937
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_132
+      rect:
+        serializedVersion: 2
+        x: 91
+        y: 54
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5806bdac13ee96ac0800000000000000
+      internalID: -3861293307869306747
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_133
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 52
+        width: 4
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c81ce22de534c8ff0800000000000000
+      internalID: -32577022766169716
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_134
+      rect:
+        serializedVersion: 2
+        x: 101
+        y: 45
+        width: 8
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: eed3023a782f1ca60800000000000000
+      internalID: 7692696302896823790
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_135
+      rect:
+        serializedVersion: 2
+        x: 106
+        y: 54
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5759e91ffedca6010800000000000000
+      internalID: 1182984282572756341
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_136
+      rect:
+        serializedVersion: 2
+        x: 124
+        y: 52
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3e2ecd8c4cebf7f90800000000000000
+      internalID: -6953629547243969821
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_137
+      rect:
+        serializedVersion: 2
+        x: 222
+        y: 52
+        width: 4
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5f2c4f030505d0850800000000000000
+      internalID: 6344815755383849717
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_138
+      rect:
+        serializedVersion: 2
+        x: 278
+        y: 52
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9467cbe7892d8fb20800000000000000
+      internalID: 3168513890258286153
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_139
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 45
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ab3732a6eb1783ac0800000000000000
+      internalID: -3875222416713878598
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_140
+      rect:
+        serializedVersion: 2
+        x: 6
+        y: 45
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d61914bdacaf56930800000000000000
+      internalID: 4135987581978513773
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_141
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 43
+        width: 4
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bad57d7b9292edc50800000000000000
+      internalID: 6691831355473878443
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_142
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 45
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 27b001c8ebf58bca0800000000000000
+      internalID: -6000941231472899214
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_143
+      rect:
+        serializedVersion: 2
+        x: 24
+        y: 45
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9d06ca6ef96ccee20800000000000000
+      internalID: 3381295810320556249
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_144
+      rect:
+        serializedVersion: 2
+        x: 33
+        y: 45
+        width: 5
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 473102922a381be50800000000000000
+      internalID: 6823379642940920692
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_145
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 45
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9e3e0d85c5c110cf0800000000000000
+      internalID: -287917718222347287
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_146
+      rect:
+        serializedVersion: 2
+        x: 47
+        y: 45
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cac609793cb954220800000000000000
+      internalID: 2469551235046337708
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_147
+      rect:
+        serializedVersion: 2
+        x: 55
+        y: 45
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2d471afca5a782710800000000000000
+      internalID: 1668718192389878994
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_148
+      rect:
+        serializedVersion: 2
+        x: 67
+        y: 45
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c6a8f49319e498b50800000000000000
+      internalID: 6595889514899540588
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_149
+      rect:
+        serializedVersion: 2
+        x: 75
+        y: 45
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 411990adc63fe8b30800000000000000
+      internalID: 4291635143770738964
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_150
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 45
+        width: 7
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 59ca37a18393fa2c0800000000000000
+      internalID: -4418249796302426987
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_151
+      rect:
+        serializedVersion: 2
+        x: 110
+        y: 43
+        width: 4
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b631c015c9e49c1a0800000000000000
+      internalID: -6788808530002701461
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_152
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 43
+        width: 6
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 008a826f823c7ec90800000000000000
+      internalID: -7140524103476664320
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_153
+      rect:
+        serializedVersion: 2
+        x: 122
+        y: 45
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8f8b4b7aa245393e0800000000000000
+      internalID: -2048200863344445192
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_154
+      rect:
+        serializedVersion: 2
+        x: 127
+        y: 43
+        width: 4
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 272523376123c4750800000000000000
+      internalID: 6290457851533087346
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_155
+      rect:
+        serializedVersion: 2
+        x: 138
+        y: 45
+        width: 4
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5316ef90473689610800000000000000
+      internalID: 1628160615329456437
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_156
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 45
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cfbede74b34df3ff0800000000000000
+      internalID: -54091319430222852
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_157
+      rect:
+        serializedVersion: 2
+        x: 152
+        y: 45
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: edf5e50a4f6d77460800000000000000
+      internalID: 7239491272172265438
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_158
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 45
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7af50a24f85016370800000000000000
+      internalID: 8313932499958914983
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_159
+      rect:
+        serializedVersion: 2
+        x: 178
+        y: 45
+        width: 9
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 881106112887a0620800000000000000
+      internalID: 2741135823240958344
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_160
+      rect:
+        serializedVersion: 2
+        x: 195
+        y: 45
+        width: 4
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bbfb2762cfa99c840800000000000000
+      internalID: 5244893648817143739
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_161
+      rect:
+        serializedVersion: 2
+        x: 200
+        y: 45
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5df68e88744048e20800000000000000
+      internalID: 3351808727956615125
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_162
+      rect:
+        serializedVersion: 2
+        x: 208
+        y: 45
+        width: 5
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d25787639c17347a0800000000000000
+      internalID: -6394141936919743187
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_163
+      rect:
+        serializedVersion: 2
+        x: 214
+        y: 45
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7c19848ee2e792430800000000000000
+      internalID: 3758674103948054983
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_164
+      rect:
+        serializedVersion: 2
+        x: 219
+        y: 43
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7696df3b1708fed30800000000000000
+      internalID: 4462926981586839911
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_165
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 45
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6eda29869164f7400800000000000000
+      internalID: 324054773136535014
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_166
+      rect:
+        serializedVersion: 2
+        x: 239
+        y: 45
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 017df8eecb0738a90800000000000000
+      internalID: -7312877413160986864
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_167
+      rect:
+        serializedVersion: 2
+        x: 244
+        y: 45
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2eefccca2a225fe30800000000000000
+      internalID: 4536570281724804834
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_168
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 40
+        height: 42
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a51252f13af44c830800000000000000
+      internalID: 4090481923580043610
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_169
+      rect:
+        serializedVersion: 2
+        x: 38
+        y: 31
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cfa68c38f02568a00800000000000000
+      internalID: 758383813847444220
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_170
+      rect:
+        serializedVersion: 2
+        x: 45
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b1054a086cb99dca0800000000000000
+      internalID: -5991586552375652325
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_171
+      rect:
+        serializedVersion: 2
+        x: 50
+        y: 31
+        width: 9
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 60e98cd1a8946f7b0800000000000000
+      internalID: -5190880662943916538
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_172
+      rect:
+        serializedVersion: 2
+        x: 63
+        y: 31
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b5dcfe24a8a1f8200800000000000000
+      internalID: 184395290876300635
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_173
+      rect:
+        serializedVersion: 2
+        x: 71
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8f61a6eb7e995b5b0800000000000000
+      internalID: -5353203361448847624
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_174
+      rect:
+        serializedVersion: 2
+        x: 76
+        y: 31
+        width: 4
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 78ee5cdaaab8554f0800000000000000
+      internalID: -840612190258598265
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_175
+      rect:
+        serializedVersion: 2
+        x: 81
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 70781df785c87f660800000000000000
+      internalID: 7419553222845630215
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_176
+      rect:
+        serializedVersion: 2
+        x: 89
+        y: 31
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c9d88036a4df63370800000000000000
+      internalID: 8302101459035000220
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_177
+      rect:
+        serializedVersion: 2
+        x: 97
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c50a6acf9d13f88b0800000000000000
+      internalID: -5147841036744744868
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_178
+      rect:
+        serializedVersion: 2
+        x: 105
+        y: 31
+        width: 8
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4e14572d32770cb10800000000000000
+      internalID: 1999729230290960868
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_179
+      rect:
+        serializedVersion: 2
+        x: 114
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4272a8ecbfaf79e90800000000000000
+      internalID: -7018865534824732892
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_180
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 31
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 93db67ca6969a4640800000000000000
+      internalID: 5065026304814267705
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_181
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c320518241e7a49b0800000000000000
+      internalID: -5095121403379383748
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_182
+      rect:
+        serializedVersion: 2
+        x: 138
+        y: 31
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 73feb5ddb0da49a30800000000000000
+      internalID: 4221189017223032631
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_183
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7d5f9f02d1fed2270800000000000000
+      internalID: 8227495002662106583
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_184
+      rect:
+        serializedVersion: 2
+        x: 149
+        y: 31
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ecf876b6ef536fa80800000000000000
+      internalID: -8433493885364760626
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_185
+      rect:
+        serializedVersion: 2
+        x: 157
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cf9efeb7a945c4c30800000000000000
+      internalID: 4344940762986703356
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_186
+      rect:
+        serializedVersion: 2
+        x: 162
+        y: 31
+        width: 4
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 68e73508c286a2690800000000000000
+      internalID: -7626168478657708410
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_187
+      rect:
+        serializedVersion: 2
+        x: 167
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2f441e130cf616d20800000000000000
+      internalID: 3270017675708941554
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_188
+      rect:
+        serializedVersion: 2
+        x: 172
+        y: 31
+        width: 7
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1eb775acd0e9ad270800000000000000
+      internalID: 8276101047313202145
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_189
+      rect:
+        serializedVersion: 2
+        x: 180
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f27dff903c990e460800000000000000
+      internalID: 7268978861541414703
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_190
+      rect:
+        serializedVersion: 2
+        x: 185
+        y: 31
+        width: 4
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 123d647b636877d80800000000000000
+      internalID: -8252980222571916511
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_191
+      rect:
+        serializedVersion: 2
+        x: 190
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 984b8680953b89250800000000000000
+      internalID: 5951704102544651401
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_192
+      rect:
+        serializedVersion: 2
+        x: 198
+        y: 31
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a375befcc9ff23e00800000000000000
+      internalID: 1023161114334811962
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_193
+      rect:
+        serializedVersion: 2
+        x: 209
+        y: 29
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e39e690702caa7650800000000000000
+      internalID: 6231482289748371774
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_194
+      rect:
+        serializedVersion: 2
+        x: 215
+        y: 31
+        width: 4
+        height: 5
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f3e74ddbef35ecd00800000000000000
+      internalID: 994824921267076671
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_195
+      rect:
+        serializedVersion: 2
+        x: 220
+        y: 31
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2abeca6d4b50d16a0800000000000000
+      internalID: -6477014414834996318
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_196
+      rect:
+        serializedVersion: 2
+        x: 229
+        y: 31
+        width: 21
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f76a9ba68962003e0800000000000000
+      internalID: -2089627791032473985
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_197
+      rect:
+        serializedVersion: 2
+        x: 251
+        y: 31
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 50d8809052a48b4e0800000000000000
+      internalID: -1965739714421420795
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_198
+      rect:
+        serializedVersion: 2
+        x: 41
+        y: 22
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8b9abfeb2abaa8230800000000000000
+      internalID: 3641911964159683000
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_199
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 22
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e8acda957e7c5cd60800000000000000
+      internalID: 7909948117002078862
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_200
+      rect:
+        serializedVersion: 2
+        x: 55
+        y: 22
+        width: 5
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f1121ce3526011f60800000000000000
+      internalID: 8003184769850482975
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - PC Cursors_201
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 22
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 028e091c297d76ec0800000000000000
+      internalID: -3573650753982502880
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      GameCube - Sonic Heroes - PC Cursors_143: 3381295810320556249
+      GameCube - Sonic Heroes - PC Cursors_46: -6609475547168405885
+      GameCube - Sonic Heroes - PC Cursors_6: 9188683256314385442
+      GameCube - Sonic Heroes - PC Cursors_139: -3875222416713878598
+      GameCube - Sonic Heroes - PC Cursors_40: 8867376994961026983
+      GameCube - Sonic Heroes - PC Cursors_181: -5095121403379383748
+      GameCube - Sonic Heroes - PC Cursors_105: -8583692611018274376
+      GameCube - Sonic Heroes - PC Cursors_156: -54091319430222852
+      GameCube - Sonic Heroes - PC Cursors_25: 4304504372581155896
+      GameCube - Sonic Heroes - PC Cursors_54: 3140525071774430095
+      GameCube - Sonic Heroes - PC Cursors_80: 484777502162898510
+      GameCube - Sonic Heroes - PC Cursors_178: 1999729230290960868
+      GameCube - Sonic Heroes - PC Cursors_145: -287917718222347287
+      GameCube - Sonic Heroes - PC Cursors_126: 5731542930654308418
+      GameCube - Sonic Heroes - PC Cursors_5: 7535695219461308589
+      GameCube - Sonic Heroes - PC Cursors_71: -899411987581745182
+      GameCube - Sonic Heroes - PC Cursors_95: -7180861825865268948
+      GameCube - Sonic Heroes - PC Cursors_148: 6595889514899540588
+      GameCube - Sonic Heroes - PC Cursors_118: 6882933207320036020
+      GameCube - Sonic Heroes - PC Cursors_107: 6736900847290153641
+      GameCube - Sonic Heroes - PC Cursors_116: 6983381863684732768
+      GameCube - Sonic Heroes - PC Cursors_162: -6394141936919743187
+      GameCube - Sonic Heroes - PC Cursors_51: -1420168755907648887
+      GameCube - Sonic Heroes - PC Cursors_74: -1017883816823122336
+      GameCube - Sonic Heroes - PC Cursors_33: 8906926888431463826
+      GameCube - Sonic Heroes - PC Cursors_161: 3351808727956615125
+      GameCube - Sonic Heroes - PC Cursors_27: 9135486419328060638
+      GameCube - Sonic Heroes - PC Cursors_57: 1968895492834517678
+      GameCube - Sonic Heroes - PC Cursors_42: -5503576862644585240
+      GameCube - Sonic Heroes - PC Cursors_130: 3470209660627247512
+      GameCube - Sonic Heroes - PC Cursors_35: 4012930979658830954
+      GameCube - Sonic Heroes - PC Cursors_103: 6157520591211928489
+      GameCube - Sonic Heroes - PC Cursors_114: 8959932286936716166
+      GameCube - Sonic Heroes - PC Cursors_158: 8313932499958914983
+      GameCube - Sonic Heroes - PC Cursors_167: 4536570281724804834
+      GameCube - Sonic Heroes - PC Cursors_106: -8949924793513575113
+      GameCube - Sonic Heroes - PC Cursors_155: 1628160615329456437
+      GameCube - Sonic Heroes - PC Cursors_125: -3836452786137708923
+      GameCube - Sonic Heroes - PC Cursors_144: 6823379642940920692
+      GameCube - Sonic Heroes - PC Cursors_198: 3641911964159683000
+      GameCube - Sonic Heroes - PC Cursors_146: 2469551235046337708
+      GameCube - Sonic Heroes - PC Cursors_63: 294624318567603033
+      GameCube - Sonic Heroes - PC Cursors_128: 3922488557967454094
+      GameCube - Sonic Heroes - PC Cursors_197: -1965739714421420795
+      GameCube - Sonic Heroes - PC Cursors_113: 7943042897556751149
+      GameCube - Sonic Heroes - PC Cursors_127: 4306018793103115423
+      GameCube - Sonic Heroes - PC Cursors_179: -7018865534824732892
+      GameCube - Sonic Heroes - PC Cursors_10: -5061504171391711142
+      GameCube - Sonic Heroes - PC Cursors_50: 7343526351470603556
+      GameCube - Sonic Heroes - PC Cursors_92: -6112299289672113194
+      GameCube - Sonic Heroes - PC Cursors_78: -256982220557348064
+      GameCube - Sonic Heroes - PC Cursors_89: -8689914617717299910
+      GameCube - Sonic Heroes - PC Cursors_141: 6691831355473878443
+      GameCube - Sonic Heroes - PC Cursors_97: -5242081669228572635
+      GameCube - Sonic Heroes - PC Cursors_201: -3573650753982502880
+      GameCube - Sonic Heroes - PC Cursors_193: 6231482289748371774
+      GameCube - Sonic Heroes - PC Cursors_0: -2380982172168434709
+      GameCube - Sonic Heroes - PC Cursors_59: 5018318993206316213
+      GameCube - Sonic Heroes - PC Cursors_76: 6341698183175219898
+      GameCube - Sonic Heroes - PC Cursors_132: -3861293307869306747
+      GameCube - Sonic Heroes - PC Cursors_24: -5045841002185128680
+      GameCube - Sonic Heroes - PC Cursors_86: -8234631802364125062
+      GameCube - Sonic Heroes - PC Cursors_38: 1265130588608281981
+      GameCube - Sonic Heroes - PC Cursors_151: -6788808530002701461
+      GameCube - Sonic Heroes - PC Cursors_117: 2211202444872561907
+      GameCube - Sonic Heroes - PC Cursors_28: -4560624988037293759
+      GameCube - Sonic Heroes - PC Cursors_82: 6690794999043937156
+      GameCube - Sonic Heroes - PC Cursors_55: -6808073972456091059
+      GameCube - Sonic Heroes - PC Cursors_185: 4344940762986703356
+      GameCube - Sonic Heroes - PC Cursors_90: -8256702822437415164
+      GameCube - Sonic Heroes - PC Cursors_61: -7053236854984829020
+      GameCube - Sonic Heroes - PC Cursors_192: 1023161114334811962
+      GameCube - Sonic Heroes - PC Cursors_4: -7981520141598533047
+      GameCube - Sonic Heroes - PC Cursors_194: 994824921267076671
+      GameCube - Sonic Heroes - PC Cursors_47: -6977853370904003272
+      GameCube - Sonic Heroes - PC Cursors_101: 2518826846887200792
+      GameCube - Sonic Heroes - PC Cursors_199: 7909948117002078862
+      GameCube - Sonic Heroes - PC Cursors_112: -7824605958077114567
+      GameCube - Sonic Heroes - PC Cursors_177: -5147841036744744868
+      GameCube - Sonic Heroes - PC Cursors_100: 5982610849061775882
+      GameCube - Sonic Heroes - PC Cursors_153: -2048200863344445192
+      GameCube - Sonic Heroes - PC Cursors_147: 1668718192389878994
+      GameCube - Sonic Heroes - PC Cursors_75: 343465245733697044
+      GameCube - Sonic Heroes - PC Cursors_62: 7830321067451872143
+      GameCube - Sonic Heroes - PC Cursors_12: 730142635480126237
+      GameCube - Sonic Heroes - PC Cursors_191: 5951704102544651401
+      GameCube - Sonic Heroes - PC Cursors_43: -1526625655666574633
+      GameCube - Sonic Heroes - PC Cursors_169: 758383813847444220
+      GameCube - Sonic Heroes - PC Cursors_88: -7646782269048758411
+      GameCube - Sonic Heroes - PC Cursors_196: -2089627791032473985
+      GameCube - Sonic Heroes - PC Cursors_68: 2902342871906149322
+      GameCube - Sonic Heroes - PC Cursors_149: 4291635143770738964
+      GameCube - Sonic Heroes - PC Cursors_84: -4420008149619296836
+      GameCube - Sonic Heroes - PC Cursors_168: 4090481923580043610
+      GameCube - Sonic Heroes - PC Cursors_134: 7692696302896823790
+      GameCube - Sonic Heroes - PC Cursors_164: 4462926981586839911
+      GameCube - Sonic Heroes - PC Cursors_21: -8607874307696969804
+      GameCube - Sonic Heroes - PC Cursors_52: -4847472743604710748
+      GameCube - Sonic Heroes - PC Cursors_70: 7655276750204423569
+      GameCube - Sonic Heroes - PC Cursors_190: -8252980222571916511
+      GameCube - Sonic Heroes - PC Cursors_23: -1561681913564517712
+      GameCube - Sonic Heroes - PC Cursors_170: -5991586552375652325
+      GameCube - Sonic Heroes - PC Cursors_182: 4221189017223032631
+      GameCube - Sonic Heroes - PC Cursors_98: 7821696420098077740
+      GameCube - Sonic Heroes - PC Cursors_85: -6743144637690338162
+      GameCube - Sonic Heroes - PC Cursors_1: -8886895105669781431
+      GameCube - Sonic Heroes - PC Cursors_15: -3794790480850517027
+      GameCube - Sonic Heroes - PC Cursors_121: -8941204072170352479
+      GameCube - Sonic Heroes - PC Cursors_150: -4418249796302426987
+      GameCube - Sonic Heroes - PC Cursors_66: 8186396175377249120
+      GameCube - Sonic Heroes - PC Cursors_32: 2748153058795074888
+      GameCube - Sonic Heroes - PC Cursors_111: -1405914666134932153
+      GameCube - Sonic Heroes - PC Cursors_187: 3270017675708941554
+      GameCube - Sonic Heroes - PC Cursors_135: 1182984282572756341
+      GameCube - Sonic Heroes - PC Cursors_195: -6477014414834996318
+      GameCube - Sonic Heroes - PC Cursors_157: 7239491272172265438
+      GameCube - Sonic Heroes - PC Cursors_93: -4278688281973629594
+      GameCube - Sonic Heroes - PC Cursors_45: 6298015689486665061
+      GameCube - Sonic Heroes - PC Cursors_87: -8974235620275655003
+      GameCube - Sonic Heroes - PC Cursors_152: -7140524103476664320
+      GameCube - Sonic Heroes - PC Cursors_175: 7419553222845630215
+      GameCube - Sonic Heroes - PC Cursors_136: -6953629547243969821
+      GameCube - Sonic Heroes - PC Cursors_20: 2879048637981368146
+      GameCube - Sonic Heroes - PC Cursors_172: 184395290876300635
+      GameCube - Sonic Heroes - PC Cursors_173: -5353203361448847624
+      GameCube - Sonic Heroes - PC Cursors_2: 8545899396148057320
+      GameCube - Sonic Heroes - PC Cursors_9: -8625144178782141496
+      GameCube - Sonic Heroes - PC Cursors_142: -6000941231472899214
+      GameCube - Sonic Heroes - PC Cursors_14: 5753700636922174917
+      GameCube - Sonic Heroes - PC Cursors_64: -7494958471036479147
+      GameCube - Sonic Heroes - PC Cursors_166: -7312877413160986864
+      GameCube - Sonic Heroes - PC Cursors_19: -4903841351036790019
+      GameCube - Sonic Heroes - PC Cursors_94: 7519576298126387375
+      GameCube - Sonic Heroes - PC Cursors_120: -7391553568628354880
+      GameCube - Sonic Heroes - PC Cursors_13: -8411371067503547792
+      GameCube - Sonic Heroes - PC Cursors_60: -3794672993796530441
+      GameCube - Sonic Heroes - PC Cursors_104: -3849379160345070966
+      GameCube - Sonic Heroes - PC Cursors_124: 605567469910467923
+      GameCube - Sonic Heroes - PC Cursors_69: 1895919978743936663
+      GameCube - Sonic Heroes - PC Cursors_200: 8003184769850482975
+      GameCube - Sonic Heroes - PC Cursors_77: -38819034883388789
+      GameCube - Sonic Heroes - PC Cursors_186: -7626168478657708410
+      GameCube - Sonic Heroes - PC Cursors_34: 2714302085734963614
+      GameCube - Sonic Heroes - PC Cursors_160: 5244893648817143739
+      GameCube - Sonic Heroes - PC Cursors_133: -32577022766169716
+      GameCube - Sonic Heroes - PC Cursors_65: 1371897127806887018
+      GameCube - Sonic Heroes - PC Cursors_17: -3818962596722388238
+      GameCube - Sonic Heroes - PC Cursors_176: 8302101459035000220
+      GameCube - Sonic Heroes - PC Cursors_171: -5190880662943916538
+      GameCube - Sonic Heroes - PC Cursors_96: 836518467953920669
+      GameCube - Sonic Heroes - PC Cursors_58: -1823472679396565326
+      GameCube - Sonic Heroes - PC Cursors_48: 3790248540781617796
+      GameCube - Sonic Heroes - PC Cursors_53: 1679579947668949533
+      GameCube - Sonic Heroes - PC Cursors_174: -840612190258598265
+      GameCube - Sonic Heroes - PC Cursors_122: 2594536894050909979
+      GameCube - Sonic Heroes - PC Cursors_31: -8800173635157977881
+      GameCube - Sonic Heroes - PC Cursors_44: -1188663195477533898
+      GameCube - Sonic Heroes - PC Cursors_73: -310381364677717973
+      GameCube - Sonic Heroes - PC Cursors_189: 7268978861541414703
+      GameCube - Sonic Heroes - PC Cursors_99: -7978714201115909190
+      GameCube - Sonic Heroes - PC Cursors_7: 6923672699935146948
+      GameCube - Sonic Heroes - PC Cursors_131: -6864667395799415937
+      GameCube - Sonic Heroes - PC Cursors_16: 6526877106571659719
+      GameCube - Sonic Heroes - PC Cursors_37: 4702410940851000572
+      GameCube - Sonic Heroes - PC Cursors_18: -5702319375946645182
+      GameCube - Sonic Heroes - PC Cursors_29: -6670840680289298016
+      GameCube - Sonic Heroes - PC Cursors_91: -1080987607624708511
+      GameCube - Sonic Heroes - PC Cursors_163: 3758674103948054983
+      GameCube - Sonic Heroes - PC Cursors_159: 2741135823240958344
+      GameCube - Sonic Heroes - PC Cursors_154: 6290457851533087346
+      GameCube - Sonic Heroes - PC Cursors_41: 7252285843262668910
+      GameCube - Sonic Heroes - PC Cursors_180: 5065026304814267705
+      GameCube - Sonic Heroes - PC Cursors_137: 6344815755383849717
+      GameCube - Sonic Heroes - PC Cursors_83: 733480126549572317
+      GameCube - Sonic Heroes - PC Cursors_102: -5450709276385687112
+      GameCube - Sonic Heroes - PC Cursors_165: 324054773136535014
+      GameCube - Sonic Heroes - PC Cursors_22: -2089022276199281838
+      GameCube - Sonic Heroes - PC Cursors_39: 5725438234922118991
+      GameCube - Sonic Heroes - PC Cursors_79: -3981180632355959376
+      GameCube - Sonic Heroes - PC Cursors_188: 8276101047313202145
+      GameCube - Sonic Heroes - PC Cursors_119: 1515644661909348392
+      GameCube - Sonic Heroes - PC Cursors_184: -8433493885364760626
+      GameCube - Sonic Heroes - PC Cursors_67: 2836300312554964097
+      GameCube - Sonic Heroes - PC Cursors_140: 4135987581978513773
+      GameCube - Sonic Heroes - PC Cursors_183: 8227495002662106583
+      GameCube - Sonic Heroes - PC Cursors_26: 8600460833911801793
+      GameCube - Sonic Heroes - PC Cursors_72: 6626029447514685652
+      GameCube - Sonic Heroes - PC Cursors_3: 2713944944743626993
+      GameCube - Sonic Heroes - PC Cursors_81: -419790448722952693
+      GameCube - Sonic Heroes - PC Cursors_56: 4858859963315612302
+      GameCube - Sonic Heroes - PC Cursors_109: -8399945338005237435
+      GameCube - Sonic Heroes - PC Cursors_110: -704839688600340775
+      GameCube - Sonic Heroes - PC Cursors_138: 3168513890258286153
+      GameCube - Sonic Heroes - PC Cursors_36: -5423964581966415720
+      GameCube - Sonic Heroes - PC Cursors_123: -2693426924243105530
+      GameCube - Sonic Heroes - PC Cursors_11: -326695013312545299
+      GameCube - Sonic Heroes - PC Cursors_30: 1584929628252646522
+      GameCube - Sonic Heroes - PC Cursors_49: -4539731406011473519
+      GameCube - Sonic Heroes - PC Cursors_115: 5881759517535401607
+      GameCube - Sonic Heroes - PC Cursors_129: -1626949320768110082
+      GameCube - Sonic Heroes - PC Cursors_8: 1361851855867744836
+      GameCube - Sonic Heroes - PC Cursors_108: -7614554150565898945
+  spritePackingTag: 
+  pSDRemoveMatte: 0
+  pSDShowRemoveMatteOption: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

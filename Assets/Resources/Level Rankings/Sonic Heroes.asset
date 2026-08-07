@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4517d4cf9d4c0f247b86c8831a500f6d, type: 3}
+  m_Name: Sonic Heroes
+  m_EditorClassIdentifier: 
+  teamSonic: 60ea0000d8d6000050c30000c8af0000
+  teamDark: 70110100e8fd0000d8d60000c8af0000
+  teamRose: 80bb000010a40000b8880000606d0000
+  teamChaotix: c8af0000409c0000b8880000606d0000

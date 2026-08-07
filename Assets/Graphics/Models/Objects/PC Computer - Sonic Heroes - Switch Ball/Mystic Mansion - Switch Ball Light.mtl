@@ -1,0 +1,12 @@
+#
+# Mystic Mansion - Switch Ball Light.mtl
+#
+
+newmtl material_0
+illum 2
+Kd 1.000000 1.000000 1.000000
+Ka 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+Ke 1.000000 1.000000 1.000000
+Ns 0.000000
+map_Kd m11_ob02.png

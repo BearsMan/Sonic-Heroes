@@ -1,0 +1,2 @@
+(Knuckles) - Touch The Checkpoint and restart from that spot when you lose a life, each time you trigger a checkpoint the leaders level is also increased
+(Tails) - Touch The Checkpoint and restart from that spot when you lose a life, each checkpoint increases the leader's level too

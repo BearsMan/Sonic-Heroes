@@ -1,0 +1,486 @@
+newmtl texture0
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_so2.png
+
+newmtl texture1
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_so3.png
+
+newmtl texture2
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_fb71.png
+
+newmtl texture3
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb11.png
+
+newmtl texture4
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb12.png
+
+newmtl texture5
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb15.png
+
+newmtl texture6
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd pk32ami2.png
+
+newmtl texture7
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_fb51.png
+
+newmtl texture8
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb16.png
+
+newmtl texture9
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb53.png
+
+newmtl texture10
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb54.png
+
+newmtl texture11
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb67.png
+
+newmtl texture12
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_yan1.png
+
+newmtl texture13
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb66.png
+
+newmtl texture14
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb65.png
+
+newmtl texture15
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_yan5.png
+
+newmtl texture16
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_fb21.png
+
+newmtl texture17
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_mit1.png
+
+newmtl texture18
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb21.png
+
+newmtl texture19
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb22.png
+
+newmtl texture20
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb23.png
+
+newmtl texture21
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_yan3.png
+
+newmtl texture22
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb13.png
+
+newmtl texture23
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb41.png
+
+newmtl texture24
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb43.png
+
+newmtl texture25
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_fb91.png
+
+newmtl texture26
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_yan2.png
+
+newmtl texture27
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb68.png
+
+newmtl texture28
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb69.png
+
+newmtl texture29
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_bl16.png
+
+newmtl texture30
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_ib02.png
+
+newmtl texture31
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_ib03.png
+
+newmtl texture32
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb70.png
+
+newmtl texture33
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb71.png
+
+newmtl texture34
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb72.png
+
+newmtl texture35
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb73.png
+
+newmtl texture36
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_b740.png
+
+newmtl texture37
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_b741.png
+
+newmtl texture38
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_b743.png
+
+newmtl texture39
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_b742.png
+
+newmtl texture40
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_3k11.png
+
+newmtl texture41
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb61.png
+
+newmtl texture42
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb62.png
+
+newmtl texture43
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb63.png
+
+newmtl texture44
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb64.png
+
+newmtl texture45
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_fb41.png
+
+newmtl texture46
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_bl73.png
+
+newmtl texture47
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_bl72.png
+
+newmtl texture48
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb52.png
+
+newmtl texture49
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb69.png
+
+newmtl texture50
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd pk32ib01.png
+
+newmtl texture51
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd pk32fb91.png
+
+newmtl texture52
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb32.png
+
+newmtl texture53
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k32_sb31.png
+

@@ -1,0 +1,261 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/1 Player.unity
+    guid: 5e5703eaea8775a4a95e32158e48bb7e
+  - enabled: 1
+    path: Assets/Scenes/2 Players.unity
+    guid: 3cc6f97f75608524c970950f6f459159
+  - enabled: 1
+    path: Assets/Scenes/2P Bingo Highway.unity
+    guid: 7125d5d4bebc6164cb08ad38aeb6fd73
+  - enabled: 1
+    path: Assets/Scenes/2P Casino Course.unity
+    guid: e20dce857dd287b4fa8dfd03f4627d26
+  - enabled: 1
+    path: Assets/Scenes/2P Casino ring.unity
+    guid: ce4ad62a77e2d514d9401d438a586d2e
+  - enabled: 1
+    path: Assets/Scenes/2P City top.unity
+    guid: 1e1e276761cb784498392d700922365d
+  - enabled: 1
+    path: Assets/Scenes/2P Egg Fleet.unity
+    guid: 9a8a64ed011c0874693778bfb6f9fd40
+  - enabled: 1
+    path: Assets/Scenes/2P Egg treat.unity
+    guid: 4384a7f45b166a74fa0f0b491cf10f35
+  - enabled: 1
+    path: Assets/Scenes/2P Frog Forest.unity
+    guid: b03986b5ac892a345a7ecdad70ebc2b3
+  - enabled: 1
+    path: Assets/Scenes/2P Grand Metropolis.unity
+    guid: b898166fb1735e141a8662d3d13c7f8b
+  - enabled: 1
+    path: Assets/Scenes/2P Hot Elevator.unity
+    guid: e2722e471d1e4044f91d06362a49d11c
+  - enabled: 1
+    path: Assets/Scenes/2P Mad Express.unity
+    guid: 87d839fcf7b4a244fa61621199301988
+  - enabled: 1
+    path: Assets/Scenes/2P Pinball Match.unity
+    guid: 134fce1ab2adfab4593c22474899b6eb
+  - enabled: 1
+    path: Assets/Scenes/2P Rail Canyon.unity
+    guid: 8793f57a95090ae4785c0414ecdb0553
+  - enabled: 1
+    path: Assets/Scenes/2P Road Rock.unity
+    guid: 71a22bf4e4310474fa64792e62a058d2
+  - enabled: 1
+    path: Assets/Scenes/2P Seaside course.unity
+    guid: d92e2d76f0d600648a1bb52b3df99626
+  - enabled: 1
+    path: Assets/Scenes/2P Seaside Hill.unity
+    guid: 591f2b2b18eec1d44a8c2926a9cc90d9
+  - enabled: 1
+    path: Assets/Scenes/2P Terror Hall.unity
+    guid: 13533e9eca05292478af737f89660810
+  - enabled: 1
+    path: Assets/Scenes/2P Turtle Shell.unity
+    guid: 94f1d8e4851edf1458e3eed0ed1ada98
+  - enabled: 1
+    path: Assets/Scenes/Action Race Menu.unity
+    guid: ca5cdc6d7ddf06a41a76dccd3ae306db
+  - enabled: 1
+    path: Assets/Scenes/Audio Room Menu.unity
+    guid: b48a8a3a00d4e4a4da5724323fdc8d39
+  - enabled: 1
+    path: Assets/Scenes/Audio Theater.unity
+    guid: 68d49254a44d205458d9db95c7ffe41e
+  - enabled: 1
+    path: Assets/Scenes/CG Opening.unity
+    guid: f35f11f3dcf4f9b4b8e749b70c9f1946
+  - enabled: 1
+    path: Assets/Scenes/CG Theater.unity
+    guid: e121765ecfd3e2a4c900359b5392cfbd
+  - enabled: 1
+    path: Assets/Scenes/Challege Screen (Sonic Heroes).unity
+    guid: 82c337500818aa04b92cba2c74a14c89
+  - enabled: 1
+    path: Assets/Scenes/Continue Game.unity
+    guid: 9c64b24e7899cf2409746984fdd051ef
+  - enabled: 1
+    path: Assets/Scenes/Defeat Last Evil.unity
+    guid: 1c5899b1fe1b5f647a72c0ed5ad0629e
+  - enabled: 1
+    path: Assets/Scenes/Emblem.unity
+    guid: 81349d9c8a44ad94c8264969f9b88ef5
+  - enabled: 1
+    path: Assets/Scenes/Get All 7 Chaos Emeralds!.unity
+    guid: 13dfb28c18727744c8bf378461fc1325
+  - enabled: 1
+    path: Assets/Scenes/Get All A-Rank!.unity
+    guid: 68b1fbf8cd06d224ab942dfda281cfd8
+  - enabled: 1
+    path: Assets/Scenes/HUD.unity
+    guid: 9a5d32d4b147fdb47a978ca990c056a6
+  - enabled: 1
+    path: Assets/Scenes/Intro.unity
+    guid: a064cc4cc83dbd24894066bcc5ed7c85
+  - enabled: 1
+    path: Assets/Scenes/Language Settings.unity
+    guid: f43e376a4634bed4e8131b83430c7af4
+  - enabled: 1
+    path: Assets/Scenes/Last Story - Ending and Credits.unity
+    guid: 146df240245ce624a89e6b0d524b9e13
+  - enabled: 1
+    path: Assets/Scenes/Last Story - Opening.unity
+    guid: 1d9fbd069e9625447907c57c68ebc2ab
+  - enabled: 1
+    path: Assets/Scenes/Main Menu.unity
+    guid: 9dc7972479bf6ea47a502abe67530205
+  - enabled: 1
+    path: Assets/Scenes/Main Story (Team Selection).unity
+    guid: 44632c7a217d05f4b9d605721cab1a1d
+  - enabled: 1
+    path: Assets/Scenes/Menu (Selector).unity
+    guid: 4fef8aa054e99b243849ef6fe8cfc998
+  - enabled: 1
+    path: Assets/Scenes/Opening Movie.unity
+    guid: 6d1c98b93551e5346a3e09bdbd84bf8a
+  - enabled: 1
+    path: Assets/Scenes/Options Menu.unity
+    guid: 27a7d31353994ea4297d174f34d3ed98
+  - enabled: 1
+    path: Assets/Scenes/Particle (Rings).unity
+    guid: ce17b519094b2f046876713038069a73
+  - enabled: 1
+    path: Assets/Scenes/Particle (Super Sonic).unity
+    guid: ed5f609ba0981334d9f24451c8a969bd
+  - enabled: 1
+    path: Assets/Scenes/Pause Menu.unity
+    guid: 0cb4657fa3fae15429ca4d2d56717632
+  - enabled: 1
+    path: Assets/Scenes/Sonic Heroes.unity
+    guid: f43cc7c3551840c43aed6fa9e591c6bd
+  - enabled: 1
+    path: Assets/Scenes/Stage 00.unity
+    guid: 43fd0fef1d5800340bc1282e0f541a96
+  - enabled: 1
+    path: Assets/Scenes/Stage 01.unity
+    guid: 6a5ba6ed73fbf6e40a29498c16f670b5
+  - enabled: 1
+    path: Assets/Scenes/Stage 02.unity
+    guid: d1d96a66a94d03248bc1c9fa1ad6867c
+  - enabled: 1
+    path: Assets/Scenes/Stage 03.unity
+    guid: ac9f46f33759f4c4787a28cfcde046cb
+  - enabled: 1
+    path: Assets/Scenes/Stage 04.unity
+    guid: 2f8c6b89199bfa54ebfd5dbbea1abdf2
+  - enabled: 1
+    path: Assets/Scenes/Stage 05.unity
+    guid: 5c6ffc1a1e497024ab5d8ebde9146d7a
+  - enabled: 1
+    path: Assets/Scenes/Stage 06.unity
+    guid: 186f13b30d24ff74caf3b35687e542ca
+  - enabled: 1
+    path: Assets/Scenes/Stage 07.unity
+    guid: df9a181b7ae3ae149a491b3e7dda2542
+  - enabled: 1
+    path: Assets/Scenes/Stage 08.unity
+    guid: 4c2399fa4289a3d4491dc9e9c17bc9e0
+  - enabled: 1
+    path: Assets/Scenes/Stage 09.unity
+    guid: c807e958d283ae34fbd546a59eb7c9b5
+  - enabled: 1
+    path: Assets/Scenes/Stage 10.unity
+    guid: 6d6281b5e63e0f840b59484dbc26597a
+  - enabled: 1
+    path: Assets/Scenes/Stage 11.unity
+    guid: 2bd84dd7b97a2644ea8a72206e1984c1
+  - enabled: 1
+    path: Assets/Scenes/Stage 12.unity
+    guid: f46d22aa70fe5874c89f55cbe40edcca
+  - enabled: 1
+    path: Assets/Scenes/Stage 13.unity
+    guid: c25b98333b7f00d42bc8862246d64005
+  - enabled: 1
+    path: Assets/Scenes/Stage 14.unity
+    guid: 26309662e992ae743bc8acf2ae427f12
+  - enabled: 1
+    path: Assets/Scenes/Special Stage.unity
+    guid: 10d08e4783eb73841a0866b09f095856
+  - enabled: 1
+    path: Assets/Scenes/Team Battle 1.unity
+    guid: 184a357a02e74114e8c967519f8cad27
+  - enabled: 1
+    path: Assets/Scenes/Team Battle 2.unity
+    guid: a67deceb0033b664b849937c518ac72a
+  - enabled: 1
+    path: Assets/Scenes/Team Blast.unity
+    guid: b2696c0434b4c0744a909146e63755dd
+  - enabled: 1
+    path: Assets/Scenes/Team Boss - Egg Albatross.unity
+    guid: e544eb8f1b3d37b4281917c9f4c8f0aa
+  - enabled: 1
+    path: Assets/Scenes/Team Boss - Egg Emperor Battle.unity
+    guid: d0cba4a23dc3f9046a85fba761028b1b
+  - enabled: 1
+    path: Assets/Scenes/Team Boss - Egg Hawk.unity
+    guid: 10a277fa74d3e544eaa870207152f3e9
+  - enabled: 1
+    path: Assets/Scenes/Team Boss - Metal Overlord.unity
+    guid: 8927807f8fba55d43b84be47642f1b1c
+  - enabled: 1
+    path: Assets/Scenes/Team Boss - Robot Carnival.unity
+    guid: 2b9163786f884c6419b443050baadbca
+  - enabled: 1
+    path: Assets/Scenes/Team Boss - Robot Storm.unity
+    guid: c396e0cf64bdd51418c1bae89f1866cc
+  - enabled: 1
+    path: Assets/Scenes/Team Chaotix - Ending.unity
+    guid: 99c0cfda579a31641afe9530d10fe914
+  - enabled: 1
+    path: Assets/Scenes/Team Chaotix - Opening.unity
+    guid: 2754cd48f420db943997dc2bd5776374
+  - enabled: 1
+    path: Assets/Scenes/Team Dark - Ending.unity
+    guid: 9915cfcf8de09394e9cd7973897468dd
+  - enabled: 1
+    path: Assets/Scenes/Team Dark - Opening.unity
+    guid: 4f4412fc3f367904e8f5fa46c96e54d8
+  - enabled: 1
+    path: Assets/Scenes/Team Rose - Ending.unity
+    guid: 79fd47add2bd72e48be5a38404457ebf
+  - enabled: 1
+    path: Assets/Scenes/Team Rose - Opening.unity
+    guid: 47938c0a444ee2c42836f7e03f767bff
+  - enabled: 1
+    path: Assets/Scenes/Team Sonic - Ending.unity
+    guid: 6dec4b0f2353dc04f9cb46b29a8f24f8
+  - enabled: 1
+    path: Assets/Scenes/Team Sonic - Opening.unity
+    guid: 25b35865c3c3c9347bfc8c433aaa1ccc
+  - enabled: 1
+    path: Assets/Scenes/Testing Ground.unity
+    guid: bbdcf307585cf32439ccfda311770027
+  - enabled: 1
+    path: Assets/Scenes/Thank You For Playing!.unity
+    guid: 782901d4257c21046a3f2794a6d72f0b
+  - enabled: 1
+    path: Assets/Scenes/Title Screen.unity
+    guid: 108c57edb86400941be85178594e8b5f
+  - enabled: 1
+    path: Assets/Scenes/Title Screen 2.unity
+    guid: 90aa4ade0301cd147a245a60376c1d8a
+  - enabled: 1
+    path: Assets/Scenes/Try Another Story!.unity
+    guid: 66d05b8b54f118d41a4d04db48152c2a
+  - enabled: 1
+    path: Assets/Scenes/Try Super Hard Mode!.unity
+    guid: a0a25c6a4e706f543bf6d62979d3d94b
+  - enabled: 1
+    path: Assets/Scenes/Vibration Settings.unity
+    guid: c738f5340cd982b41ac576a26cde426f
+  m_configObjects:
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 6068c046c3ee55e4b897cac69cf3d139, type: 3}

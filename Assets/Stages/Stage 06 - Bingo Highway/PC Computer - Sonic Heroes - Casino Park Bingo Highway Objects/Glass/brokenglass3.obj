@@ -1,0 +1,19 @@
+# Created by Metasequoia
+
+mtllib brokenglass3.mtl
+
+v -5.580300 -0.000100 -5.538900
+v 2.491300 -0.000100 5.732400
+v 3.558300 -0.000100 -0.172100
+# 3 vertices
+
+vt 0.24990 0.24990
+vt 0.49990 0.24990
+vt 0.49990 0.00000
+# 3 texture vertices
+
+g Object_1
+usemtl Material_1
+f 2/3 3/2 1/1
+# 1 elements
+

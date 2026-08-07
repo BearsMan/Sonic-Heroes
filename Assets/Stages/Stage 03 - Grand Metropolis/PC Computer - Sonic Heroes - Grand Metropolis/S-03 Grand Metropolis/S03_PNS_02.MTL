@@ -1,0 +1,5 @@
+#Exported by HeroesModelTool
+newmtl ps3_ami1_m
+	map_Kd ps3_ami1.png
+newmtl ps3_ami2_m
+	map_Kd ps3_ami2.png

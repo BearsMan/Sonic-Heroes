@@ -1,0 +1,9 @@
+# Created by Metasequoia
+
+newmtl Material_1
+Ka 0.25788 0.25788 0.25788
+Kd 0.34384 0.34384 0.34384
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd ef_bluel.png
+

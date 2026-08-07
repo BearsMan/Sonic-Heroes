@@ -1,0 +1,20 @@
+For Feature Reference ONLY BACK UP Assets / Project Settings Folder and Optionally - Visual Studio Solutions
+Fix Boostpads for New Player Movement - (Fixed/Done)
+Fix Change Gate - (Fixed/Done)
+Fix Camera Flicker (Fixed/Done)
+Fix Player Rotation (Fixed/Done)
+Fix End Goal Ring - (Fixed/Done)
+Fix Speed Boost - (Fixed/Done)
+Fix Terrain Path - (Fixed/Done)
+Create Save/Load System - (Not Created Yet)
+Fix Audio Objects to Sound Effect System (Not Created Yet)
+Create Audio Menu - (Not Created Yet)
+Create Scoring System For Every Level Finished With Grading System (Ranking From A to E) - (Fixed/Done)
+Create Audio Dialogs in Team Selections - (Fixed/Done)
+Create Tutorial Dialogs - (Fixed/Done)
+Create Auto Save System (Not Created)
+Create Auto Load System (Not Created)
+Fix Animation Controller with Movements - Rework (need to fix Fly)
+Create Icons and Faces (this is used with Character.cs and HUD.cs using CreateAssetMenu) - Fixed/Done
+Fix Crate Audio Spawn Breakage - Work In Progress
+Fix Homing Attack - Work In Progress

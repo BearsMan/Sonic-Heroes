@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bef732600fcc7c4089929a1d96902a8, type: 3}
+  m_Name: 99 Unsorted - 99 Cheese  3 Character Definition
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterDefinition
+  characterId: cheese--3
+  displayName: Cheese  3
+  characterType: 0
+  movementProfile: {fileID: 11400000, guid: 03cfe165b17a26b459bfd6037f9ed333, type: 2}
+  abilityProfile: {fileID: 11400000, guid: e519b218d321245428f51ce6348ee2e0, type: 2}
+  animatorProfile: {fileID: 11400000, guid: b631dd9c68c9ddb46b6fee0b49aab205, type: 2}
+  presentationProfile: {fileID: 11400000, guid: 06d063bdcb2b1734e858211cbc89312c, type: 2}
+  automaticSetup: 1
+  applyTypePresets: 1
+  autoAssignProjectAssets: 1
+  replaceInvalidAssignments: 1
+  logAutomaticAssignments: 1

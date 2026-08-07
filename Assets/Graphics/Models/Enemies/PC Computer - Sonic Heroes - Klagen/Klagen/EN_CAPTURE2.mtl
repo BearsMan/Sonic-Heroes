@@ -1,0 +1,9 @@
+# Created by Metasequoia
+
+newmtl Material_1
+Ka 0.48471 0.48471 0.48471
+Kd 0.64627 0.64627 0.64627
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd en_cap1.png
+

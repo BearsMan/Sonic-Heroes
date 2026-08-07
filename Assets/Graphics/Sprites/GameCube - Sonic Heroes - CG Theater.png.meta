@@ -1,0 +1,2285 @@
+fileFormatVersion: 2
+guid: 2f6c37fc2036071459daa35dfaed9856
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 8470156873035408551
+    second: GameCube - Sonic Heroes - CG Theater_0
+  - first:
+      213: 3923717118665387035
+    second: GameCube - Sonic Heroes - CG Theater_1
+  - first:
+      213: -3363421796389938905
+    second: GameCube - Sonic Heroes - CG Theater_2
+  - first:
+      213: -3291626502944103240
+    second: GameCube - Sonic Heroes - CG Theater_3
+  - first:
+      213: 4751796219735956119
+    second: GameCube - Sonic Heroes - CG Theater_4
+  - first:
+      213: 3303479595376663575
+    second: GameCube - Sonic Heroes - CG Theater_5
+  - first:
+      213: -4586736197331149622
+    second: GameCube - Sonic Heroes - CG Theater_6
+  - first:
+      213: -8198616457180272688
+    second: GameCube - Sonic Heroes - CG Theater_7
+  - first:
+      213: -6014063214415418702
+    second: GameCube - Sonic Heroes - CG Theater_8
+  - first:
+      213: -5125441932959913463
+    second: GameCube - Sonic Heroes - CG Theater_9
+  - first:
+      213: -7769261630865306931
+    second: GameCube - Sonic Heroes - CG Theater_10
+  - first:
+      213: 1329088907593353550
+    second: GameCube - Sonic Heroes - CG Theater_11
+  - first:
+      213: -2251559246754453419
+    second: GameCube - Sonic Heroes - CG Theater_12
+  - first:
+      213: -8812970373005918652
+    second: GameCube - Sonic Heroes - CG Theater_13
+  - first:
+      213: -9096135141247986384
+    second: GameCube - Sonic Heroes - CG Theater_14
+  - first:
+      213: -1006025386787400121
+    second: GameCube - Sonic Heroes - CG Theater_15
+  - first:
+      213: -3393413603139513294
+    second: GameCube - Sonic Heroes - CG Theater_16
+  - first:
+      213: 941352098692979878
+    second: GameCube - Sonic Heroes - CG Theater_17
+  - first:
+      213: 4851666855356929922
+    second: GameCube - Sonic Heroes - CG Theater_18
+  - first:
+      213: -8335489290742168474
+    second: GameCube - Sonic Heroes - CG Theater_19
+  - first:
+      213: 1017967235530595721
+    second: GameCube - Sonic Heroes - CG Theater_20
+  - first:
+      213: 3345321531486861627
+    second: GameCube - Sonic Heroes - CG Theater_21
+  - first:
+      213: -2897850576005107524
+    second: GameCube - Sonic Heroes - CG Theater_22
+  - first:
+      213: -5002454637482268476
+    second: GameCube - Sonic Heroes - CG Theater_23
+  - first:
+      213: -7346039333469000553
+    second: GameCube - Sonic Heroes - CG Theater_24
+  - first:
+      213: 8467826447659572593
+    second: GameCube - Sonic Heroes - CG Theater_25
+  - first:
+      213: -7139641885709116678
+    second: GameCube - Sonic Heroes - CG Theater_26
+  - first:
+      213: 557746648694047996
+    second: GameCube - Sonic Heroes - CG Theater_27
+  - first:
+      213: 7237500119147453256
+    second: GameCube - Sonic Heroes - CG Theater_28
+  - first:
+      213: 2166420011155219097
+    second: GameCube - Sonic Heroes - CG Theater_29
+  - first:
+      213: 7319892939827055362
+    second: GameCube - Sonic Heroes - CG Theater_30
+  - first:
+      213: 3004447819798640343
+    second: GameCube - Sonic Heroes - CG Theater_31
+  - first:
+      213: -1674520802472875230
+    second: GameCube - Sonic Heroes - CG Theater_32
+  - first:
+      213: -3370898652477016492
+    second: GameCube - Sonic Heroes - CG Theater_33
+  - first:
+      213: 3413969485995647346
+    second: GameCube - Sonic Heroes - CG Theater_34
+  - first:
+      213: 1114775709252670716
+    second: GameCube - Sonic Heroes - CG Theater_35
+  - first:
+      213: -1775404252403432141
+    second: GameCube - Sonic Heroes - CG Theater_36
+  - first:
+      213: 7257451643670522563
+    second: GameCube - Sonic Heroes - CG Theater_37
+  - first:
+      213: 699583957976243848
+    second: GameCube - Sonic Heroes - CG Theater_38
+  - first:
+      213: 2823457924530414166
+    second: GameCube - Sonic Heroes - CG Theater_39
+  - first:
+      213: -4211138421270286554
+    second: GameCube - Sonic Heroes - CG Theater_40
+  - first:
+      213: 8906922798138819270
+    second: GameCube - Sonic Heroes - CG Theater_41
+  - first:
+      213: 6579928665503557307
+    second: GameCube - Sonic Heroes - CG Theater_42
+  - first:
+      213: -3191215071048116584
+    second: GameCube - Sonic Heroes - CG Theater_43
+  - first:
+      213: -5088995684519263241
+    second: GameCube - Sonic Heroes - CG Theater_44
+  - first:
+      213: -4320273989121257763
+    second: GameCube - Sonic Heroes - CG Theater_45
+  - first:
+      213: 1084719233557133157
+    second: GameCube - Sonic Heroes - CG Theater_46
+  - first:
+      213: -3181077166414655315
+    second: GameCube - Sonic Heroes - CG Theater_47
+  - first:
+      213: -4982289168656486115
+    second: GameCube - Sonic Heroes - CG Theater_48
+  - first:
+      213: -354018093233620509
+    second: GameCube - Sonic Heroes - CG Theater_49
+  - first:
+      213: 465803146735120644
+    second: GameCube - Sonic Heroes - CG Theater_50
+  - first:
+      213: -7790083228230679119
+    second: GameCube - Sonic Heroes - CG Theater_51
+  - first:
+      213: 503787125770753193
+    second: GameCube - Sonic Heroes - CG Theater_52
+  - first:
+      213: -1533042858790465316
+    second: GameCube - Sonic Heroes - CG Theater_53
+  - first:
+      213: 7464145830143223896
+    second: GameCube - Sonic Heroes - CG Theater_54
+  - first:
+      213: 5004919126917624324
+    second: GameCube - Sonic Heroes - CG Theater_55
+  - first:
+      213: 7537576947226539231
+    second: GameCube - Sonic Heroes - CG Theater_56
+  - first:
+      213: 7280398620687701067
+    second: GameCube - Sonic Heroes - CG Theater_57
+  - first:
+      213: -5775849888446773401
+    second: GameCube - Sonic Heroes - CG Theater_58
+  - first:
+      213: -7019616732046055510
+    second: GameCube - Sonic Heroes - CG Theater_59
+  - first:
+      213: 9077099792580712248
+    second: GameCube - Sonic Heroes - CG Theater_60
+  - first:
+      213: -6887265104475907669
+    second: GameCube - Sonic Heroes - CG Theater_61
+  - first:
+      213: 1008902995971693370
+    second: GameCube - Sonic Heroes - CG Theater_62
+  - first:
+      213: -4956960843443485059
+    second: GameCube - Sonic Heroes - CG Theater_63
+  - first:
+      213: -5151127218563208156
+    second: GameCube - Sonic Heroes - CG Theater_64
+  - first:
+      213: -2413096103452595090
+    second: GameCube - Sonic Heroes - CG Theater_65
+  - first:
+      213: 418841051115684854
+    second: GameCube - Sonic Heroes - CG Theater_66
+  - first:
+      213: -2148739664015600701
+    second: GameCube - Sonic Heroes - CG Theater_67
+  - first:
+      213: -1214478330218238561
+    second: GameCube - Sonic Heroes - CG Theater_68
+  - first:
+      213: 6453697665703924312
+    second: GameCube - Sonic Heroes - CG Theater_69
+  - first:
+      213: -6935089900005690577
+    second: GameCube - Sonic Heroes - CG Theater_70
+  - first:
+      213: 6691918580399564967
+    second: GameCube - Sonic Heroes - CG Theater_71
+  - first:
+      213: 590216529978140472
+    second: GameCube - Sonic Heroes - CG Theater_72
+  - first:
+      213: 5509172504705109106
+    second: GameCube - Sonic Heroes - CG Theater_73
+  - first:
+      213: -8631087645385771681
+    second: GameCube - Sonic Heroes - CG Theater_74
+  - first:
+      213: 6000242909136123353
+    second: GameCube - Sonic Heroes - CG Theater_75
+  - first:
+      213: 601664883655751327
+    second: GameCube - Sonic Heroes - CG Theater_76
+  - first:
+      213: -1998533066297261035
+    second: GameCube - Sonic Heroes - CG Theater_77
+  - first:
+      213: -2666906128895502264
+    second: GameCube - Sonic Heroes - CG Theater_78
+  - first:
+      213: 6002542402645690772
+    second: GameCube - Sonic Heroes - CG Theater_79
+  - first:
+      213: 2857346771845706620
+    second: GameCube - Sonic Heroes - CG Theater_80
+  - first:
+      213: 373851827813382782
+    second: GameCube - Sonic Heroes - CG Theater_81
+  - first:
+      213: 5400635827436925606
+    second: GameCube - Sonic Heroes - CG Theater_82
+  - first:
+      213: 185775165429166913
+    second: GameCube - Sonic Heroes - CG Theater_83
+  - first:
+      213: 6025624994332628042
+    second: GameCube - Sonic Heroes - CG Theater_84
+  - first:
+      213: 2936592153592475804
+    second: GameCube - Sonic Heroes - CG Theater_85
+  - first:
+      213: 2355796217086226848
+    second: GameCube - Sonic Heroes - CG Theater_86
+  externalObjects: {}
+  serializedVersion: 11
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMasterTextureLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 0
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_0
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 788
+        width: 486
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7a4eb199cca0c8570800000000000000
+      internalID: 8470156873035408551
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_1
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 753
+        width: 51
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b1c6b214ee7d37630800000000000000
+      internalID: 3923717118665387035
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_2
+      rect:
+        serializedVersion: 2
+        x: 57
+        y: 753
+        width: 138
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7291f5442b9b251d0800000000000000
+      internalID: -3363421796389938905
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_3
+      rect:
+        serializedVersion: 2
+        x: 200
+        y: 753
+        width: 162
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8b461c6a22bc152d0800000000000000
+      internalID: -3291626502944103240
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_4
+      rect:
+        serializedVersion: 2
+        x: 367
+        y: 753
+        width: 137
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 79ad76a5c75c1f140800000000000000
+      internalID: 4751796219735956119
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_5
+      rect:
+        serializedVersion: 2
+        x: 509
+        y: 753
+        width: 51
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 71c5d2d703158dd20800000000000000
+      internalID: 3303479595376663575
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_6
+      rect:
+        serializedVersion: 2
+        x: 565
+        y: 753
+        width: 205
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: acc96a7eab3a850c0800000000000000
+      internalID: -4586736197331149622
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_7
+      rect:
+        serializedVersion: 2
+        x: 775
+        y: 753
+        width: 118
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0d7291435c9a83e80800000000000000
+      internalID: -8198616457180272688
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_8
+      rect:
+        serializedVersion: 2
+        x: 898
+        y: 753
+        width: 51
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2ba6600de51c98ca0800000000000000
+      internalID: -6014063214415418702
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_9
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 724
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 90a680db7b5ced8b0800000000000000
+      internalID: -5125441932959913463
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_10
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 724
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: dca8335c5b90e2490800000000000000
+      internalID: -7769261630865306931
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_11
+      rect:
+        serializedVersion: 2
+        x: 750
+        y: 724
+        width: 236
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e498304d15fd17210800000000000000
+      internalID: 1329088907593353550
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_12
+      rect:
+        serializedVersion: 2
+        x: 993
+        y: 724
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 558647a5bcad0c0e0800000000000000
+      internalID: -2251559246754453419
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_13
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 695
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 44eb0fc832a02b580800000000000000
+      internalID: -8812970373005918652
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_14
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 695
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 03557fc484904c180800000000000000
+      internalID: -9096135141247986384
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_15
+      rect:
+        serializedVersion: 2
+        x: 750
+        y: 695
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7461389ad31e902f0800000000000000
+      internalID: -1006025386787400121
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_16
+      rect:
+        serializedVersion: 2
+        x: 993
+        y: 695
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 23414e89e4c28e0d0800000000000000
+      internalID: -3393413603139513294
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_17
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 666
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6acd92b0fba501d00800000000000000
+      internalID: 941352098692979878
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_18
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 666
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 287161abc45945340800000000000000
+      internalID: 4851666855356929922
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_19
+      rect:
+        serializedVersion: 2
+        x: 750
+        y: 666
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6648d3447a4625c80800000000000000
+      internalID: -8335489290742168474
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_20
+      rect:
+        serializedVersion: 2
+        x: 993
+        y: 666
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 98d99caaecb802e00800000000000000
+      internalID: 1017967235530595721
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_21
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 405
+        width: 258
+        height: 238
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b397db76538fc6e20800000000000000
+      internalID: 3345321531486861627
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_22
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 637
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cb0fd0d2144c8c7d0800000000000000
+      internalID: -2897850576005107524
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_23
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 637
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4c82dd7e206b39ab0800000000000000
+      internalID: -5002454637482268476
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_24
+      rect:
+        serializedVersion: 2
+        x: 750
+        y: 637
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 79c688ea520ad0a90800000000000000
+      internalID: -7346039333469000553
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_25
+      rect:
+        serializedVersion: 2
+        x: 993
+        y: 637
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 17d18682a43c38570800000000000000
+      internalID: 8467826447659572593
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_26
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 608
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: afadeca4885eaec90800000000000000
+      internalID: -7139641885709116678
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_27
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 608
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cf4c2163f938db700800000000000000
+      internalID: 557746648694047996
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_28
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 579
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 84b91af2304c07460800000000000000
+      internalID: 7237500119147453256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_29
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 579
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 992643f958ba01e10800000000000000
+      internalID: 2166420011155219097
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_30
+      rect:
+        serializedVersion: 2
+        x: 750
+        y: 579
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 20b0848a8db759560800000000000000
+      internalID: 7319892939827055362
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_31
+      rect:
+        serializedVersion: 2
+        x: 993
+        y: 579
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7d67b45bf51f1b920800000000000000
+      internalID: 3004447819798640343
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_32
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 550
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 22b2a9fb338e2c8e0800000000000000
+      internalID: -1674520802472875230
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_33
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 550
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 456b34d09892831d0800000000000000
+      internalID: -3370898652477016492
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_34
+      rect:
+        serializedVersion: 2
+        x: 750
+        y: 550
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2712bc6d82bd06f20800000000000000
+      internalID: 3413969485995647346
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_35
+      rect:
+        serializedVersion: 2
+        x: 993
+        y: 550
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cf45d3ae99a787f00800000000000000
+      internalID: 1114775709252670716
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_36
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 521
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 33586ca2d3f7c57e0800000000000000
+      internalID: -1775404252403432141
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_37
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 521
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3ca6e8b71d5a7b460800000000000000
+      internalID: 7257451643670522563
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_38
+      rect:
+        serializedVersion: 2
+        x: 750
+        y: 521
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 88e5cb937eb65b900800000000000000
+      internalID: 699583957976243848
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_39
+      rect:
+        serializedVersion: 2
+        x: 993
+        y: 521
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 652a5e5e500fe2720800000000000000
+      internalID: 2823457924530414166
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_40
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 492
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 62f6f2cdae70f85c0800000000000000
+      internalID: -4211138421270286554
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_41
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 492
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6c284e0181fbb9b70800000000000000
+      internalID: 8906922798138819270
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_42
+      rect:
+        serializedVersion: 2
+        x: 750
+        y: 492
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: bb6efb2624a905b50800000000000000
+      internalID: 6579928665503557307
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_43
+      rect:
+        serializedVersion: 2
+        x: 993
+        y: 492
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 896dd48fcc686b3d0800000000000000
+      internalID: -3191215071048116584
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_44
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 463
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7f3cbb833614069b0800000000000000
+      internalID: -5088995684519263241
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_45
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 463
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: dde411a52bd4b04c0800000000000000
+      internalID: -4320273989121257763
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_46
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 434
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 567f4355562bd0f00800000000000000
+      internalID: 1084719233557133157
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_47
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 434
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: da09fb4db2b8ad3d0800000000000000
+      internalID: -3181077166414655315
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_48
+      rect:
+        serializedVersion: 2
+        x: 1076
+        y: 321
+        width: 156
+        height: 123
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d1134fdf56a5bdab0800000000000000
+      internalID: -4982289168656486115
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_49
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 405
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3e9bfbc7b66461bf0800000000000000
+      internalID: -354018093233620509
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_50
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 405
+        width: 238
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 401f7687e7dd67600800000000000000
+      internalID: 465803146735120644
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_51
+      rect:
+        serializedVersion: 2
+        x: 750
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1b5059ad39014e390800000000000000
+      internalID: -7790083228230679119
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_52
+      rect:
+        serializedVersion: 2
+        x: 761
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9a41bf1c8bfcdf600800000000000000
+      internalID: 503787125770753193
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_53
+      rect:
+        serializedVersion: 2
+        x: 772
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cd0585074a989bae0800000000000000
+      internalID: -1533042858790465316
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_54
+      rect:
+        serializedVersion: 2
+        x: 783
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8586665f519f59760800000000000000
+      internalID: 7464145830143223896
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_55
+      rect:
+        serializedVersion: 2
+        x: 794
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 402bb71cd6b057540800000000000000
+      internalID: 5004919126917624324
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_56
+      rect:
+        serializedVersion: 2
+        x: 805
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fd47c963c4ada9860800000000000000
+      internalID: 7537576947226539231
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_57
+      rect:
+        serializedVersion: 2
+        x: 816
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b449559e8fb290560800000000000000
+      internalID: 7280398620687701067
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_58
+      rect:
+        serializedVersion: 2
+        x: 827
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7678623d02f08dfa0800000000000000
+      internalID: -5775849888446773401
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_59
+      rect:
+        serializedVersion: 2
+        x: 834
+        y: 405
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: aa7a10316cf459e90800000000000000
+      internalID: -7019616732046055510
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_60
+      rect:
+        serializedVersion: 2
+        x: 849
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8379b873b2658fd70800000000000000
+      internalID: 9077099792580712248
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_61
+      rect:
+        serializedVersion: 2
+        x: 857
+        y: 405
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ba915c5b0e48b60a0800000000000000
+      internalID: -6887265104475907669
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_62
+      rect:
+        serializedVersion: 2
+        x: 871
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a3b58bfede7500e00800000000000000
+      internalID: 1008902995971693370
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_63
+      rect:
+        serializedVersion: 2
+        x: 879
+        y: 405
+        width: 24
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d76c7014066553bb0800000000000000
+      internalID: -4956960843443485059
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_64
+      rect:
+        serializedVersion: 2
+        x: 904
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 42ca1b826158388b0800000000000000
+      internalID: -5151127218563208156
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_65
+      rect:
+        serializedVersion: 2
+        x: 915
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e6c24d801e5f28ed0800000000000000
+      internalID: -2413096103452595090
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_66
+      rect:
+        serializedVersion: 2
+        x: 926
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6f30a1587b500d500800000000000000
+      internalID: 418841051115684854
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_67
+      rect:
+        serializedVersion: 2
+        x: 937
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3c3de8bf8a42e22e0800000000000000
+      internalID: -2148739664015600701
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_68
+      rect:
+        serializedVersion: 2
+        x: 948
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f9daeeba46e452fe0800000000000000
+      internalID: -1214478330218238561
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_69
+      rect:
+        serializedVersion: 2
+        x: 959
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 852dc0475d3209950800000000000000
+      internalID: 6453697665703924312
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_70
+      rect:
+        serializedVersion: 2
+        x: 970
+        y: 405
+        width: 10
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f23f2c8ca7c91cf90800000000000000
+      internalID: -6935089900005690577
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_71
+      rect:
+        serializedVersion: 2
+        x: 981
+        y: 405
+        width: 4
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7a86d8a5e787edc50800000000000000
+      internalID: 6691918580399564967
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_72
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 279
+        width: 142
+        height: 71
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 83729e19eced03800800000000000000
+      internalID: 590216529978140472
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_73
+      rect:
+        serializedVersion: 2
+        x: 149
+        y: 279
+        width: 145
+        height: 118
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 27c0c454433847c40800000000000000
+      internalID: 5509172504705109106
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_74
+      rect:
+        serializedVersion: 2
+        x: 300
+        y: 279
+        width: 68
+        height: 68
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f55b4871487383880800000000000000
+      internalID: -8631087645385771681
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_75
+      rect:
+        serializedVersion: 2
+        x: 373
+        y: 279
+        width: 68
+        height: 68
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9d57d1d9225254350800000000000000
+      internalID: 6000242909136123353
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_76
+      rect:
+        serializedVersion: 2
+        x: 446
+        y: 279
+        width: 40
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f96b020260b895800800000000000000
+      internalID: 601664883655751327
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_77
+      rect:
+        serializedVersion: 2
+        x: 492
+        y: 279
+        width: 75
+        height: 121
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 514ca7fc3c8c344e0800000000000000
+      internalID: -1998533066297261035
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_78
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 139
+        width: 164
+        height: 135
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8481fd1710f3dfad0800000000000000
+      internalID: -2666906128895502264
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_79
+      rect:
+        serializedVersion: 2
+        x: 170
+        y: 139
+        width: 164
+        height: 135
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4998aea23805d4350800000000000000
+      internalID: 6002542402645690772
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_80
+      rect:
+        serializedVersion: 2
+        x: 339
+        y: 139
+        width: 163
+        height: 133
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c73f8f700c557a720800000000000000
+      internalID: 2857346771845706620
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_81
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 139
+        width: 163
+        height: 133
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e7a7273b140303500800000000000000
+      internalID: 373851827813382782
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_82
+      rect:
+        serializedVersion: 2
+        x: 675
+        y: 139
+        width: 163
+        height: 133
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6a230a7dba9e2fa40800000000000000
+      internalID: 5400635827436925606
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_83
+      rect:
+        serializedVersion: 2
+        x: 843
+        y: 139
+        width: 163
+        height: 133
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 143be775781049200800000000000000
+      internalID: 185775165429166913
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_84
+      rect:
+        serializedVersion: 2
+        x: 1011
+        y: 139
+        width: 163
+        height: 133
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a4459e8d1025f9350800000000000000
+      internalID: 6025624994332628042
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_85
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 1
+        width: 163
+        height: 133
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c903415410fd0c820800000000000000
+      internalID: 2936592153592475804
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - CG Theater_86
+      rect:
+        serializedVersion: 2
+        x: 169
+        y: 1
+        width: 163
+        height: 133
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0a132aa8d2871b020800000000000000
+      internalID: 2355796217086226848
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      GameCube - Sonic Heroes - CG Theater_6: -4586736197331149622
+      GameCube - Sonic Heroes - CG Theater_26: -7139641885709116678
+      GameCube - Sonic Heroes - CG Theater_82: 5400635827436925606
+      GameCube - Sonic Heroes - CG Theater_69: 6453697665703924312
+      GameCube - Sonic Heroes - CG Theater_70: -6935089900005690577
+      GameCube - Sonic Heroes - CG Theater_78: -2666906128895502264
+      GameCube - Sonic Heroes - CG Theater_44: -5088995684519263241
+      GameCube - Sonic Heroes - CG Theater_30: 7319892939827055362
+      GameCube - Sonic Heroes - CG Theater_34: 3413969485995647346
+      GameCube - Sonic Heroes - CG Theater_3: -3291626502944103240
+      GameCube - Sonic Heroes - CG Theater_25: 8467826447659572593
+      GameCube - Sonic Heroes - CG Theater_14: -9096135141247986384
+      GameCube - Sonic Heroes - CG Theater_71: 6691918580399564967
+      GameCube - Sonic Heroes - CG Theater_40: -4211138421270286554
+      GameCube - Sonic Heroes - CG Theater_48: -4982289168656486115
+      GameCube - Sonic Heroes - CG Theater_17: 941352098692979878
+      GameCube - Sonic Heroes - CG Theater_0: 8470156873035408551
+      GameCube - Sonic Heroes - CG Theater_46: 1084719233557133157
+      GameCube - Sonic Heroes - CG Theater_74: -8631087645385771681
+      GameCube - Sonic Heroes - CG Theater_83: 185775165429166913
+      GameCube - Sonic Heroes - CG Theater_36: -1775404252403432141
+      GameCube - Sonic Heroes - CG Theater_64: -5151127218563208156
+      GameCube - Sonic Heroes - CG Theater_66: 418841051115684854
+      GameCube - Sonic Heroes - CG Theater_73: 5509172504705109106
+      GameCube - Sonic Heroes - CG Theater_16: -3393413603139513294
+      GameCube - Sonic Heroes - CG Theater_27: 557746648694047996
+      GameCube - Sonic Heroes - CG Theater_53: -1533042858790465316
+      GameCube - Sonic Heroes - CG Theater_68: -1214478330218238561
+      GameCube - Sonic Heroes - CG Theater_23: -5002454637482268476
+      GameCube - Sonic Heroes - CG Theater_63: -4956960843443485059
+      GameCube - Sonic Heroes - CG Theater_45: -4320273989121257763
+      GameCube - Sonic Heroes - CG Theater_52: 503787125770753193
+      GameCube - Sonic Heroes - CG Theater_29: 2166420011155219097
+      GameCube - Sonic Heroes - CG Theater_4: 4751796219735956119
+      GameCube - Sonic Heroes - CG Theater_5: 3303479595376663575
+      GameCube - Sonic Heroes - CG Theater_50: 465803146735120644
+      GameCube - Sonic Heroes - CG Theater_8: -6014063214415418702
+      GameCube - Sonic Heroes - CG Theater_60: 9077099792580712248
+      GameCube - Sonic Heroes - CG Theater_20: 1017967235530595721
+      GameCube - Sonic Heroes - CG Theater_56: 7537576947226539231
+      GameCube - Sonic Heroes - CG Theater_49: -354018093233620509
+      GameCube - Sonic Heroes - CG Theater_57: 7280398620687701067
+      GameCube - Sonic Heroes - CG Theater_19: -8335489290742168474
+      GameCube - Sonic Heroes - CG Theater_11: 1329088907593353550
+      GameCube - Sonic Heroes - CG Theater_35: 1114775709252670716
+      GameCube - Sonic Heroes - CG Theater_81: 373851827813382782
+      GameCube - Sonic Heroes - CG Theater_76: 601664883655751327
+      GameCube - Sonic Heroes - CG Theater_32: -1674520802472875230
+      GameCube - Sonic Heroes - CG Theater_12: -2251559246754453419
+      GameCube - Sonic Heroes - CG Theater_58: -5775849888446773401
+      GameCube - Sonic Heroes - CG Theater_54: 7464145830143223896
+      GameCube - Sonic Heroes - CG Theater_80: 2857346771845706620
+      GameCube - Sonic Heroes - CG Theater_47: -3181077166414655315
+      GameCube - Sonic Heroes - CG Theater_55: 5004919126917624324
+      GameCube - Sonic Heroes - CG Theater_15: -1006025386787400121
+      GameCube - Sonic Heroes - CG Theater_41: 8906922798138819270
+      GameCube - Sonic Heroes - CG Theater_62: 1008902995971693370
+      GameCube - Sonic Heroes - CG Theater_59: -7019616732046055510
+      GameCube - Sonic Heroes - CG Theater_67: -2148739664015600701
+      GameCube - Sonic Heroes - CG Theater_7: -8198616457180272688
+      GameCube - Sonic Heroes - CG Theater_1: 3923717118665387035
+      GameCube - Sonic Heroes - CG Theater_39: 2823457924530414166
+      GameCube - Sonic Heroes - CG Theater_2: -3363421796389938905
+      GameCube - Sonic Heroes - CG Theater_31: 3004447819798640343
+      GameCube - Sonic Heroes - CG Theater_84: 6025624994332628042
+      GameCube - Sonic Heroes - CG Theater_42: 6579928665503557307
+      GameCube - Sonic Heroes - CG Theater_79: 6002542402645690772
+      GameCube - Sonic Heroes - CG Theater_43: -3191215071048116584
+      GameCube - Sonic Heroes - CG Theater_13: -8812970373005918652
+      GameCube - Sonic Heroes - CG Theater_51: -7790083228230679119
+      GameCube - Sonic Heroes - CG Theater_21: 3345321531486861627
+      GameCube - Sonic Heroes - CG Theater_86: 2355796217086226848
+      GameCube - Sonic Heroes - CG Theater_33: -3370898652477016492
+      GameCube - Sonic Heroes - CG Theater_9: -5125441932959913463
+      GameCube - Sonic Heroes - CG Theater_75: 6000242909136123353
+      GameCube - Sonic Heroes - CG Theater_72: 590216529978140472
+      GameCube - Sonic Heroes - CG Theater_61: -6887265104475907669
+      GameCube - Sonic Heroes - CG Theater_18: 4851666855356929922
+      GameCube - Sonic Heroes - CG Theater_24: -7346039333469000553
+      GameCube - Sonic Heroes - CG Theater_10: -7769261630865306931
+      GameCube - Sonic Heroes - CG Theater_85: 2936592153592475804
+      GameCube - Sonic Heroes - CG Theater_37: 7257451643670522563
+      GameCube - Sonic Heroes - CG Theater_38: 699583957976243848
+      GameCube - Sonic Heroes - CG Theater_28: 7237500119147453256
+      GameCube - Sonic Heroes - CG Theater_77: -1998533066297261035
+      GameCube - Sonic Heroes - CG Theater_22: -2897850576005107524
+      GameCube - Sonic Heroes - CG Theater_65: -2413096103452595090
+  spritePackingTag: 
+  pSDRemoveMatte: 0
+  pSDShowRemoveMatteOption: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -1,0 +1,9 @@
+# Created by Metasequoia
+
+newmtl Material_1
+Ka 0.50117 0.50117 0.50117
+Kd 0.66823 0.66823 0.66823
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd en_pw0.png
+

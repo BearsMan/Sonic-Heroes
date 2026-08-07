@@ -1,0 +1,785 @@
+fileFormatVersion: 2
+guid: 79b62094f70e6df439f242adca055767
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 5951593025941093359
+    second: GameCube - Sonic Heroes - Character Icons_0
+  - first:
+      213: -7598729109619003899
+    second: GameCube - Sonic Heroes - Character Icons_1
+  - first:
+      213: -4996682949324913312
+    second: GameCube - Sonic Heroes - Character Icons_2
+  - first:
+      213: 8757939041372814058
+    second: GameCube - Sonic Heroes - Character Icons_3
+  - first:
+      213: 2949753350162032069
+    second: GameCube - Sonic Heroes - Character Icons_4
+  - first:
+      213: -3052721012519661211
+    second: GameCube - Sonic Heroes - Character Icons_5
+  - first:
+      213: -7690601920758296899
+    second: GameCube - Sonic Heroes - Character Icons_6
+  - first:
+      213: -3692630915166917641
+    second: GameCube - Sonic Heroes - Character Icons_7
+  - first:
+      213: -2567825650161966522
+    second: GameCube - Sonic Heroes - Character Icons_8
+  - first:
+      213: -7106509431525651853
+    second: GameCube - Sonic Heroes - Character Icons_9
+  - first:
+      213: -8498019203058089258
+    second: GameCube - Sonic Heroes - Character Icons_10
+  - first:
+      213: 590297319963688366
+    second: GameCube - Sonic Heroes - Character Icons_11
+  - first:
+      213: 4387614541064639787
+    second: GameCube - Sonic Heroes - Character Icons_12
+  - first:
+      213: -206649785932727057
+    second: GameCube - Sonic Heroes - Character Icons_13
+  - first:
+      213: -2805014278692218681
+    second: GameCube - Sonic Heroes - Character Icons_14
+  - first:
+      213: -4615659618171577848
+    second: GameCube - Sonic Heroes - Character Icons_15
+  - first:
+      213: 3866494638794099945
+    second: GameCube - Sonic Heroes - Character Icons_16
+  - first:
+      213: 1760836183381965232
+    second: GameCube - Sonic Heroes - Character Icons_17
+  - first:
+      213: -1958199605116832168
+    second: GameCube - Sonic Heroes - Character Icons_18
+  - first:
+      213: 8863434037853572427
+    second: GameCube - Sonic Heroes - Character Icons_19
+  - first:
+      213: -8930110062505186031
+    second: GameCube - Sonic Heroes - Character Icons_20
+  - first:
+      213: -5666308617450592918
+    second: GameCube - Sonic Heroes - Character Icons_21
+  - first:
+      213: 674532655455405842
+    second: GameCube - Sonic Heroes - Character Icons_22
+  - first:
+      213: 2809018429824037566
+    second: GameCube - Sonic Heroes - Character Icons_23
+  - first:
+      213: -4584075899208230387
+    second: GameCube - Sonic Heroes - Character Icons_24
+  - first:
+      213: -3844316699581956660
+    second: GameCube - Sonic Heroes - Character Icons_25
+  - first:
+      213: 4669007396939723863
+    second: GameCube - Sonic Heroes - Character Icons_26
+  externalObjects: {}
+  serializedVersion: 11
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMasterTextureLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_0
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 257
+        width: 56
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: feb39eef25e489250800000000000000
+      internalID: 5951593025941093359
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_1
+      rect:
+        serializedVersion: 2
+        x: 67
+        y: 256
+        width: 57
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 50e2db47224eb8690800000000000000
+      internalID: -7598729109619003899
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_2
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 256
+        width: 55
+        height: 63
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 065cc36c45738aab0800000000000000
+      internalID: -4996682949324913312
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_3
+      rect:
+        serializedVersion: 2
+        x: 196
+        y: 257
+        width: 56
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: aea3d8518237a8970800000000000000
+      internalID: 8757939041372814058
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_4
+      rect:
+        serializedVersion: 2
+        x: 259
+        y: 256
+        width: 57
+        height: 64
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5c52d632b01afe820800000000000000
+      internalID: 2949753350162032069
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_5
+      rect:
+        serializedVersion: 2
+        x: 324
+        y: 256
+        width: 55
+        height: 63
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5611562c96e82a5d0800000000000000
+      internalID: -3052721012519661211
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_6
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 288
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: dbec344bc4e754590800000000000000
+      internalID: -7690601920758296899
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_7
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 264
+        width: 8
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7fba9de3fb321ccc0800000000000000
+      internalID: -3692630915166917641
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_8
+      rect:
+        serializedVersion: 2
+        x: 14
+        y: 207
+        width: 40
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 642a5f41d204d5cd0800000000000000
+      internalID: -2567825650161966522
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_9
+      rect:
+        serializedVersion: 2
+        x: 80
+        y: 207
+        width: 38
+        height: 42
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 37a43fce25b906d90800000000000000
+      internalID: -7106509431525651853
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_10
+      rect:
+        serializedVersion: 2
+        x: 143
+        y: 207
+        width: 34
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6d2464b2f88f01a80800000000000000
+      internalID: -8498019203058089258
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_11
+      rect:
+        serializedVersion: 2
+        x: 206
+        y: 207
+        width: 40
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: eadfc44f848213800800000000000000
+      internalID: 590297319963688366
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_12
+      rect:
+        serializedVersion: 2
+        x: 272
+        y: 209
+        width: 16
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b251f73bd20f3ec30800000000000000
+      internalID: 4387614541064639787
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_13
+      rect:
+        serializedVersion: 2
+        x: 304
+        y: 209
+        width: 16
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fecb1945d15d12df0800000000000000
+      internalID: -206649785932727057
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_14
+      rect:
+        serializedVersion: 2
+        x: 3
+        y: 142
+        width: 50
+        height: 41
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7c8d6a800669219d0800000000000000
+      internalID: -2805014278692218681
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_15
+      rect:
+        serializedVersion: 2
+        x: 70
+        y: 143
+        width: 44
+        height: 47
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 80a94c63802e1ffb0800000000000000
+      internalID: -4615659618171577848
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_16
+      rect:
+        serializedVersion: 2
+        x: 141
+        y: 143
+        width: 37
+        height: 34
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9ec464f636c88a530800000000000000
+      internalID: 3866494638794099945
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_17
+      rect:
+        serializedVersion: 2
+        x: 194
+        y: 144
+        width: 50
+        height: 41
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0b9f222fd2fbf6810800000000000000
+      internalID: 1760836183381965232
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_18
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 79
+        width: 39
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 85673b985d313d4e0800000000000000
+      internalID: -1958199605116832168
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_19
+      rect:
+        serializedVersion: 2
+        x: 77
+        y: 79
+        width: 45
+        height: 44
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b4d4e540c4e310b70800000000000000
+      internalID: 8863434037853572427
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_20
+      rect:
+        serializedVersion: 2
+        x: 133
+        y: 78
+        width: 58
+        height: 40
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 11dac3f3630e11480800000000000000
+      internalID: -8930110062505186031
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_21
+      rect:
+        serializedVersion: 2
+        x: 201
+        y: 81
+        width: 39
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a656f15755a3d51b0800000000000000
+      internalID: -5666308617450592918
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_22
+      rect:
+        serializedVersion: 2
+        x: 292
+        y: 0
+        width: 156
+        height: 121
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 21702d550eb6c5900800000000000000
+      internalID: 674532655455405842
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_23
+      rect:
+        serializedVersion: 2
+        x: 14
+        y: 15
+        width: 39
+        height: 45
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: eb2ff2d0163abf620800000000000000
+      internalID: 2809018429824037566
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_24
+      rect:
+        serializedVersion: 2
+        x: 78
+        y: 15
+        width: 36
+        height: 47
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d0a9344d1471260c0800000000000000
+      internalID: -4584075899208230387
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_25
+      rect:
+        serializedVersion: 2
+        x: 131
+        y: 15
+        width: 51
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ccdb05d645e36aac0800000000000000
+      internalID: -3844316699581956660
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Character Icons_26
+      rect:
+        serializedVersion: 2
+        x: 205
+        y: 17
+        width: 39
+        height: 45
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 75473447d75abc040800000000000000
+      internalID: 4669007396939723863
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      GameCube - Sonic Heroes - Character Icons_16: 3866494638794099945
+      GameCube - Sonic Heroes - Character Icons_12: 4387614541064639787
+      GameCube - Sonic Heroes - Character Icons_14: -2805014278692218681
+      GameCube - Sonic Heroes - Character Icons_9: -7106509431525651853
+      GameCube - Sonic Heroes - Character Icons_22: 674532655455405842
+      GameCube - Sonic Heroes - Character Icons_7: -3692630915166917641
+      GameCube - Sonic Heroes - Character Icons_25: -3844316699581956660
+      GameCube - Sonic Heroes - Character Icons_3: 8757939041372814058
+      GameCube - Sonic Heroes - Character Icons_20: -8930110062505186031
+      GameCube - Sonic Heroes - Character Icons_24: -4584075899208230387
+      GameCube - Sonic Heroes - Character Icons_21: -5666308617450592918
+      GameCube - Sonic Heroes - Character Icons_1: -7598729109619003899
+      GameCube - Sonic Heroes - Character Icons_8: -2567825650161966522
+      GameCube - Sonic Heroes - Character Icons_6: -7690601920758296899
+      GameCube - Sonic Heroes - Character Icons_10: -8498019203058089258
+      GameCube - Sonic Heroes - Character Icons_17: 1760836183381965232
+      GameCube - Sonic Heroes - Character Icons_23: 2809018429824037566
+      GameCube - Sonic Heroes - Character Icons_2: -4996682949324913312
+      GameCube - Sonic Heroes - Character Icons_26: 4669007396939723863
+      GameCube - Sonic Heroes - Character Icons_4: 2949753350162032069
+      GameCube - Sonic Heroes - Character Icons_0: 5951593025941093359
+      GameCube - Sonic Heroes - Character Icons_18: -1958199605116832168
+      GameCube - Sonic Heroes - Character Icons_5: -3052721012519661211
+      GameCube - Sonic Heroes - Character Icons_11: 590297319963688366
+      GameCube - Sonic Heroes - Character Icons_19: 8863434037853572427
+      GameCube - Sonic Heroes - Character Icons_15: -4615659618171577848
+      GameCube - Sonic Heroes - Character Icons_13: -206649785932727057
+  spritePackingTag: 
+  pSDRemoveMatte: 0
+  pSDShowRemoveMatteOption: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

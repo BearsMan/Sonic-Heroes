@@ -1,0 +1,51 @@
+# Created by Metasequoia
+
+newmtl Material_3
+Ka 0.00000 0.00000 0.00000
+Kd 0.00000 0.00000 0.00000
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd obj_ring.png
+
+newmtl Material_4
+Ka 0.00000 0.00000 0.00000
+Kd 0.00000 0.00000 0.00000
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd o_off.png
+
+newmtl Material_6
+Ka 0.00000 0.00000 0.00000
+Kd 0.00000 0.00000 0.00000
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd obj_a1.png
+
+newmtl Material_7
+Ka 0.00000 0.00000 0.00000
+Kd 0.00000 0.00000 0.00000
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd obj_dshr.png
+
+newmtl Material_8
+Ka 0.00000 0.00000 0.00000
+Kd 0.00000 0.00000 0.00000
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd obj_a0.png
+
+newmtl mat1
+Ka 0.00000 0.00000 0.00000
+Kd 0.00000 0.00000 0.00000
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd obj_dsr2.png
+
+newmtl mat2
+Ka 0.00000 0.00000 0.00000
+Kd 0.00000 0.00000 0.00000
+Ks 0.00000 0.00000 0.00000
+Ns 5.00000
+map_Kd obj_bob1.png
+

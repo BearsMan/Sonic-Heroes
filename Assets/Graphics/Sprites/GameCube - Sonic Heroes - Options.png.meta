@@ -1,0 +1,1860 @@
+fileFormatVersion: 2
+guid: cb4575b762bbc1f4db5108e42309e030
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -6227290737516663716
+    second: GameCube - Sonic Heroes - Options_0
+  - first:
+      213: -4748634695336667873
+    second: GameCube - Sonic Heroes - Options_1
+  - first:
+      213: -6088246184037418668
+    second: GameCube - Sonic Heroes - Options_2
+  - first:
+      213: 8003877415397515587
+    second: GameCube - Sonic Heroes - Options_3
+  - first:
+      213: 2525384454941244026
+    second: GameCube - Sonic Heroes - Options_4
+  - first:
+      213: -2324638830726368778
+    second: GameCube - Sonic Heroes - Options_5
+  - first:
+      213: -8012799861984009862
+    second: GameCube - Sonic Heroes - Options_6
+  - first:
+      213: -7764404494106021652
+    second: GameCube - Sonic Heroes - Options_7
+  - first:
+      213: -2769250506540665700
+    second: GameCube - Sonic Heroes - Options_8
+  - first:
+      213: -4036329776509782144
+    second: GameCube - Sonic Heroes - Options_9
+  - first:
+      213: 6572719370106145317
+    second: GameCube - Sonic Heroes - Options_10
+  - first:
+      213: -8859482277732577780
+    second: GameCube - Sonic Heroes - Options_11
+  - first:
+      213: 6908486650534006828
+    second: GameCube - Sonic Heroes - Options_12
+  - first:
+      213: 5680014339128911149
+    second: GameCube - Sonic Heroes - Options_13
+  - first:
+      213: 7501850862320075637
+    second: GameCube - Sonic Heroes - Options_14
+  - first:
+      213: -5275500462870392730
+    second: GameCube - Sonic Heroes - Options_15
+  - first:
+      213: 7561799069111045407
+    second: GameCube - Sonic Heroes - Options_16
+  - first:
+      213: -6423888877909833558
+    second: GameCube - Sonic Heroes - Options_17
+  - first:
+      213: 1649225022325244870
+    second: GameCube - Sonic Heroes - Options_18
+  - first:
+      213: 1531029788582985357
+    second: GameCube - Sonic Heroes - Options_19
+  - first:
+      213: 8133233035080822081
+    second: GameCube - Sonic Heroes - Options_20
+  - first:
+      213: 6083222157754829954
+    second: GameCube - Sonic Heroes - Options_21
+  - first:
+      213: 5152133518191584395
+    second: GameCube - Sonic Heroes - Options_22
+  - first:
+      213: 5138982279164234827
+    second: GameCube - Sonic Heroes - Options_23
+  - first:
+      213: 2325483435233810868
+    second: GameCube - Sonic Heroes - Options_24
+  - first:
+      213: 2494568708097195244
+    second: GameCube - Sonic Heroes - Options_25
+  - first:
+      213: 8670112238207977219
+    second: GameCube - Sonic Heroes - Options_26
+  - first:
+      213: 3249976617574149876
+    second: GameCube - Sonic Heroes - Options_27
+  - first:
+      213: -7431761405609718026
+    second: GameCube - Sonic Heroes - Options_28
+  - first:
+      213: -459257338723769577
+    second: GameCube - Sonic Heroes - Options_29
+  - first:
+      213: -955285753031065024
+    second: GameCube - Sonic Heroes - Options_30
+  - first:
+      213: 804018322337094452
+    second: GameCube - Sonic Heroes - Options_31
+  - first:
+      213: -7753700763219027654
+    second: GameCube - Sonic Heroes - Options_32
+  - first:
+      213: -1574142699398475548
+    second: GameCube - Sonic Heroes - Options_33
+  - first:
+      213: 7402697277589660702
+    second: GameCube - Sonic Heroes - Options_34
+  - first:
+      213: 5692823476742907363
+    second: GameCube - Sonic Heroes - Options_35
+  - first:
+      213: 3897566045328063945
+    second: GameCube - Sonic Heroes - Options_36
+  - first:
+      213: -6455240389784592957
+    second: GameCube - Sonic Heroes - Options_37
+  - first:
+      213: 8511088339352645581
+    second: GameCube - Sonic Heroes - Options_38
+  - first:
+      213: 5657662398173432964
+    second: GameCube - Sonic Heroes - Options_39
+  - first:
+      213: -2516957094702765226
+    second: GameCube - Sonic Heroes - Options_40
+  - first:
+      213: 3419945269108131048
+    second: GameCube - Sonic Heroes - Options_41
+  - first:
+      213: 4386374192493747310
+    second: GameCube - Sonic Heroes - Options_42
+  - first:
+      213: 6121876499040110335
+    second: GameCube - Sonic Heroes - Options_43
+  - first:
+      213: 5687212823064676391
+    second: GameCube - Sonic Heroes - Options_44
+  - first:
+      213: -9200767634759906910
+    second: GameCube - Sonic Heroes - Options_45
+  - first:
+      213: -3235770494348529158
+    second: GameCube - Sonic Heroes - Options_46
+  - first:
+      213: 3114562793366864341
+    second: GameCube - Sonic Heroes - Options_47
+  - first:
+      213: 8496249197064415953
+    second: GameCube - Sonic Heroes - Options_48
+  - first:
+      213: -3938342742637921658
+    second: GameCube - Sonic Heroes - Options_49
+  - first:
+      213: 3838605406421636417
+    second: GameCube - Sonic Heroes - Options_50
+  - first:
+      213: 6619551063095188124
+    second: GameCube - Sonic Heroes - Options_51
+  - first:
+      213: 2750485376124009138
+    second: GameCube - Sonic Heroes - Options_52
+  - first:
+      213: 7498385939001914161
+    second: GameCube - Sonic Heroes - Options_53
+  - first:
+      213: -1051018301649015632
+    second: GameCube - Sonic Heroes - Options_54
+  - first:
+      213: 6385112026473486439
+    second: GameCube - Sonic Heroes - Options_55
+  - first:
+      213: 6330196260185228279
+    second: GameCube - Sonic Heroes - Options_56
+  - first:
+      213: -9105180153600540354
+    second: GameCube - Sonic Heroes - Options_57
+  - first:
+      213: 2300936202086997023
+    second: GameCube - Sonic Heroes - Options_58
+  - first:
+      213: 4001500617932626609
+    second: GameCube - Sonic Heroes - Options_59
+  - first:
+      213: -7426963672902698979
+    second: GameCube - Sonic Heroes - Options_60
+  - first:
+      213: 7309519007182000193
+    second: GameCube - Sonic Heroes - Options_61
+  - first:
+      213: -1715306898232731555
+    second: GameCube - Sonic Heroes - Options_62
+  - first:
+      213: -5645818163727105398
+    second: GameCube - Sonic Heroes - Options_63
+  - first:
+      213: 1549319709811298426
+    second: GameCube - Sonic Heroes - Options_64
+  - first:
+      213: -7168564726540674908
+    second: GameCube - Sonic Heroes - Options_65
+  - first:
+      213: -8760764580442451281
+    second: GameCube - Sonic Heroes - Options_66
+  - first:
+      213: 2195981268362910995
+    second: GameCube - Sonic Heroes - Options_67
+  - first:
+      213: 5730491755769244245
+    second: GameCube - Sonic Heroes - Options_68
+  - first:
+      213: -4239506149815620287
+    second: GameCube - Sonic Heroes - Options_69
+  externalObjects: {}
+  serializedVersion: 11
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMasterTextureLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 0
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 3819
+        width: 161
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c5c2d3d51183499a0800000000000000
+      internalID: -6227290737516663716
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_1
+      rect:
+        serializedVersion: 2
+        x: 240
+        y: 3713
+        width: 128
+        height: 139
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f15dc5867e5791eb0800000000000000
+      internalID: -4748634695336667873
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_2
+      rect:
+        serializedVersion: 2
+        x: 375
+        y: 3714
+        width: 126
+        height: 138
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 459725f3a54328ba0800000000000000
+      internalID: -6088246184037418668
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_3
+      rect:
+        serializedVersion: 2
+        x: 513
+        y: 3778
+        width: 91
+        height: 71
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3416a8a5a1c731f60800000000000000
+      internalID: 8003877415397515587
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_4
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 3780
+        width: 238
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a7af01e18c7fb0320800000000000000
+      internalID: 2525384454941244026
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_5
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 2927
+        width: 313
+        height: 294
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6f1b977cc493dbfd0800000000000000
+      internalID: -2324638830726368778
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_6
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 3223
+        width: 306
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a71e42aaaf0dcc090800000000000000
+      internalID: -8012799861984009862
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_7
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 3264
+        width: 315
+        height: 179
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ce03d5c004b4f3490800000000000000
+      internalID: -7764404494106021652
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_8
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 3445
+        width: 67
+        height: 86
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c94b29f1655a199d0800000000000000
+      internalID: -2769250506540665700
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_9
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 3535
+        width: 124
+        height: 34
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0877dc224731cf7c0800000000000000
+      internalID: -4036329776509782144
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_10
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 3571
+        width: 262
+        height: 83
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 52a818f717df63b50800000000000000
+      internalID: 6572719370106145317
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_11
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 3655
+        width: 262
+        height: 121
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c0e81e5decbcc0580800000000000000
+      internalID: -8859482277732577780
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_12
+      rect:
+        serializedVersion: 2
+        x: 76
+        y: 3505
+        width: 34
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c209b948100efdf50800000000000000
+      internalID: 6908486650534006828
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_13
+      rect:
+        serializedVersion: 2
+        x: 125
+        y: 3505
+        width: 34
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d2567ea82f673de40800000000000000
+      internalID: 5680014339128911149
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_14
+      rect:
+        serializedVersion: 2
+        x: 125
+        y: 3533
+        width: 137
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 573cb8edc9deb1860800000000000000
+      internalID: 7501850862320075637
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_15
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 3571
+        width: 264
+        height: 83
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6609332a748a9c6b0800000000000000
+      internalID: -5275500462870392730
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_16
+      rect:
+        serializedVersion: 2
+        x: 264
+        y: 3197
+        width: 340
+        height: 500
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f1d4e317038e0f860800000000000000
+      internalID: 7561799069111045407
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_17
+      rect:
+        serializedVersion: 2
+        x: 541
+        y: 2634
+        width: 63
+        height: 738
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: aa80a9bc913c9d6a0800000000000000
+      internalID: -6423888877909833558
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_18
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 2854
+        width: 313
+        height: 72
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6c3c16a7b6933e610800000000000000
+      internalID: 1649225022325244870
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_19
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 2632
+        width: 157
+        height: 75
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d8eb7012b7f4f3510800000000000000
+      internalID: 1531029788582985357
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_20
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 2650
+        width: 561
+        height: 202
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 14de67b8a5c0fd070800000000000000
+      internalID: 8133233035080822081
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_21
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1833
+        width: 516
+        height: 613
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 28c03ca7252fb6450800000000000000
+      internalID: 6083222157754829954
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_22
+      rect:
+        serializedVersion: 2
+        x: 168
+        y: 2208
+        width: 436
+        height: 441
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b84613b332e008740800000000000000
+      internalID: 5152133518191584395
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_23
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 990
+        width: 604
+        height: 356
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b4c8c98c725515740800000000000000
+      internalID: 5138982279164234827
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_24
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1765
+        width: 54
+        height: 152
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4b99a280dd6c54020800000000000000
+      internalID: 2325483435233810868
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_25
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1643
+        width: 131
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: cec30f1f50d7e9220800000000000000
+      internalID: 2494568708097195244
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_26
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1600
+        width: 163
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3074729f42d625870800000000000000
+      internalID: 8670112238207977219
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_27
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1694
+        width: 59
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4fe25dab38c3a1d20800000000000000
+      internalID: 3249976617574149876
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_28
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1350
+        width: 198
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6fecc2370641dd890800000000000000
+      internalID: -7431761405609718026
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_29
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1395
+        width: 528
+        height: 201
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 713e0e832e360a9f0800000000000000
+      internalID: -459257338723769577
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_30
+      rect:
+        serializedVersion: 2
+        x: 56
+        y: 1765
+        width: 65
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 042879f3ba42eb2f0800000000000000
+      internalID: -955285753031065024
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_31
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 1694
+        width: 51
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 43bdecf7762782b00800000000000000
+      internalID: 804018322337094452
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_32
+      rect:
+        serializedVersion: 2
+        x: 114
+        y: 1694
+        width: 60
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a3997a99c32556490800000000000000
+      internalID: -7753700763219027654
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_33
+      rect:
+        serializedVersion: 2
+        x: 123
+        y: 1765
+        width: 62
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4e054981e85872ae0800000000000000
+      internalID: -1574142699398475548
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_34
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 1643
+        width: 192
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e14ab7ae3f9abb660800000000000000
+      internalID: 7402697277589660702
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_35
+      rect:
+        serializedVersion: 2
+        x: 174
+        y: 1694
+        width: 66
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3e5e34c4ac8f00f40800000000000000
+      internalID: 5692823476742907363
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_36
+      rect:
+        serializedVersion: 2
+        x: 175
+        y: 1600
+        width: 138
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9cd37640bafe61630800000000000000
+      internalID: 3897566045328063945
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_37
+      rect:
+        serializedVersion: 2
+        x: 187
+        y: 1765
+        width: 29
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3cd922b11116a66a0800000000000000
+      internalID: -6455240389784592957
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_38
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 1350
+        width: 95
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: dcf651f30c57d1670800000000000000
+      internalID: 8511088339352645581
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_39
+      rect:
+        serializedVersion: 2
+        x: 219
+        y: 1765
+        width: 53
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 48c463eb9fd048e40800000000000000
+      internalID: 5657662398173432964
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_40
+      rect:
+        serializedVersion: 2
+        x: 242
+        y: 1694
+        width: 51
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 65ba7579bd8f11dd0800000000000000
+      internalID: -2516957094702765226
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_41
+      rect:
+        serializedVersion: 2
+        x: 296
+        y: 1694
+        width: 53
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8e4c7744a16167f20800000000000000
+      internalID: 3419945269108131048
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_42
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 1602
+        width: 163
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e6cd78b86188fdc30800000000000000
+      internalID: 4386374192493747310
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_43
+      rect:
+        serializedVersion: 2
+        x: 351
+        y: 1643
+        width: 137
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ff60914ad3645f450800000000000000
+      internalID: 6121876499040110335
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_44
+      rect:
+        serializedVersion: 2
+        x: 445
+        y: 1235
+        width: 159
+        height: 806
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 72801d03ee90dee40800000000000000
+      internalID: 5687212823064676391
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_45
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1141
+        width: 183
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2a9893d759e405080800000000000000
+      internalID: -9200767634759906910
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_46
+      rect:
+        serializedVersion: 2
+        x: 200
+        y: 1139
+        width: 347
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: af17aa511eb3813d0800000000000000
+      internalID: -3235770494348529158
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_47
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1066
+        width: 342
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5d1c741eb56293b20800000000000000
+      internalID: 3114562793366864341
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_48
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1101
+        width: 370
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1dae83231adb8e570800000000000000
+      internalID: 8496249197064415953
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_49
+      rect:
+        serializedVersion: 2
+        x: 385
+        y: 1099
+        width: 186
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 68a345d44223859c0800000000000000
+      internalID: -3938342742637921658
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_50
+      rect:
+        serializedVersion: 2
+        x: 362
+        y: 1066
+        width: 151
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 145d7a28747754530800000000000000
+      internalID: 3838605406421636417
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_51
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 988
+        width: 315
+        height: 76
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c9a1958be9e5ddb50800000000000000
+      internalID: 6619551063095188124
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_52
+      rect:
+        serializedVersion: 2
+        x: 317
+        y: 1026
+        width: 198
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2ba37cb70efab2620800000000000000
+      internalID: 2750485376124009138
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_53
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 940
+        width: 183
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1333efa884e9f0860800000000000000
+      internalID: 7498385939001914161
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_54
+      rect:
+        serializedVersion: 2
+        x: 178
+        y: 904
+        width: 191
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0bca6c55c680a61f0800000000000000
+      internalID: -1051018301649015632
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_55
+      rect:
+        serializedVersion: 2
+        x: 347
+        y: 651
+        width: 257
+        height: 318
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 768d60dee897c9850800000000000000
+      internalID: 6385112026473486439
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_56
+      rect:
+        serializedVersion: 2
+        x: 370
+        y: 940
+        width: 96
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7f3c8d6b5ff59d750800000000000000
+      internalID: 6330196260185228279
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_57
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 902
+        width: 177
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e3104b044e6e3a180800000000000000
+      internalID: -9105180153600540354
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_58
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 825
+        width: 528
+        height: 77
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f1c5b30f8419eef10800000000000000
+      internalID: 2300936202086997023
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_59
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 787
+        width: 197
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1ba51647c9f288730800000000000000
+      internalID: 4001500617932626609
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_60
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 731
+        width: 146
+        height: 34
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d1877e4a3ef1ee890800000000000000
+      internalID: -7426963672902698979
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_61
+      rect:
+        serializedVersion: 2
+        x: 167
+        y: 729
+        width: 314
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1409c0e3fc0a07560800000000000000
+      internalID: 7309519007182000193
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_62
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 687
+        width: 215
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d589f02d6710238e0800000000000000
+      internalID: -1715306898232731555
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_63
+      rect:
+        serializedVersion: 2
+        x: 217
+        y: 689
+        width: 126
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a82099cfa4606a1b0800000000000000
+      internalID: -5645818163727105398
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_64
+      rect:
+        serializedVersion: 2
+        x: 362
+        y: 687
+        width: 213
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a7050d2411a408510800000000000000
+      internalID: 1549319709811298426
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_65
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 648
+        width: 215
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4a8d525ac54248c90800000000000000
+      internalID: -7168564726540674908
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_66
+      rect:
+        serializedVersion: 2
+        x: 217
+        y: 648
+        width: 104
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fa257e5d7038b6680800000000000000
+      internalID: -8760764580442451281
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_67
+      rect:
+        serializedVersion: 2
+        x: 347
+        y: 650
+        width: 149
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 31dde2a2451b97e10800000000000000
+      internalID: 2195981268362910995
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_68
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 604
+        height: 613
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 55a2ee2f3ebc68f40800000000000000
+      internalID: 5730491755769244245
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GameCube - Sonic Heroes - Options_69
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 608
+        width: 197
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 14de72d5e9f3a25c0800000000000000
+      internalID: -4239506149815620287
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      GameCube - Sonic Heroes - Options_29: -459257338723769577
+      GameCube - Sonic Heroes - Options_25: 2494568708097195244
+      GameCube - Sonic Heroes - Options_36: 3897566045328063945
+      GameCube - Sonic Heroes - Options_37: -6455240389784592957
+      GameCube - Sonic Heroes - Options_49: -3938342742637921658
+      GameCube - Sonic Heroes - Options_13: 5680014339128911149
+      GameCube - Sonic Heroes - Options_58: 2300936202086997023
+      GameCube - Sonic Heroes - Options_32: -7753700763219027654
+      GameCube - Sonic Heroes - Options_53: 7498385939001914161
+      GameCube - Sonic Heroes - Options_51: 6619551063095188124
+      GameCube - Sonic Heroes - Options_3: 8003877415397515587
+      GameCube - Sonic Heroes - Options_12: 6908486650534006828
+      GameCube - Sonic Heroes - Options_50: 3838605406421636417
+      GameCube - Sonic Heroes - Options_4: 2525384454941244026
+      GameCube - Sonic Heroes - Options_9: -4036329776509782144
+      GameCube - Sonic Heroes - Options_31: 804018322337094452
+      GameCube - Sonic Heroes - Options_55: 6385112026473486439
+      GameCube - Sonic Heroes - Options_26: 8670112238207977219
+      GameCube - Sonic Heroes - Options_62: -1715306898232731555
+      GameCube - Sonic Heroes - Options_56: 6330196260185228279
+      GameCube - Sonic Heroes - Options_2: -6088246184037418668
+      GameCube - Sonic Heroes - Options_59: 4001500617932626609
+      GameCube - Sonic Heroes - Options_14: 7501850862320075637
+      GameCube - Sonic Heroes - Options_33: -1574142699398475548
+      GameCube - Sonic Heroes - Options_24: 2325483435233810868
+      GameCube - Sonic Heroes - Options_40: -2516957094702765226
+      GameCube - Sonic Heroes - Options_67: 2195981268362910995
+      GameCube - Sonic Heroes - Options_38: 8511088339352645581
+      GameCube - Sonic Heroes - Options_69: -4239506149815620287
+      GameCube - Sonic Heroes - Options_5: -2324638830726368778
+      GameCube - Sonic Heroes - Options_54: -1051018301649015632
+      GameCube - Sonic Heroes - Options_35: 5692823476742907363
+      GameCube - Sonic Heroes - Options_45: -9200767634759906910
+      GameCube - Sonic Heroes - Options_47: 3114562793366864341
+      GameCube - Sonic Heroes - Options_61: 7309519007182000193
+      GameCube - Sonic Heroes - Options_19: 1531029788582985357
+      GameCube - Sonic Heroes - Options_66: -8760764580442451281
+      GameCube - Sonic Heroes - Options_63: -5645818163727105398
+      GameCube - Sonic Heroes - Options_10: 6572719370106145317
+      GameCube - Sonic Heroes - Options_39: 5657662398173432964
+      GameCube - Sonic Heroes - Options_16: 7561799069111045407
+      GameCube - Sonic Heroes - Options_34: 7402697277589660702
+      GameCube - Sonic Heroes - Options_17: -6423888877909833558
+      GameCube - Sonic Heroes - Options_1: -4748634695336667873
+      GameCube - Sonic Heroes - Options_21: 6083222157754829954
+      GameCube - Sonic Heroes - Options_18: 1649225022325244870
+      GameCube - Sonic Heroes - Options_20: 8133233035080822081
+      GameCube - Sonic Heroes - Options_52: 2750485376124009138
+      GameCube - Sonic Heroes - Options_11: -8859482277732577780
+      GameCube - Sonic Heroes - Options_15: -5275500462870392730
+      GameCube - Sonic Heroes - Options_30: -955285753031065024
+      GameCube - Sonic Heroes - Options_28: -7431761405609718026
+      GameCube - Sonic Heroes - Options_48: 8496249197064415953
+      GameCube - Sonic Heroes - Options_23: 5138982279164234827
+      GameCube - Sonic Heroes - Options_64: 1549319709811298426
+      GameCube - Sonic Heroes - Options_8: -2769250506540665700
+      GameCube - Sonic Heroes - Options_41: 3419945269108131048
+      GameCube - Sonic Heroes - Options_22: 5152133518191584395
+      GameCube - Sonic Heroes - Options_42: 4386374192493747310
+      GameCube - Sonic Heroes - Options_6: -8012799861984009862
+      GameCube - Sonic Heroes - Options_43: 6121876499040110335
+      GameCube - Sonic Heroes - Options_65: -7168564726540674908
+      GameCube - Sonic Heroes - Options_68: 5730491755769244245
+      GameCube - Sonic Heroes - Options_27: 3249976617574149876
+      GameCube - Sonic Heroes - Options_0: -6227290737516663716
+      GameCube - Sonic Heroes - Options_57: -9105180153600540354
+      GameCube - Sonic Heroes - Options_44: 5687212823064676391
+      GameCube - Sonic Heroes - Options_60: -7426963672902698979
+      GameCube - Sonic Heroes - Options_7: -7764404494106021652
+      GameCube - Sonic Heroes - Options_46: -3235770494348529158
+  spritePackingTag: 
+  pSDRemoveMatte: 0
+  pSDShowRemoveMatteOption: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

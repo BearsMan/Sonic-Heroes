@@ -1,0 +1,37 @@
+Sonic Heroes
+Action Stage gameplay
+Badniks
+Egg Pawn, Falco, Klagen, Rhinoliner, Search Flapper: 200 points
+All other Flappers: 100 points
+Egg Pawn with shield: 300 points
+Gold Cameron, Gold Klagen, Egg Knight: 400 points
+Egg Hammer, E-2000: 500 points
+Heavy-Egg Hammer: 1000 points
+E-2000R: 10000 points
+Additinal points for defeating multiple badniks
+2 enemies: 400 points
+3 enemies: 800 points
+4 enemies: 1000 points
+5 or more enemies: 2000 points
+Ring: 10 points
+Light Dashing trails of rings
+4-5 rings: 200 points
+6-9 rings: 400 points
+10-19 rings: 800 points
+20 or more rings: 1000 points
+Rainbow Ring: 1000 points for leader, 800 points for other characters.
+Target Switch: 1000 points for Bullseye, otherwise 400 points.
+Level-Ups
+From Item Box: 200 points
+Power Core: 100 when gaining a level, 500 after level 3.
+Story items (Team Chaotix only)
+Red torch: 10 points
+Other items: 100 points
+Action Stage Results Screen
+Level-Up Bonus: 500 points per character, maximum of 3
+Time Bonus[Note 3]
+≤1:30: 50000
+1:31-2:05: 42720-40000
+2:05-4:10: 40000-30000
+4:10-6:15: 30000-20000
+6:15-8:20: 20000-10000

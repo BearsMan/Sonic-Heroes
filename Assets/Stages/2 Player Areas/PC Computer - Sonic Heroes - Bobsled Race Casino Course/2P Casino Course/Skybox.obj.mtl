@@ -1,0 +1,45 @@
+newmtl texture0
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k03_sor1.png
+
+newmtl texture1
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k03_sor3.png
+
+newmtl texture2
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k03_sor4.png
+
+newmtl texture3
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd k03_sor2.png
+
+newmtl texture4
+Ka 0.2 0.2 0.2
+Kd 0.8 0.8 0.8
+Ks 0 0 0
+Ns 10
+d 1.0
+illum 4
+map_Kd pk3_sor6.png
+
