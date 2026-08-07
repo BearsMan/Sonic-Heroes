@@ -1270,23 +1270,8 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             Mathf.Max(
                 0.01f,
                 platformDetachDistance);
-
-        if (!Enum.IsDefined(
-                typeof(MovementState),
-                startingState))
-        {
-            startingState =
-                MovementState.Ground;
-        }
-
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
-        {
-            ResolveDependencies();
-            ApplyPhysicsSettings();
-        }
-#endif
     }
+            
 
     private void OnDrawGizmosSelected()
     {
