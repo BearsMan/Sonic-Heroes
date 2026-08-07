@@ -29,11 +29,15 @@ public abstract class TrackVehicle : MonoBehaviour
     private const string SeatPointName = "Seat Point";
     private const string SeatPointPrefix = "Seat Point ";
     private const string ExitPointName = "Exit Point";
-    private const string LeaderSlotName = "Test Player";
+    private const string LeaderSlotName = "Team Leader";
     private const string LeftTeamMemberSlotName = "Left Team Member";
     private const string RightTeamMemberSlotName = "Right Team Member";
+
     private const int MaximumRiderCapacity = 3;
     private const int GroundHitCapacity = 16;
+
+    private const float MinimumDirectionSqrMagnitude = 0.0001f;
+    private const float MinimumSpeedThreshold = 0.01f;
 
     private const RigidbodyConstraints DefaultConstraints =
         RigidbodyConstraints.FreezeRotationX |
@@ -66,11 +70,9 @@ public abstract class TrackVehicle : MonoBehaviour
 
     [Header("Track")]
     [SerializeField] private Transform pathRoot;
-
     [SerializeField]
     private Transform[] pathPoints =
         Array.Empty<Transform>();
-
     [SerializeField] private bool resolvePathAutomatically = true;
     [SerializeField] private bool loopPath;
     [SerializeField] private bool startAutomatically;
@@ -108,13 +110,10 @@ public abstract class TrackVehicle : MonoBehaviour
     [SerializeField] private bool requirePlayerTag = true;
     [SerializeField] private string playerTag = "Player";
     [SerializeField] private Transform seatPoint;
-
     [SerializeField]
     private Transform[] seatPoints =
         Array.Empty<Transform>();
-
     [SerializeField] private Transform exitPoint;
-
     [SerializeField, Range(1, MaximumRiderCapacity)]
     private int maximumRiders = MaximumRiderCapacity;
 
@@ -170,11 +169,17 @@ public abstract class TrackVehicle : MonoBehaviour
     private readonly List<bool> originalMovementComponentStates =
         new(MaximumRiderCapacity);
 
-    private readonly HashSet<int> animatorParameters =
-        new();
+    private readonly List<bool> originalRiderKinematicStates =
+        new(MaximumRiderCapacity);
+
+    private readonly List<bool> originalRiderGravityStates =
+        new(MaximumRiderCapacity);
 
     private readonly List<UltimatePlayerMovement> boardingCandidates =
         new(MaximumRiderCapacity);
+
+    private readonly HashSet<int> animatorParameters =
+        new();
 
     private readonly RaycastHit[] groundHits =
         new RaycastHit[GroundHitCapacity];
@@ -222,10 +227,8 @@ public abstract class TrackVehicle : MonoBehaviour
         initialized;
 
     public bool IsDriving =>
-        currentState ==
-            VehicleState.Driving ||
-        currentState ==
-            VehicleState.Airborne;
+        currentState == VehicleState.Driving ||
+        currentState == VehicleState.Airborne;
 
     public bool IsGrounded =>
         grounded;
@@ -263,19 +266,50 @@ public abstract class TrackVehicle : MonoBehaviour
     protected IReadOnlyList<UltimatePlayerMovement> Riders =>
         riders;
 
-    public bool StartDriving()
+    public bool InitializeVehicle()
     {
-        if (!initialized ||
-            safetyShutdown ||
-            pathPoints == null ||
-            pathPoints.Length == 0 ||
-            currentState ==
-                VehicleState.Disabled ||
-            currentState ==
-                VehicleState.Finished)
+        if (initialized)
+            return true;
+
+        ResolveDependencies();
+        ConfigureRigidbody();
+        ConfigureComponents();
+
+        if (!ValidateConfiguration())
         {
+            initialized = false;
             return false;
         }
+
+        ResetRuntimeState();
+        CacheAnimatorParameters();
+
+        currentState =
+            IsValidVehicleState(startingState)
+                ? startingState
+                : VehicleState.Waiting;
+
+        grounded =
+            DetectGround(
+                out groundNormal);
+
+        groundedLastFrame =
+            grounded;
+
+        initialized = true;
+
+        if (startAutomatically)
+        {
+            StartDriving();
+        }
+
+        return true;
+    }
+
+    public bool StartDriving()
+    {
+        if (!CanDrive())
+            return false;
 
         currentSpeed =
             Mathf.Max(
@@ -307,8 +341,12 @@ public abstract class TrackVehicle : MonoBehaviour
     public bool BoardVehicle(
         UltimatePlayerMovement movement)
     {
-        if (movement == null)
+        if (movement == null ||
+            !allowBoarding ||
+            safetyShutdown)
+        {
             return false;
+        }
 
         if (!boardEntireTeamAutomatically)
         {
@@ -324,7 +362,6 @@ public abstract class TrackVehicle : MonoBehaviour
                 MaximumRiderCapacity)
         {
             boardingCandidates.Clear();
-
             return false;
         }
 
@@ -334,51 +371,32 @@ public abstract class TrackVehicle : MonoBehaviour
         ChangeState(
             VehicleState.Boarding);
 
-        int boardedCount =
-            0;
+        int boardedCount = 0;
 
-        foreach (UltimatePlayerMovement candidate
-                 in boardingCandidates)
+        for (int index = 0;
+             index < boardingCandidates.Count &&
+             boardedCount < maximumRiders;
+             index++)
         {
-            if (!CanBoard(
-                    candidate))
-            {
+            UltimatePlayerMovement candidate =
+                boardingCandidates[index];
+
+            if (!CanBoard(candidate))
                 continue;
-            }
 
-            CacheRiderState(
-                candidate);
-
-            AttachRider(
-                candidate);
-
-            RiderBoarded?.Invoke(
-                candidate);
-
-            OnRiderBoarded(
-                candidate);
+            if (!BoardRiderInternal(candidate))
+                continue;
 
             boardedCount++;
-
-            if (boardedCount >=
-                maximumRiders)
-            {
-                break;
-            }
         }
 
         boardingCandidates.Clear();
 
-        if (boardedCount == 0)
-        {
-            ChangeState(
-                VehicleState.Waiting);
-
-            return false;
-        }
-
         ChangeState(
             VehicleState.Waiting);
+
+        if (boardedCount == 0)
+            return false;
 
         if (startAutomatically)
         {
@@ -391,29 +409,21 @@ public abstract class TrackVehicle : MonoBehaviour
     public bool BoardSingleRider(
         UltimatePlayerMovement movement)
     {
-        if (!CanBoard(
-                movement))
-        {
+        if (!CanBoard(movement))
             return false;
-        }
 
         ChangeState(
             VehicleState.Boarding);
 
-        CacheRiderState(
-            movement);
-
-        AttachRider(
-            movement);
-
-        RiderBoarded?.Invoke(
-            movement);
-
-        OnRiderBoarded(
-            movement);
+        bool boarded =
+            BoardRiderInternal(
+                movement);
 
         ChangeState(
             VehicleState.Waiting);
+
+        if (!boarded)
+            return false;
 
         if (startAutomatically)
         {
@@ -436,10 +446,8 @@ public abstract class TrackVehicle : MonoBehaviour
 
         DismountAllSafely();
 
-        if (currentState !=
-                VehicleState.Finished &&
-            currentState !=
-                VehicleState.Disabled)
+        if (currentState != VehicleState.Finished &&
+            currentState != VehicleState.Disabled)
         {
             ChangeState(
                 wasDriving
@@ -464,11 +472,9 @@ public abstract class TrackVehicle : MonoBehaviour
 
         ResolvePathPoints();
 
-        currentPathIndex =
-            0;
+        currentPathIndex = 0;
 
         return
-            pathPoints != null &&
             pathPoints.Length > 0;
     }
 
@@ -498,8 +504,7 @@ public abstract class TrackVehicle : MonoBehaviour
             return;
         }
 
-        checkpointReached =
-            true;
+        checkpointReached = true;
 
         CheckpointReached?.Invoke();
         OnCheckpointReached();
@@ -532,8 +537,7 @@ public abstract class TrackVehicle : MonoBehaviour
     public bool CompleteTrack()
     {
         if (!initialized ||
-            currentState ==
-                VehicleState.Finished)
+            currentState == VehicleState.Finished)
         {
             return false;
         }
@@ -572,15 +576,16 @@ public abstract class TrackVehicle : MonoBehaviour
 
         DismountAllSafely();
         StopVehicleMotion();
-        ResetRuntimeState();
 
-        safetyShutdown =
-            false;
+        safetyShutdown = false;
+        initialized = false;
 
         RestoreRequiredComponents();
 
-        enabled =
-            true;
+        if (!InitializeVehicle())
+            return false;
+
+        enabled = true;
 
         ChangeState(
             VehicleState.Waiting);
@@ -601,11 +606,24 @@ public abstract class TrackVehicle : MonoBehaviour
 
     protected virtual void Start()
     {
-        if (!InitializeVehicle())
+        TryInitializeVehicle();
+    }
+
+    private bool TryInitializeVehicle()
+    {
+        if (initialized)
+            return true;
+
+        ResolveDependencies();
+        ConfigureRigidbody();
+
+        if (pathPoints == null ||
+            pathPoints.Length == 0)
         {
-            enabled =
-                false;
+            return false;
         }
+
+        return InitializeVehicle();
     }
 
     protected virtual void OnEnable()
@@ -614,13 +632,11 @@ public abstract class TrackVehicle : MonoBehaviour
             return;
 
         ResolveDependencies();
-        ConfigureRigidbody();
         ConfigureComponents();
 
         if (initialized &&
             !safetyShutdown &&
-            currentState ==
-                VehicleState.Disabled)
+            currentState == VehicleState.Disabled)
         {
             ChangeState(
                 VehicleState.Waiting);
@@ -629,13 +645,8 @@ public abstract class TrackVehicle : MonoBehaviour
 
     protected virtual void Update()
     {
-        if (!initialized ||
-            shuttingDown ||
-            applicationQuitting ||
-            safetyShutdown)
-        {
+        if (!CanRun())
             return;
-        }
 
         UpdateTimers();
         HandleJumpInput();
@@ -658,11 +669,16 @@ public abstract class TrackVehicle : MonoBehaviour
 
     protected virtual void FixedUpdate()
     {
-        if (!initialized ||
-            shuttingDown ||
+        if (shuttingDown ||
             applicationQuitting ||
             safetyShutdown)
         {
+            return;
+        }
+
+        if (!initialized)
+        {
+            TryInitializeVehicle();
             return;
         }
 
@@ -702,9 +718,8 @@ public abstract class TrackVehicle : MonoBehaviour
                 break;
 
             default:
-                Debug.LogError(
-                    $"Unhandled {nameof(VehicleState)} value '{currentState}'.",
-                    this);
+                EnterSafetyShutdown(
+                    $"Unhandled vehicle state '{currentState}'.");
                 break;
         }
     }
@@ -742,7 +757,9 @@ public abstract class TrackVehicle : MonoBehaviour
         StopVehicleMotion();
 
         if (!shuttingDown &&
-            !applicationQuitting)
+            !applicationQuitting &&
+            initialized &&
+            !safetyShutdown)
         {
             ChangeState(
                 VehicleState.Disabled);
@@ -751,8 +768,7 @@ public abstract class TrackVehicle : MonoBehaviour
 
     protected virtual void OnDestroy()
     {
-        shuttingDown =
-            true;
+        shuttingDown = true;
 
         DismountAllSafely();
         StopVehicleMotion();
@@ -763,9 +779,8 @@ public abstract class TrackVehicle : MonoBehaviour
         CheckpointReached = null;
         TrackCompleted = null;
 
-        riders.Clear();
-        originalRiderParents.Clear();
-        originalMovementComponentStates.Clear();
+        ClearRiderCollections();
+
         animatorParameters.Clear();
         boardingCandidates.Clear();
 
@@ -775,16 +790,15 @@ public abstract class TrackVehicle : MonoBehaviour
         vehicleAudioSource = null;
 
         pathRoot = null;
-        pathPoints = null;
+        pathPoints = Array.Empty<Transform>();
         seatPoint = null;
-        seatPoints = null;
+        seatPoints = Array.Empty<Transform>();
         exitPoint = null;
     }
 
     protected virtual void OnApplicationQuit()
     {
-        applicationQuitting =
-            true;
+        applicationQuitting = true;
     }
 
     protected virtual void OnApplicationPause(
@@ -906,8 +920,7 @@ public abstract class TrackVehicle : MonoBehaviour
                 0.1f,
                 safetyCheckInterval);
 
-        if (!Enum.IsDefined(
-                typeof(VehicleState),
+        if (!IsValidVehicleState(
                 startingState))
         {
             startingState =
@@ -918,7 +931,6 @@ public abstract class TrackVehicle : MonoBehaviour
         if (!Application.isPlaying)
         {
             ResolveDependencies();
-            ConfigureRigidbody();
             ConfigureComponents();
         }
 #endif
@@ -946,310 +958,6 @@ public abstract class TrackVehicle : MonoBehaviour
 
     #endregion
 
-    #region Initialization
-
-    public bool InitializeVehicle()
-    {
-        if (initialized)
-            return true;
-
-        ResolveDependencies();
-        ConfigureRigidbody();
-        ConfigureComponents();
-
-        if (!ValidateConfiguration())
-        {
-            initialized =
-                false;
-
-            safetyShutdown =
-                false;
-
-            Debug.LogError(
-                $"{GetType().Name} failed to initialize on '{name}'.",
-                this);
-
-            return false;
-        }
-
-        ResetRuntimeState();
-        CacheAnimatorParameters();
-
-        currentState =
-            IsValidVehicleState(
-                startingState)
-                ? startingState
-                : VehicleState.Waiting;
-
-        initialized =
-            true;
-
-        if (startAutomatically)
-        {
-            StartDriving();
-        }
-
-        return true;
-    }
-
-    private static bool IsValidVehicleState(
-        VehicleState state)
-    {
-        return Enum.IsDefined(
-            typeof(VehicleState),
-            state);
-    }
-
-    private void ResolveDependencies()
-    {
-        ResolveRigidbody();
-        ResolveCollider();
-        ResolveAnimator();
-        ResolveAudioSource();
-        ResolveSeatPoints();
-        ResolveExitPoint();
-        ResolvePathRoot();
-        ResolvePathPoints();
-    }
-
-    private void ResolveRigidbody()
-    {
-        if (vehicleRigidbody != null)
-            return;
-
-        vehicleRigidbody =
-            GetComponent<Rigidbody>();
-
-        vehicleRigidbody ??=
-            GetComponentInParent<Rigidbody>();
-
-        vehicleRigidbody ??=
-            GetComponentInChildren<Rigidbody>(
-                includeInactive: true);
-    }
-
-    private void ResolveCollider()
-    {
-        if (vehicleCollider != null)
-            return;
-
-        vehicleCollider =
-            GetComponent<Collider>();
-
-        vehicleCollider ??=
-            GetComponentInChildren<Collider>(
-                includeInactive: true);
-
-        vehicleCollider ??=
-            GetComponentInParent<Collider>();
-    }
-
-    private void ResolveAnimator()
-    {
-        if (vehicleAnimator != null)
-            return;
-
-        vehicleAnimator =
-            GetComponent<Animator>();
-
-        vehicleAnimator ??=
-            GetComponentInChildren<Animator>(
-                includeInactive: true);
-
-        vehicleAnimator ??=
-            GetComponentInParent<Animator>();
-    }
-
-    private void ResolveAudioSource()
-    {
-        if (vehicleAudioSource != null)
-            return;
-
-        vehicleAudioSource =
-            GetComponent<AudioSource>();
-
-        vehicleAudioSource ??=
-            GetComponentInChildren<AudioSource>(
-                includeInactive: true);
-
-        vehicleAudioSource ??=
-            GetComponentInParent<AudioSource>();
-    }
-
-    private void ResolveSeatPoints()
-    {
-        seatPoint ??=
-            FindChildByName(
-                SeatPointName);
-
-        if (seatPoints == null ||
-            seatPoints.Length == 0)
-        {
-            List<Transform> resolvedSeats =
-                new(MaximumRiderCapacity);
-
-            for (int index = 1;
-                 index <= MaximumRiderCapacity;
-                 index++)
-            {
-                Transform resolvedSeat =
-                    FindChildByName(
-                        $"{SeatPointPrefix}{index}");
-
-                if (resolvedSeat != null)
-                {
-                    resolvedSeats.Add(
-                        resolvedSeat);
-                }
-            }
-
-            if (resolvedSeats.Count == 0 &&
-                seatPoint != null)
-            {
-                resolvedSeats.Add(
-                    seatPoint);
-            }
-
-            seatPoints =
-                resolvedSeats.ToArray();
-        }
-
-        seatPoint ??=
-            seatPoints != null &&
-            seatPoints.Length > 0
-                ? seatPoints[0]
-                : transform;
-    }
-
-    private void ResolveExitPoint()
-    {
-        exitPoint ??=
-            FindChildByName(
-                ExitPointName);
-    }
-
-    private void ResolvePathRoot()
-    {
-        if (!resolvePathAutomatically ||
-            pathRoot != null)
-        {
-            return;
-        }
-
-        pathRoot =
-            FindChildByName(
-                PathRootName);
-    }
-
-    private void ResolvePathPoints()
-    {
-        if (pathPoints != null &&
-            pathPoints.Length > 0)
-        {
-            return;
-        }
-
-        if (pathRoot == null)
-        {
-            pathPoints =
-                Array.Empty<Transform>();
-
-            return;
-        }
-
-        List<Transform> points =
-            new();
-
-        foreach (Transform child
-                 in pathRoot)
-        {
-            if (child != null)
-            {
-                points.Add(
-                    child);
-            }
-        }
-
-        pathPoints =
-            points.ToArray();
-    }
-
-    private void ConfigureRigidbody()
-    {
-        ResolveRigidbody();
-
-        if (vehicleRigidbody == null)
-            return;
-
-        vehicleRigidbody.useGravity =
-            true;
-
-        vehicleRigidbody.isKinematic =
-            false;
-
-        vehicleRigidbody.interpolation =
-            RigidbodyInterpolation.Interpolate;
-
-        vehicleRigidbody.collisionDetectionMode =
-            CollisionDetectionMode.ContinuousDynamic;
-
-        vehicleRigidbody.constraints =
-            DefaultConstraints;
-
-        vehicleRigidbody.WakeUp();
-    }
-
-    private void ConfigureComponents()
-    {
-        if (vehicleAudioSource != null)
-        {
-            vehicleAudioSource.playOnAwake =
-                false;
-        }
-    }
-
-    private void ResetRuntimeState()
-    {
-        currentSpeed =
-            0f;
-
-        currentTrackOffset =
-            0f;
-
-        lateralCorrectionVelocity =
-            Vector3.zero;
-
-        startingTrackPosition =
-            vehicleRigidbody != null
-                ? vehicleRigidbody.position
-                : transform.position;
-
-        jumpCooldownTimer =
-            0f;
-
-        safetyTimer =
-            safetyCheckInterval;
-
-        currentPathIndex =
-            0;
-
-        grounded =
-            false;
-
-        groundedLastFrame =
-            false;
-
-        checkpointReached =
-            false;
-
-        boardingCandidates.Clear();
-
-        safetyShutdown =
-            false;
-    }
-
-    #endregion
-
     #region State Machine
 
     protected void ChangeState(
@@ -1258,10 +966,7 @@ public abstract class TrackVehicle : MonoBehaviour
         if (!IsValidVehicleState(
                 newState))
         {
-            Debug.LogError(
-                $"{GetType().Name} received invalid state '{newState}'.",
-                this);
-
+            RecoverInvalidVehicleState();
             return;
         }
 
@@ -1274,8 +979,16 @@ public abstract class TrackVehicle : MonoBehaviour
         VehicleState previousState =
             currentState;
 
+        ExitState(
+            previousState);
+
         currentState =
             newState;
+
+        EnterState(
+            currentState);
+
+        UpdateAnimator();
 
         StateChanged?.Invoke(
             currentState);
@@ -1284,12 +997,73 @@ public abstract class TrackVehicle : MonoBehaviour
             previousState,
             currentState);
 
-        if (logStateChanges)
+        LogStateChange(
+            $"{previousState} -> {currentState}");
+    }
+
+    private void EnterState(
+        VehicleState state)
+    {
+        switch (state)
         {
-            Debug.Log(
-                $"{GetType().Name} state changed from {previousState} to {currentState} on '{name}'.",
-                this);
+            case VehicleState.Waiting:
+                lateralCorrectionVelocity =
+                    Vector3.zero;
+                break;
+
+            case VehicleState.Driving:
+                currentSpeed =
+                    Mathf.Max(
+                        currentSpeed,
+                        minimumDrivingSpeed);
+                break;
+
+            case VehicleState.Airborne:
+                grounded = false;
+                break;
+
+            case VehicleState.Finished:
+            case VehicleState.Disabled:
+                StopVehicleMotion();
+                break;
         }
+    }
+
+    private void ExitState(
+        VehicleState state)
+    {
+        if (state ==
+            VehicleState.Driving ||
+            state ==
+            VehicleState.Airborne)
+        {
+            lateralCorrectionVelocity =
+                Vector3.zero;
+        }
+    }
+
+    private void RecoverInvalidVehicleState()
+    {
+        VehicleState recoveredState =
+            grounded
+                ? VehicleState.Waiting
+                : VehicleState.Airborne;
+
+        currentState =
+            recoveredState;
+
+        currentSpeed = 0f;
+        lateralCorrectionVelocity =
+            Vector3.zero;
+
+        UpdateAnimator();
+
+        StateChanged?.Invoke(
+            currentState);
+
+        Debug.LogError(
+            $"{GetType().Name} recovered an invalid vehicle state on '{name}' to {recoveredState}.",
+            this);
     }
 
     private void UpdateWaitingState()
@@ -1324,6 +1098,7 @@ public abstract class TrackVehicle : MonoBehaviour
         ApplySteering();
         ApplyDrivingVelocity();
         RotateToTrack();
+
         CheckPathPointArrival(
             targetPoint.position);
 
@@ -1344,6 +1119,7 @@ public abstract class TrackVehicle : MonoBehaviour
 
         ApplyAirborneVelocity();
         RotateToTrack();
+
         CheckPathPointArrival(
             targetPoint.position);
 
@@ -1361,8 +1137,11 @@ public abstract class TrackVehicle : MonoBehaviour
 
         ApplyDrivingVelocity();
 
-        if (currentSpeed > 0.01f)
+        if (currentSpeed >
+            MinimumSpeedThreshold)
+        {
             return;
+        }
 
         StopVehicleMotion();
         StopDrivePresentation();
@@ -1387,17 +1166,27 @@ public abstract class TrackVehicle : MonoBehaviour
 
     #region Track Movement
 
+    private bool CanDrive()
+    {
+        return
+            initialized &&
+            !safetyShutdown &&
+            vehicleRigidbody != null &&
+            pathPoints != null &&
+            pathPoints.Length > 0 &&
+            currentState != VehicleState.Disabled &&
+            currentState != VehicleState.Finished;
+    }
+
     private bool TryGetCurrentPathPoint(
         out Transform targetPoint)
     {
-        targetPoint =
-            null;
+        targetPoint = null;
 
         if (pathPoints == null ||
             pathPoints.Length == 0 ||
             currentPathIndex < 0 ||
-            currentPathIndex >=
-                pathPoints.Length)
+            currentPathIndex >= pathPoints.Length)
         {
             return false;
         }
@@ -1414,15 +1203,18 @@ public abstract class TrackVehicle : MonoBehaviour
     private void UpdateTrackDirection(
         Vector3 targetPosition)
     {
+        if (vehicleRigidbody == null)
+            return;
+
         Vector3 direction =
             targetPosition -
             vehicleRigidbody.position;
 
-        direction.y =
-            0f;
+        direction.y = 0f;
 
-        if (direction.sqrMagnitude <=
-            0.0001f)
+        if (!IsFiniteVector(direction) ||
+            direction.sqrMagnitude <=
+                MinimumDirectionSqrMagnitude)
         {
             return;
         }
@@ -1433,14 +1225,15 @@ public abstract class TrackVehicle : MonoBehaviour
 
     private void ApplySteering()
     {
-        float targetOffset =
-            0f;
+        if (vehicleRigidbody == null)
+            return;
+
+        float targetOffset = 0f;
 
         if (allowSteering)
         {
             targetOffset =
-                Input.GetAxisRaw(
-                    "Horizontal") *
+                Input.GetAxisRaw("Horizontal") *
                 maximumTrackOffset;
         }
 
@@ -1472,12 +1265,9 @@ public abstract class TrackVehicle : MonoBehaviour
             currentTrackOffset;
 
         Vector3 correction =
-            desiredPosition -
-            vehicleRigidbody.position;
-
-        correction =
             Vector3.Project(
-                correction,
+                desiredPosition -
+                vehicleRigidbody.position,
                 trackRight);
 
         float maximumCorrectionSpeed =
@@ -1503,6 +1293,9 @@ public abstract class TrackVehicle : MonoBehaviour
 
     private void ApplyDrivingVelocity()
     {
+        if (vehicleRigidbody == null)
+            return;
+
         Vector3 velocity =
             trackDirection *
             currentSpeed +
@@ -1511,9 +1304,11 @@ public abstract class TrackVehicle : MonoBehaviour
         velocity.y =
             vehicleRigidbody.linearVelocity.y;
 
-        if (!IsFiniteVector(
-                velocity))
+        if (!IsFiniteVector(velocity))
         {
+            EnterSafetyShutdown(
+                "Driving velocity became invalid.");
+
             return;
         }
 
@@ -1523,6 +1318,9 @@ public abstract class TrackVehicle : MonoBehaviour
 
     private void ApplyAirborneVelocity()
     {
+        if (vehicleRigidbody == null)
+            return;
+
         Vector3 velocity =
             vehicleRigidbody.linearVelocity;
 
@@ -1536,9 +1334,11 @@ public abstract class TrackVehicle : MonoBehaviour
         velocity.z =
             horizontalVelocity.z;
 
-        if (!IsFiniteVector(
-                velocity))
+        if (!IsFiniteVector(velocity))
         {
+            EnterSafetyShutdown(
+                "Airborne velocity became invalid.");
+
             return;
         }
 
@@ -1548,37 +1348,61 @@ public abstract class TrackVehicle : MonoBehaviour
 
     private void RotateToTrack()
     {
-        if (trackDirection.sqrMagnitude <=
-            0.0001f)
+        if (vehicleRigidbody == null ||
+            trackDirection.sqrMagnitude <=
+                MinimumDirectionSqrMagnitude)
         {
             return;
+        }
+
+        Vector3 up =
+            grounded
+                ? groundNormal
+                : Vector3.up;
+
+        if (!IsFiniteVector(up) ||
+            up.sqrMagnitude <=
+                MinimumDirectionSqrMagnitude)
+        {
+            up =
+                Vector3.up;
         }
 
         Quaternion targetRotation =
             Quaternion.LookRotation(
                 trackDirection,
-                grounded
-                    ? groundNormal
-                    : Vector3.up);
+                up);
 
-        vehicleRigidbody.MoveRotation(
+        if (!IsFiniteQuaternion(
+                targetRotation))
+        {
+            return;
+        }
+
+        Quaternion nextRotation =
             Quaternion.Slerp(
                 vehicleRigidbody.rotation,
                 targetRotation,
-                rotationSpeed *
-                Time.fixedDeltaTime));
+                Mathf.Clamp01(
+                    rotationSpeed *
+                    Time.fixedDeltaTime));
+
+        vehicleRigidbody.MoveRotation(
+            nextRotation);
     }
 
     private void CheckPathPointArrival(
         Vector3 targetPosition)
     {
+        if (vehicleRigidbody == null)
+            return;
+
         float distance =
             Vector3.Distance(
                 vehicleRigidbody.position,
                 targetPosition);
 
-        if (!float.IsFinite(
-                distance) ||
+        if (!float.IsFinite(distance) ||
             distance >
                 pointArrivalDistance)
         {
@@ -1595,9 +1419,7 @@ public abstract class TrackVehicle : MonoBehaviour
 
         if (loopPath)
         {
-            currentPathIndex =
-                0;
-
+            currentPathIndex = 0;
             return;
         }
 
@@ -1612,6 +1434,107 @@ public abstract class TrackVehicle : MonoBehaviour
         }
     }
 
+    private bool TryGetTrackFrame(
+        out Vector3 trackCenter,
+        out Vector3 trackRight)
+    {
+        trackCenter =
+            vehicleRigidbody != null
+                ? vehicleRigidbody.position
+                : transform.position;
+
+        trackRight =
+            transform.right;
+
+        if (pathPoints == null ||
+            pathPoints.Length == 0)
+        {
+            return false;
+        }
+
+        Vector3 segmentStart =
+            currentPathIndex > 0 &&
+            currentPathIndex - 1 <
+                pathPoints.Length &&
+            pathPoints[currentPathIndex - 1] != null
+                ? pathPoints[currentPathIndex - 1].position
+                : startingTrackPosition;
+
+        Vector3 segmentEnd =
+            currentPathIndex <
+                pathPoints.Length &&
+            pathPoints[currentPathIndex] != null
+                ? pathPoints[currentPathIndex].position
+                : segmentStart +
+                  trackDirection;
+
+        Vector3 segment =
+            segmentEnd -
+            segmentStart;
+
+        segment.y = 0f;
+
+        if (!IsFiniteVector(segment) ||
+            segment.sqrMagnitude <=
+                MinimumDirectionSqrMagnitude)
+        {
+            return false;
+        }
+
+        Vector3 segmentDirection =
+            segment.normalized;
+
+        Vector3 position =
+            vehicleRigidbody != null
+                ? vehicleRigidbody.position
+                : transform.position;
+
+        Vector3 fromStart =
+            position -
+            segmentStart;
+
+        fromStart.y = 0f;
+
+        float segmentLength =
+            segment.magnitude;
+
+        float distanceAlongSegment =
+            Mathf.Clamp(
+                Vector3.Dot(
+                    fromStart,
+                    segmentDirection),
+                0f,
+                segmentLength);
+
+        trackCenter =
+            segmentStart +
+            segmentDirection *
+            distanceAlongSegment;
+
+        Vector3 up =
+            grounded
+                ? groundNormal
+                : Vector3.up;
+
+        trackRight =
+            Vector3.Cross(
+                up,
+                segmentDirection);
+
+        if (trackRight.sqrMagnitude <=
+            MinimumDirectionSqrMagnitude)
+        {
+            trackRight =
+                transform.right;
+        }
+
+        trackRight.Normalize();
+
+        return
+            IsFiniteVector(trackCenter) &&
+            IsFiniteVector(trackRight);
+    }
+
     #endregion
 
     #region Jump And Grounding
@@ -1622,8 +1545,8 @@ public abstract class TrackVehicle : MonoBehaviour
             !IsDriving ||
             !grounded ||
             jumpCooldownTimer > 0f ||
-            !Input.GetKeyDown(
-                jumpKey))
+            vehicleRigidbody == null ||
+            !Input.GetKeyDown(jumpKey))
         {
             return;
         }
@@ -1631,21 +1554,19 @@ public abstract class TrackVehicle : MonoBehaviour
         Vector3 velocity =
             vehicleRigidbody.linearVelocity;
 
+        velocity.y = 0f;
+
         velocity +=
-            transform.up *
+            Vector3.up *
             jumpVelocity;
 
-        if (!IsFiniteVector(
-                velocity))
-        {
+        if (!IsFiniteVector(velocity))
             return;
-        }
 
         vehicleRigidbody.linearVelocity =
             velocity;
 
-        grounded =
-            false;
+        grounded = false;
 
         jumpCooldownTimer =
             jumpCooldown;
@@ -1657,6 +1578,7 @@ public abstract class TrackVehicle : MonoBehaviour
             JumpHash);
 
         jumpEffect?.Play();
+
         PlayOneShot(
             jumpClip);
 
@@ -1668,29 +1590,60 @@ public abstract class TrackVehicle : MonoBehaviour
         groundedLastFrame =
             grounded;
 
+        grounded =
+            DetectGround(
+                out groundNormal);
+
+        if (groundedLastFrame &&
+            !grounded &&
+            currentState ==
+                VehicleState.Driving)
+        {
+            ChangeState(
+                VehicleState.Airborne);
+        }
+        else if (!groundedLastFrame &&
+                 grounded &&
+                 currentState ==
+                    VehicleState.Airborne)
+        {
+            ChangeState(
+                VehicleState.Driving);
+        }
+    }
+
+    private bool DetectGround(
+        out Vector3 normal)
+    {
+        normal =
+            Vector3.up;
+
+        if (vehicleRigidbody == null)
+            return false;
+
         Vector3 origin =
             vehicleRigidbody.position +
-            transform.up *
+            Vector3.up *
             0.1f;
 
         int hitCount =
             Physics.SphereCastNonAlloc(
                 origin,
                 groundProbeRadius,
-                -transform.up,
+                Vector3.down,
                 groundHits,
                 groundProbeDistance,
                 groundMask,
                 QueryTriggerInteraction.Ignore);
-
-        bool foundGround =
-            false;
 
         RaycastHit closestHit =
             default;
 
         float closestDistance =
             float.PositiveInfinity;
+
+        bool foundGround =
+            false;
 
         for (int index = 0;
              index < hitCount;
@@ -1731,35 +1684,235 @@ public abstract class TrackVehicle : MonoBehaviour
                 true;
         }
 
-        grounded =
-            foundGround;
-
-        groundNormal =
-            foundGround
-                ? closestHit.normal.normalized
-                : Vector3.up;
-
-        if (groundedLastFrame &&
-            !grounded &&
-            currentState ==
-                VehicleState.Driving)
+        for (int index = 0;
+             index < hitCount;
+             index++)
         {
-            ChangeState(
-                VehicleState.Airborne);
+            groundHits[index] =
+                default;
         }
-        else if (!groundedLastFrame &&
-                 grounded &&
-                 currentState ==
-                    VehicleState.Airborne)
-        {
-            ChangeState(
-                VehicleState.Driving);
-        }
+
+        if (!foundGround)
+            return false;
+
+        normal =
+            closestHit.normal.normalized;
+
+        return
+            IsFiniteVector(normal);
     }
 
     #endregion
 
-    #region Automatic Team Boarding
+    #region Boarding
+
+    private bool BoardRiderInternal(
+        UltimatePlayerMovement movement)
+    {
+        if (!CanBoard(movement))
+            return false;
+
+        Rigidbody riderRigidbody =
+            ResolveRigidbody(
+                movement);
+
+        CacheRiderState(
+            movement,
+            riderRigidbody);
+
+        AttachRider(
+            movement,
+            riderRigidbody);
+
+        RiderBoarded?.Invoke(
+            movement);
+
+        OnRiderBoarded(
+            movement);
+
+        return true;
+    }
+
+    private bool CanBoard(
+        UltimatePlayerMovement movement)
+    {
+        return
+            allowBoarding &&
+            initialized &&
+            !safetyShutdown &&
+            movement != null &&
+            movement.IsInitialized &&
+            !movement.IsSafetyShutdown &&
+            movement.gameObject.activeInHierarchy &&
+            riders.Count <
+                maximumRiders &&
+            !riders.Contains(
+                movement) &&
+            currentState !=
+                VehicleState.Finished &&
+            currentState !=
+                VehicleState.Disabled;
+    }
+
+    private void CacheRiderState(
+        UltimatePlayerMovement movement,
+        Rigidbody riderRigidbody)
+    {
+        riders.Add(
+            movement);
+
+        originalRiderParents.Add(
+            movement.transform.parent);
+
+        originalMovementComponentStates.Add(
+            movement.enabled);
+
+        originalRiderKinematicStates.Add(
+            riderRigidbody != null &&
+            riderRigidbody.isKinematic);
+
+        originalRiderGravityStates.Add(
+            riderRigidbody == null ||
+            riderRigidbody.useGravity);
+    }
+
+    private void AttachRider(
+        UltimatePlayerMovement movement,
+        Rigidbody riderRigidbody)
+    {
+        movement.DisableMovement();
+        movement.SetInputEnabled(
+            false);
+
+        movement.enabled =
+            false;
+
+        if (riderRigidbody != null)
+        {
+            riderRigidbody.linearVelocity =
+                Vector3.zero;
+
+            riderRigidbody.angularVelocity =
+                Vector3.zero;
+
+            riderRigidbody.isKinematic =
+                true;
+
+            riderRigidbody.useGravity =
+                false;
+        }
+
+        int riderIndex =
+            riders.IndexOf(
+                movement);
+
+        Transform targetSeat =
+            ResolveSeatForRider(
+                riderIndex);
+
+        movement.transform.SetParent(
+            targetSeat,
+            worldPositionStays: false);
+
+        movement.transform.localPosition =
+            Vector3.zero;
+
+        movement.transform.localRotation =
+            Quaternion.identity;
+    }
+
+    private void DismountAllSafely()
+    {
+        for (int index =
+                 riders.Count - 1;
+             index >= 0;
+             index--)
+        {
+            DismountRiderAt(
+                index);
+        }
+    }
+
+    private void DismountRiderAt(
+        int index)
+    {
+        if (index < 0 ||
+            index >= riders.Count)
+        {
+            return;
+        }
+
+        UltimatePlayerMovement movement =
+            riders[index];
+
+        Transform originalParent =
+            originalRiderParents[index];
+
+        bool movementComponentWasEnabled =
+            originalMovementComponentStates[index];
+
+        bool riderWasKinematic =
+            originalRiderKinematicStates[index];
+
+        bool riderUsedGravity =
+            originalRiderGravityStates[index];
+
+        RemoveRiderStateAt(
+            index);
+
+        if (movement == null)
+            return;
+
+        movement.transform.SetParent(
+            originalParent,
+            worldPositionStays: true);
+
+        Transform destination =
+            exitPoint != null
+                ? exitPoint
+                : transform;
+
+        movement.transform.SetPositionAndRotation(
+            destination.position,
+            destination.rotation);
+
+        Rigidbody riderRigidbody =
+            ResolveRigidbody(
+                movement);
+
+        if (riderRigidbody != null)
+        {
+            riderRigidbody.isKinematic =
+                riderWasKinematic;
+
+            riderRigidbody.useGravity =
+                riderUsedGravity;
+
+            riderRigidbody.linearVelocity =
+                Vector3.zero;
+
+            riderRigidbody.angularVelocity =
+                Vector3.zero;
+
+            if (!riderRigidbody.isKinematic)
+            {
+                riderRigidbody.WakeUp();
+            }
+        }
+
+        movement.enabled =
+            movementComponentWasEnabled;
+
+        movement.EnableMovement();
+        movement.SetInputEnabled(
+            true);
+
+        RiderDismounted?.Invoke(
+            movement);
+
+        OnRiderDismounted(
+            movement);
+    }
 
     private void CollectBoardingCandidates(
         UltimatePlayerMovement activatingMovement)
@@ -1801,11 +1954,11 @@ public abstract class TrackVehicle : MonoBehaviour
                 teamRoot.GetComponentsInChildren<UltimatePlayerMovement>(
                     includeInactive: true);
 
-            foreach (UltimatePlayerMovement movement
+            foreach (UltimatePlayerMovement candidate
                      in teamMovements)
             {
                 AddBoardingCandidate(
-                    movement);
+                    candidate);
             }
         }
 
@@ -1987,205 +2140,6 @@ public abstract class TrackVehicle : MonoBehaviour
         return characterTransform.root;
     }
 
-    private static Transform FindDirectOrNestedChild(
-        Transform root,
-        string targetName)
-    {
-        if (root == null ||
-            string.IsNullOrWhiteSpace(
-                targetName))
-        {
-            return null;
-        }
-
-        Transform[] children =
-            root.GetComponentsInChildren<Transform>(
-                includeInactive: true);
-
-        foreach (Transform child
-                 in children)
-        {
-            if (child != null &&
-                string.Equals(
-                    child.name,
-                    targetName,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return child;
-            }
-        }
-
-        return null;
-    }
-
-    #endregion
-
-    #region Boarding
-
-    private bool CanBoard(
-        UltimatePlayerMovement movement)
-    {
-        return
-            allowBoarding &&
-            initialized &&
-            movement != null &&
-            movement.IsInitialized &&
-            !movement.IsSafetyShutdown &&
-            riders.Count <
-                maximumRiders &&
-            !riders.Contains(
-                movement) &&
-            currentState !=
-                VehicleState.Finished &&
-            currentState !=
-                VehicleState.Disabled;
-    }
-
-    private void CacheRiderState(
-        UltimatePlayerMovement movement)
-    {
-        riders.Add(
-            movement);
-
-        originalRiderParents.Add(
-            movement.transform.parent);
-
-        originalMovementComponentStates.Add(
-            movement.enabled);
-    }
-
-    private void AttachRider(
-        UltimatePlayerMovement movement)
-    {
-        movement.DisableMovement();
-        movement.SetInputEnabled(
-            false);
-
-        movement.enabled =
-            false;
-
-        Rigidbody riderRigidbody =
-            ResolveRigidbody(
-                movement);
-
-        if (riderRigidbody != null)
-        {
-            riderRigidbody.linearVelocity =
-                Vector3.zero;
-
-            riderRigidbody.angularVelocity =
-                Vector3.zero;
-
-            riderRigidbody.isKinematic =
-                true;
-
-            riderRigidbody.useGravity =
-                false;
-        }
-
-        int riderIndex =
-            Mathf.Max(
-                0,
-                riders.IndexOf(
-                    movement));
-
-        Transform targetSeat =
-            ResolveSeatForRider(
-                riderIndex);
-
-        movement.transform.SetParent(
-            targetSeat,
-            true);
-
-        movement.transform.SetPositionAndRotation(
-            targetSeat.position,
-            targetSeat.rotation);
-    }
-
-    private void DismountAllSafely()
-    {
-        for (int index =
-                 riders.Count - 1;
-             index >= 0;
-             index--)
-        {
-            DismountRiderAt(
-                index);
-        }
-    }
-
-    private void DismountRiderAt(
-        int index)
-    {
-        UltimatePlayerMovement movement =
-            riders[index];
-
-        Transform originalParent =
-            originalRiderParents[index];
-
-        bool movementComponentWasEnabled =
-            originalMovementComponentStates[index];
-
-        riders.RemoveAt(
-            index);
-
-        originalRiderParents.RemoveAt(
-            index);
-
-        originalMovementComponentStates.RemoveAt(
-            index);
-
-        if (movement == null)
-            return;
-
-        movement.transform.SetParent(
-            originalParent,
-            true);
-
-        Transform destination =
-            exitPoint != null
-                ? exitPoint
-                : transform;
-
-        movement.transform.SetPositionAndRotation(
-            destination.position,
-            destination.rotation);
-
-        Rigidbody riderRigidbody =
-            ResolveRigidbody(
-                movement);
-
-        if (riderRigidbody != null)
-        {
-            riderRigidbody.isKinematic =
-                false;
-
-            riderRigidbody.useGravity =
-                true;
-
-            riderRigidbody.linearVelocity =
-                Vector3.zero;
-
-            riderRigidbody.angularVelocity =
-                Vector3.zero;
-
-            riderRigidbody.WakeUp();
-        }
-
-        movement.enabled =
-            movementComponentWasEnabled;
-
-        movement.EnableMovement();
-        movement.SetInputEnabled(
-            true);
-
-        RiderDismounted?.Invoke(
-            movement);
-
-        OnRiderDismounted(
-            movement);
-    }
-
     #endregion
 
     #region Presentation
@@ -2194,8 +2148,12 @@ public abstract class TrackVehicle : MonoBehaviour
     {
         animatorParameters.Clear();
 
-        if (vehicleAnimator == null)
+        if (vehicleAnimator == null ||
+            vehicleAnimator.runtimeAnimatorController ==
+                null)
+        {
             return;
+        }
 
         foreach (AnimatorControllerParameter parameter
                  in vehicleAnimator.parameters)
@@ -2252,6 +2210,7 @@ public abstract class TrackVehicle : MonoBehaviour
         if (vehicleAudioSource != null)
         {
             vehicleAudioSource.Stop();
+            vehicleAudioSource.loop = false;
         }
 
         stopEffect?.Play();
@@ -2321,22 +2280,6 @@ public abstract class TrackVehicle : MonoBehaviour
 
     #endregion
 
-    #region Timers
-
-    private void UpdateTimers()
-    {
-        if (jumpCooldownTimer > 0f)
-        {
-            jumpCooldownTimer =
-                Mathf.Max(
-                    0f,
-                    jumpCooldownTimer -
-                    Time.deltaTime);
-        }
-    }
-
-    #endregion
-
     #region Runtime Safety
 
     private bool RunPhysicsSafetyChecks()
@@ -2388,52 +2331,64 @@ public abstract class TrackVehicle : MonoBehaviour
             return false;
         }
 
-        if (!vehicleRigidbody.gameObject.activeInHierarchy)
+        if (vehicleRigidbody.gameObject !=
+                gameObject ||
+            vehicleCollider.gameObject !=
+                gameObject)
+        {
             return false;
+        }
+
+        if (!vehicleRigidbody.gameObject.activeInHierarchy ||
+            !vehicleCollider.gameObject.activeInHierarchy)
+        {
+            return false;
+        }
 
         if (restoreDisabledComponents &&
             !vehicleCollider.enabled)
         {
-            vehicleCollider.enabled =
-                true;
+            vehicleCollider.enabled = true;
         }
 
         if (restoreDisabledComponents &&
             vehicleAnimator != null &&
             !vehicleAnimator.enabled)
         {
-            vehicleAnimator.enabled =
-                true;
+            vehicleAnimator.enabled = true;
         }
 
         if (restoreDisabledComponents &&
             vehicleAudioSource != null &&
             !vehicleAudioSource.enabled)
         {
-            vehicleAudioSource.enabled =
-                true;
+            vehicleAudioSource.enabled = true;
         }
 
-        if (vehicleRigidbody.isKinematic)
-        {
-            vehicleRigidbody.isKinematic =
-                false;
-        }
-
-        if (!vehicleRigidbody.useGravity)
-        {
-            vehicleRigidbody.useGravity =
-                true;
-        }
-
-        return true;
+        return
+            vehicleCollider.enabled &&
+            !vehicleCollider.isTrigger;
     }
 
     private void AttemptRuntimeReferenceRecovery()
     {
         ResolveDependencies();
-        ConfigureRigidbody();
         ConfigureComponents();
+
+        if (vehicleRigidbody != null)
+        {
+            vehicleRigidbody.interpolation =
+                RigidbodyInterpolation.Interpolate;
+
+            vehicleRigidbody.collisionDetectionMode =
+                CollisionDetectionMode.ContinuousDynamic;
+
+            if (!vehicleRigidbody.isKinematic)
+            {
+                vehicleRigidbody.WakeUp();
+            }
+        }
+
         CacheAnimatorParameters();
     }
 
@@ -2452,12 +2407,9 @@ public abstract class TrackVehicle : MonoBehaviour
             vehicleRigidbody.angularVelocity;
 
         return
-            IsFiniteVector(
-                position) &&
-            IsFiniteVector(
-                velocity) &&
-            IsFiniteVector(
-                angularVelocity) &&
+            IsFiniteVector(position) &&
+            IsFiniteVector(velocity) &&
+            IsFiniteVector(angularVelocity) &&
             velocity.sqrMagnitude <=
                 maximumLinearSpeed *
                 maximumLinearSpeed &&
@@ -2497,6 +2449,11 @@ public abstract class TrackVehicle : MonoBehaviour
                 angularVelocity,
                 maximumAngularSpeed);
 
+        if (!vehicleRigidbody.isKinematic)
+        {
+            vehicleRigidbody.WakeUp();
+        }
+
         return true;
     }
 
@@ -2506,28 +2463,33 @@ public abstract class TrackVehicle : MonoBehaviour
             transform.lossyScale;
 
         return
-            IsFiniteVector(
-                scale) &&
-            Mathf.Abs(
-                scale.x) >=
+            IsFiniteVector(scale) &&
+            Mathf.Abs(scale.x) >=
                 minimumValidScale &&
-            Mathf.Abs(
-                scale.y) >=
+            Mathf.Abs(scale.y) >=
                 minimumValidScale &&
-            Mathf.Abs(
-                scale.z) >=
+            Mathf.Abs(scale.z) >=
                 minimumValidScale;
     }
 
     private void EnterSafetyShutdown(
         string reason)
     {
-        safetyShutdown =
-            true;
+        if (safetyShutdown)
+            return;
+
+        safetyShutdown = true;
 
         StopVehicleMotion();
+        StopDrivePresentation();
         DismountAllSafely();
         boardingCandidates.Clear();
+
+        if (vehicleRigidbody != null)
+        {
+            vehicleRigidbody.useGravity = false;
+            vehicleRigidbody.isKinematic = true;
+        }
 
         ChangeState(
             VehicleState.Disabled);
@@ -2535,9 +2497,6 @@ public abstract class TrackVehicle : MonoBehaviour
         Debug.LogError(
             $"{GetType().Name} entered safety shutdown on '{name}': {reason}",
             this);
-
-        enabled =
-            false;
     }
 
     private void RestoreRequiredComponents()
@@ -2548,20 +2507,18 @@ public abstract class TrackVehicle : MonoBehaviour
 
         if (vehicleCollider != null)
         {
-            vehicleCollider.enabled =
-                true;
+            vehicleCollider.enabled = true;
+            vehicleCollider.isTrigger = false;
         }
 
         if (vehicleAnimator != null)
         {
-            vehicleAnimator.enabled =
-                true;
+            vehicleAnimator.enabled = true;
         }
 
         if (vehicleAudioSource != null)
         {
-            vehicleAudioSource.enabled =
-                true;
+            vehicleAudioSource.enabled = true;
         }
     }
 
@@ -2575,39 +2532,311 @@ public abstract class TrackVehicle : MonoBehaviour
             if (riders[index] != null)
                 continue;
 
-            riders.RemoveAt(
-                index);
-
-            originalRiderParents.RemoveAt(
-                index);
-
-            originalMovementComponentStates.RemoveAt(
+            RemoveRiderStateAt(
                 index);
         }
     }
 
     #endregion
 
-    #region Validation
+    #region Initialization Helpers
+
+    private void ResolveDependencies()
+    {
+        ResolveRigidbody();
+        ResolveCollider();
+        ResolveAnimator();
+        ResolveAudioSource();
+        ResolveSeatPoints();
+        ResolveExitPoint();
+        ResolvePathRoot();
+        ResolvePathPoints();
+    }
+
+    private void ResolveRigidbody()
+    {
+        if (vehicleRigidbody != null &&
+            vehicleRigidbody.gameObject ==
+                gameObject)
+        {
+            return;
+        }
+
+        vehicleRigidbody =
+            GetComponent<Rigidbody>();
+    }
+
+    private void ResolveCollider()
+    {
+        if (vehicleCollider != null &&
+            vehicleCollider.gameObject ==
+                gameObject &&
+            !vehicleCollider.isTrigger)
+        {
+            return;
+        }
+
+        Collider[] colliders =
+            GetComponents<Collider>();
+
+        vehicleCollider =
+            null;
+
+        foreach (Collider candidate
+                 in colliders)
+        {
+            if (candidate == null ||
+                !candidate.enabled ||
+                candidate.isTrigger)
+            {
+                continue;
+            }
+
+            vehicleCollider =
+                candidate;
+
+            break;
+        }
+    }
+
+    private void ResolveAnimator()
+    {
+        if (vehicleAnimator != null)
+            return;
+
+        vehicleAnimator =
+            GetComponent<Animator>();
+
+        vehicleAnimator ??=
+            GetComponentInChildren<Animator>(
+                includeInactive: true);
+
+        vehicleAnimator ??=
+            GetComponentInParent<Animator>();
+    }
+
+    private void ResolveAudioSource()
+    {
+        if (vehicleAudioSource != null)
+            return;
+
+        vehicleAudioSource =
+            GetComponent<AudioSource>();
+
+        vehicleAudioSource ??=
+            GetComponentInChildren<AudioSource>(
+                includeInactive: true);
+
+        vehicleAudioSource ??=
+            GetComponentInParent<AudioSource>();
+    }
+
+    private void ResolveSeatPoints()
+    {
+        seatPoint ??=
+            FindChildByName(
+                SeatPointName);
+
+        if (seatPoints == null ||
+            seatPoints.Length == 0)
+        {
+            List<Transform> resolvedSeats =
+                new(MaximumRiderCapacity);
+
+            for (int index = 1;
+                 index <= MaximumRiderCapacity;
+                 index++)
+            {
+                Transform resolvedSeat =
+                    FindChildByName(
+                        $"{SeatPointPrefix}{index}");
+
+                if (resolvedSeat != null)
+                {
+                    resolvedSeats.Add(
+                        resolvedSeat);
+                }
+            }
+
+            if (resolvedSeats.Count == 0 &&
+                seatPoint != null)
+            {
+                resolvedSeats.Add(
+                    seatPoint);
+            }
+
+            seatPoints =
+                resolvedSeats.ToArray();
+        }
+
+        seatPoint ??=
+            seatPoints != null &&
+            seatPoints.Length > 0
+                ? seatPoints[0]
+                : transform;
+    }
+
+    private void ResolveExitPoint()
+    {
+        exitPoint ??=
+            FindChildByName(
+                ExitPointName);
+    }
+
+    private void ResolvePathRoot()
+    {
+        if (!resolvePathAutomatically ||
+            pathRoot != null)
+        {
+            return;
+        }
+
+        pathRoot =
+            FindChildByName(
+                PathRootName);
+    }
+
+    private void ResolvePathPoints()
+    {
+        if (pathPoints != null &&
+            pathPoints.Length > 0)
+        {
+            CompactPathPoints();
+            return;
+        }
+
+        if (pathRoot == null)
+        {
+            pathPoints =
+                Array.Empty<Transform>();
+
+            return;
+        }
+
+        List<Transform> points =
+            new();
+
+        foreach (Transform child
+                 in pathRoot)
+        {
+            if (child != null)
+            {
+                points.Add(
+                    child);
+            }
+        }
+
+        pathPoints =
+            points.ToArray();
+    }
+
+    private void CompactPathPoints()
+    {
+        if (pathPoints == null ||
+            pathPoints.Length == 0)
+        {
+            pathPoints =
+                Array.Empty<Transform>();
+
+            return;
+        }
+
+        List<Transform> validPoints =
+            new(pathPoints.Length);
+
+        foreach (Transform point
+                 in pathPoints)
+        {
+            if (point != null)
+            {
+                validPoints.Add(
+                    point);
+            }
+        }
+
+        pathPoints =
+            validPoints.ToArray();
+    }
+
+    private void ConfigureRigidbody()
+    {
+        ResolveRigidbody();
+
+        if (vehicleRigidbody == null)
+            return;
+
+        vehicleRigidbody.useGravity = true;
+        vehicleRigidbody.isKinematic = false;
+        vehicleRigidbody.interpolation =
+            RigidbodyInterpolation.Interpolate;
+        vehicleRigidbody.collisionDetectionMode =
+            CollisionDetectionMode.ContinuousDynamic;
+        vehicleRigidbody.constraints =
+            DefaultConstraints;
+
+        vehicleRigidbody.WakeUp();
+    }
+
+    private void ConfigureComponents()
+    {
+        if (vehicleCollider != null)
+        {
+            vehicleCollider.enabled = true;
+            vehicleCollider.isTrigger = false;
+        }
+
+        if (vehicleAudioSource != null)
+        {
+            vehicleAudioSource.playOnAwake =
+                false;
+        }
+    }
+
+    private void ResetRuntimeState()
+    {
+        currentSpeed = 0f;
+        currentTrackOffset = 0f;
+        lateralCorrectionVelocity =
+            Vector3.zero;
+
+        startingTrackPosition =
+            vehicleRigidbody != null
+                ? vehicleRigidbody.position
+                : transform.position;
+
+        jumpCooldownTimer = 0f;
+        safetyTimer =
+            safetyCheckInterval;
+        currentPathIndex = 0;
+
+        grounded = false;
+        groundedLastFrame = false;
+        checkpointReached = false;
+        safetyShutdown = false;
+
+        boardingCandidates.Clear();
+    }
 
     private bool ValidateConfiguration()
     {
+        bool valid = true;
+
         if (vehicleRigidbody == null)
         {
             Debug.LogError(
                 $"{GetType().Name} requires a Rigidbody.",
                 this);
 
-            return false;
+            valid = false;
         }
 
         if (vehicleCollider == null)
         {
             Debug.LogError(
-                $"{GetType().Name} requires a Collider.",
+                $"{GetType().Name} requires a non-trigger Collider.",
                 this);
 
-            return false;
+            valid = false;
         }
 
         if (pathPoints == null ||
@@ -2617,7 +2846,7 @@ public abstract class TrackVehicle : MonoBehaviour
                 $"{GetType().Name} requires at least one path point.",
                 this);
 
-            return false;
+            valid = false;
         }
 
         if (maximumRiders > 1 &&
@@ -2626,69 +2855,34 @@ public abstract class TrackVehicle : MonoBehaviour
                 maximumRiders))
         {
             Debug.LogWarning(
-                $"{GetType().Name} on '{name}' has fewer seat points than its Maximum Riders value. The final valid seat will be reused.",
+                $"{GetType().Name} on '{name}' has fewer seat points than Maximum Riders. The last valid seat will be reused.",
                 this);
         }
 
-        return true;
-    }
-
-    #endregion
-
-    #region Extensibility
-
-    protected virtual void OnStateChanged(
-        VehicleState previousState,
-        VehicleState newState)
-    {
-    }
-
-    protected virtual void OnDrivingStarted()
-    {
-    }
-
-    protected virtual void OnDrivingPhysicsUpdated()
-    {
-    }
-
-    protected virtual void OnAirbornePhysicsUpdated()
-    {
-    }
-
-    protected virtual void OnVehicleJumped()
-    {
-    }
-
-    protected virtual void OnVehicleStopped()
-    {
-    }
-
-    protected virtual void OnVehicleCollision(
-        Collision collision)
-    {
-    }
-
-    protected virtual void OnRiderBoarded(
-        UltimatePlayerMovement movement)
-    {
-    }
-
-    protected virtual void OnRiderDismounted(
-        UltimatePlayerMovement movement)
-    {
-    }
-
-    protected virtual void OnCheckpointReached()
-    {
-    }
-
-    protected virtual void OnTrackCompleted()
-    {
+        return valid;
     }
 
     #endregion
 
     #region Helpers
+
+    private bool CanRun()
+    {
+        return
+            initialized &&
+            !shuttingDown &&
+            !applicationQuitting &&
+            !safetyShutdown;
+    }
+
+    private static bool IsValidVehicleState(
+        VehicleState state)
+    {
+        return
+            Enum.IsDefined(
+                typeof(VehicleState),
+                state);
+    }
 
     private UltimatePlayerMovement ResolveMovement(
         Collider other)
@@ -2750,7 +2944,8 @@ public abstract class TrackVehicle : MonoBehaviour
 
             if (seatPoints[seatIndex] != null)
             {
-                return seatPoints[seatIndex];
+                return
+                    seatPoints[seatIndex];
             }
         }
 
@@ -2760,129 +2955,14 @@ public abstract class TrackVehicle : MonoBehaviour
                 : transform;
     }
 
-    private bool TryGetTrackFrame(
-        out Vector3 trackCenter,
-        out Vector3 trackRight)
+    private static Transform FindDirectOrNestedChild(
+        Transform root,
+        string targetName)
     {
-        trackCenter =
-            vehicleRigidbody != null
-                ? vehicleRigidbody.position
-                : transform.position;
-
-        trackRight =
-            transform.right;
-
-        if (pathPoints == null ||
-            pathPoints.Length == 0)
-        {
-            return false;
-        }
-
-        Vector3 segmentStart =
-            currentPathIndex > 0 &&
-            currentPathIndex - 1 <
-                pathPoints.Length &&
-            pathPoints[currentPathIndex - 1] != null
-                ? pathPoints[currentPathIndex - 1].position
-                : startingTrackPosition;
-
-        Vector3 segmentEnd =
-            currentPathIndex <
-                pathPoints.Length &&
-            pathPoints[currentPathIndex] != null
-                ? pathPoints[currentPathIndex].position
-                : segmentStart +
-                  trackDirection;
-
-        Vector3 segment =
-            segmentEnd -
-            segmentStart;
-
-        segment.y =
-            0f;
-
-        if (segment.sqrMagnitude <=
-            0.0001f)
-        {
-            return false;
-        }
-
-        Vector3 segmentDirection =
-            segment.normalized;
-
-        Vector3 position =
-            vehicleRigidbody != null
-                ? vehicleRigidbody.position
-                : transform.position;
-
-        Vector3 fromStart =
-            position -
-            segmentStart;
-
-        fromStart.y =
-            0f;
-
-        float segmentLength =
-            segment.magnitude;
-
-        float distanceAlongSegment =
-            Mathf.Clamp(
-                Vector3.Dot(
-                    fromStart,
-                    segmentDirection),
-                0f,
-                segmentLength);
-
-        trackCenter =
-            segmentStart +
-            segmentDirection *
-            distanceAlongSegment;
-
-        Vector3 up =
-            grounded
-                ? groundNormal
-                : Vector3.up;
-
-        trackRight =
-            Vector3.Cross(
-                up,
-                segmentDirection);
-
-        if (trackRight.sqrMagnitude <=
-            0.0001f)
-        {
-            trackRight =
-                transform.right;
-        }
-
-        trackRight.Normalize();
-
         return
-            IsFiniteVector(
-                trackCenter) &&
-            IsFiniteVector(
-                trackRight);
-    }
-
-    private bool IsOwnCollider(
-        Collider candidate)
-    {
-        if (candidate == null)
-            return false;
-
-        Transform candidateTransform =
-            candidate.transform;
-
-        Transform vehicleTransform =
-            vehicleRigidbody != null
-                ? vehicleRigidbody.transform
-                : transform;
-
-        return
-            candidateTransform ==
-                vehicleTransform ||
-            candidateTransform.IsChildOf(
-                vehicleTransform);
+            FindDescendantByName(
+                root,
+                targetName);
     }
 
     private static Transform FindDescendantByName(
@@ -2919,30 +2999,114 @@ public abstract class TrackVehicle : MonoBehaviour
     private Transform FindChildByName(
         string targetName)
     {
+        return
+            FindDescendantByName(
+                transform,
+                targetName);
+    }
+
+    private bool IsOwnCollider(
+        Collider candidate)
+    {
+        if (candidate == null)
+            return false;
+
+        Transform root =
+            vehicleRigidbody != null
+                ? vehicleRigidbody.transform
+                : transform;
+
+        return
+            candidate.transform == root ||
+            candidate.transform.IsChildOf(
+                root);
+    }
+
+    private static bool HasTagInHierarchy(
+        Transform source,
+        string requiredTag)
+    {
+        if (source == null)
+            return false;
+
         if (string.IsNullOrWhiteSpace(
-                targetName))
+                requiredTag))
         {
-            return null;
+            return true;
         }
 
-        Transform[] children =
-            GetComponentsInChildren<Transform>(
-                includeInactive: true);
+        Transform current =
+            source;
 
-        foreach (Transform child
-                 in children)
+        while (current != null)
         {
-            if (child != null &&
-                string.Equals(
-                    child.name,
-                    targetName,
-                    StringComparison.OrdinalIgnoreCase))
+            if (current.CompareTag(
+                    requiredTag))
             {
-                return child;
+                return true;
             }
+
+            current =
+                current.parent;
         }
 
-        return null;
+        return false;
+    }
+
+    private void RemoveRiderStateAt(
+        int index)
+    {
+        riders.RemoveAt(
+            index);
+
+        originalRiderParents.RemoveAt(
+            index);
+
+        originalMovementComponentStates.RemoveAt(
+            index);
+
+        originalRiderKinematicStates.RemoveAt(
+            index);
+
+        originalRiderGravityStates.RemoveAt(
+            index);
+    }
+
+    private void ClearRiderCollections()
+    {
+        riders.Clear();
+        originalRiderParents.Clear();
+        originalMovementComponentStates.Clear();
+        originalRiderKinematicStates.Clear();
+        originalRiderGravityStates.Clear();
+    }
+
+    private void StopVehicleMotion()
+    {
+        if (vehicleRigidbody == null)
+            return;
+
+        vehicleRigidbody.linearVelocity =
+            Vector3.zero;
+
+        vehicleRigidbody.angularVelocity =
+            Vector3.zero;
+
+        currentSpeed = 0f;
+        lateralCorrectionVelocity =
+            Vector3.zero;
+    }
+
+    private void UpdateTimers()
+    {
+        if (jumpCooldownTimer <= 0f)
+            return;
+
+        jumpCooldownTimer =
+            Mathf.Max(
+                0f,
+                jumpCooldownTimer -
+                Time.deltaTime);
     }
 
     private void DrawPathGizmos()
@@ -2999,72 +3163,87 @@ public abstract class TrackVehicle : MonoBehaviour
         }
     }
 
-    private static bool HasTagInHierarchy(
-        Transform source,
-        string requiredTag)
-    {
-        if (source == null)
-            return false;
-
-        Transform current =
-            source;
-
-        while (current != null)
-        {
-            if (string.IsNullOrWhiteSpace(
-                    requiredTag) ||
-                current.CompareTag(
-                    requiredTag))
-            {
-                return true;
-            }
-
-            current =
-                current.parent;
-        }
-
-        return false;
-    }
-
-    private void StopVehicleMotion()
-    {
-        if (vehicleRigidbody == null)
-            return;
-
-        vehicleRigidbody.linearVelocity =
-            Vector3.zero;
-
-        vehicleRigidbody.angularVelocity =
-            Vector3.zero;
-
-        currentSpeed =
-            0f;
-    }
-
     private static bool IsFiniteVector(
         Vector3 value)
     {
         return
-            float.IsFinite(
-                value.x) &&
-            float.IsFinite(
-                value.y) &&
-            float.IsFinite(
-                value.z);
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z);
     }
 
     private static bool IsFiniteQuaternion(
         Quaternion value)
     {
         return
-            float.IsFinite(
-                value.x) &&
-            float.IsFinite(
-                value.y) &&
-            float.IsFinite(
-                value.z) &&
-            float.IsFinite(
-                value.w);
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z) &&
+            float.IsFinite(value.w);
+    }
+
+    private void LogStateChange(
+        string message)
+    {
+        if (!logStateChanges)
+            return;
+
+        Debug.Log(
+            message,
+            this);
+    }
+
+    #endregion
+
+    #region Extensibility
+
+    protected virtual void OnStateChanged(
+        VehicleState previousState,
+        VehicleState newState)
+    {
+    }
+
+    protected virtual void OnDrivingStarted()
+    {
+    }
+
+    protected virtual void OnDrivingPhysicsUpdated()
+    {
+    }
+
+    protected virtual void OnAirbornePhysicsUpdated()
+    {
+    }
+
+    protected virtual void OnVehicleJumped()
+    {
+    }
+
+    protected virtual void OnVehicleStopped()
+    {
+    }
+
+    protected virtual void OnVehicleCollision(
+        Collision collision)
+    {
+    }
+
+    protected virtual void OnRiderBoarded(
+        UltimatePlayerMovement movement)
+    {
+    }
+
+    protected virtual void OnRiderDismounted(
+        UltimatePlayerMovement movement)
+    {
+    }
+
+    protected virtual void OnCheckpointReached()
+    {
+    }
+
+    protected virtual void OnTrackCompleted()
+    {
     }
 
     #endregion
