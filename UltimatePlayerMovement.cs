@@ -28,6 +28,8 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     private const string GroundProbeName = "GroundCheck";
     private const int HomingTargetCapacity = 32;
+    private const int OverlapCapacity = 32;
+    private const int GroundHitCapacity = 16;
 
     private const RigidbodyConstraints DefaultConstraints =
     RigidbodyConstraints.FreezeRotationX |
@@ -166,10 +168,18 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     #region Runtime State
 
     private readonly Collider[] homingTargets =
-        new Collider[HomingTargetCapacity];
+    new Collider[HomingTargetCapacity];
+
+    private readonly Collider[] blockingOverlaps =
+        new Collider[OverlapCapacity];
 
     private readonly HashSet<int> animatorParameters =
         new();
+
+    private readonly RaycastHit[] groundHits =
+    new RaycastHit[GroundHitCapacity];
+
+
 
     private MovementState currentState;
 
@@ -290,9 +300,15 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     }
 
     public bool SetSafeDestination(
-        Vector3 destination,
-        Quaternion rotation)
+    Vector3 destination,
+    Quaternion rotation)
     {
+        if (!IsFiniteVector(destination) ||
+            !IsFiniteQuaternion(rotation))
+        {
+            return false;
+        }
+
         if (!TryResolveGroundedDestination(
                 destination,
                 out Vector3 groundedDestination,
@@ -356,13 +372,13 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         characterDefinition =
             definition;
 
-        if (!RefreshCharacterRuntime(
-                forceAnimatorResolution: definitionChanged))
+        if (!initialized)
         {
-            return false;
+            return InitializeMovement();
         }
 
-        return true;
+        return RefreshCharacterRuntime(
+            forceAnimatorResolution: definitionChanged);
     }
 
     private bool ValidateCharacterDefinition(
@@ -592,12 +608,28 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     }
 
     public void LaunchFromSpring(
-        Vector3 launchVelocity)
+    Vector3 launchVelocity)
     {
         if (!initialized ||
             playerRigidbody == null)
         {
             return;
+        }
+
+        if (!IsFiniteVector(
+                launchVelocity))
+        {
+            return;
+        }
+
+        if (launchVelocity.sqrMagnitude >
+            maximumLinearSpeed *
+            maximumLinearSpeed)
+        {
+            launchVelocity =
+                Vector3.ClampMagnitude(
+                    launchVelocity,
+                    maximumLinearSpeed);
         }
 
         playerRigidbody.linearVelocity =
@@ -610,8 +642,8 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     }
 
     public void EnterHurtState(
-        Vector3 knockbackVelocity,
-        float duration = -1f)
+    Vector3 knockbackVelocity,
+    float duration = -1f)
     {
         if (!initialized ||
             playerRigidbody == null)
@@ -619,13 +651,33 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             return;
         }
 
+        if (!IsFiniteVector(
+                knockbackVelocity))
+        {
+            knockbackVelocity =
+                Vector3.zero;
+        }
+
+        if (knockbackVelocity.sqrMagnitude >
+            maximumLinearSpeed *
+            maximumLinearSpeed)
+        {
+            knockbackVelocity =
+                Vector3.ClampMagnitude(
+                    knockbackVelocity,
+                    maximumLinearSpeed);
+        }
+
         playerRigidbody.linearVelocity =
             knockbackVelocity;
 
         stateTimer =
+            float.IsFinite(duration) &&
             duration >= 0f
                 ? duration
-                : defaultHurtDuration;
+                : Mathf.Max(
+                    0f,
+                    defaultHurtDuration);
 
         ChangeState(
             MovementState.Hurt);
@@ -705,19 +757,25 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     {
         ResolveDependencies();
         ConfigureRigidbody();
-
-        if (characterDefinition != null)
-        {
-            ApplyCharacterDefinition();
-        }
     }
 
     private void Start()
     {
-        if (!InitializeMovement())
-        {
-            enabled = false;
-        }
+        TryInitializeMovement();
+    }
+
+    private bool TryInitializeMovement()
+    {
+        if (initialized)
+            return true;
+
+        if (characterDefinition == null)
+            return false;
+
+        ResolveDependencies();
+        ConfigureRigidbody();
+
+        return InitializeMovement();
     }
 
     private void OnEnable()
@@ -739,12 +797,15 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         if (!initialized)
             return;
 
-        UpdateInputTimers();
         UpdateAnimator();
 
         if (!CanProcessInput())
+        {
+            jumpBufferTimer = 0f;
             return;
+        }
 
+        UpdateInputTimers();
         HandleJumpInput();
         HandleRollingInput();
         HandleHomingAttackInput();
@@ -752,11 +813,16 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!initialized ||
-            shuttingDown ||
-            applicationQuitting ||
-            safetyShutdown)
+        if (shuttingDown ||
+    applicationQuitting ||
+    safetyShutdown)
         {
+            return;
+        }
+
+        if (!initialized)
+        {
+            TryInitializeMovement();
             return;
         }
 
@@ -908,6 +974,29 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             return;
         }
 
+        if (playerRigidbody == null)
+        {
+            ChangeState(
+                grounded
+                    ? MovementState.Ground
+                    : MovementState.Air);
+
+            return;
+        }
+
+        if (!IsFiniteVector(
+                homingDirection) ||
+            homingDirection.sqrMagnitude <=
+                0.000001f)
+        {
+            ChangeState(
+                grounded
+                    ? MovementState.Ground
+                    : MovementState.Air);
+
+            return;
+        }
+
         UpdateHomingAttack();
     }
 
@@ -926,9 +1015,16 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             return;
         }
 
+        if (playerRigidbody == null)
+        {
+            ExitGrindingState();
+            return;
+        }
+
         if (!railGrinding.IsGrinding)
         {
             ExitGrindingState();
+            return;
         }
     }
 
@@ -1338,25 +1434,100 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     private void ResolveCamera()
     {
-        if (cameraTransform != null)
+        if (IsValidCameraTransform(
+                cameraTransform))
+        {
             return;
+        }
 
-        if (Camera.main != null)
+        cameraTransform = null;
+
+        Camera mainCamera =
+            Camera.main;
+
+        if (IsUsableCamera(
+                mainCamera))
         {
             cameraTransform =
-                Camera.main.transform;
+                mainCamera.transform;
 
             return;
+        }
+
+        CameraController cameraController =
+            FindAnyObjectByType<CameraController>(
+                FindObjectsInactive.Include);
+
+        if (cameraController != null)
+        {
+            Camera controllerCamera =
+                cameraController.GetComponent<Camera>();
+
+            controllerCamera ??=
+                cameraController.GetComponentInChildren<Camera>(
+                    includeInactive: true);
+
+            if (IsUsableCamera(
+                    controllerCamera))
+            {
+                cameraTransform =
+                    controllerCamera.transform;
+
+                return;
+            }
+        }
+
+        Camera[] cameras =
+    FindObjectsByType<Camera>(
+        FindObjectsInactive.Include);
+
+        foreach (Camera candidate in cameras)
+        {
+            if (!IsUsableCamera(
+                    candidate))
+            {
+                continue;
+            }
+
+            cameraTransform =
+                candidate.transform;
+
+            return;
+        }
+    }
+
+    private static bool IsValidCameraTransform(
+    Transform candidate)
+    {
+        if (candidate == null ||
+            !candidate.gameObject.scene.IsValid() ||
+            !candidate.gameObject.activeInHierarchy)
+        {
+            return false;
         }
 
         Camera camera =
-            FindAnyObjectByType<Camera>();
+            candidate.GetComponent<Camera>();
 
-        if (camera != null)
-        {
-            cameraTransform =
-                camera.transform;
-        }
+        camera ??=
+            candidate.GetComponentInChildren<Camera>(
+                includeInactive: true);
+
+        camera ??=
+            candidate.GetComponentInParent<Camera>();
+
+        return IsUsableCamera(
+            camera);
+    }
+
+    private static bool IsUsableCamera(
+        Camera candidate)
+    {
+        return
+            candidate != null &&
+            candidate.gameObject.scene.IsValid() &&
+            candidate.gameObject.activeInHierarchy &&
+            candidate.enabled;
     }
 
     private void ResolveGroundProbe()
@@ -1365,7 +1536,8 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             return;
 
         Transform existingProbe =
-            transform.Find(GroundProbeName);
+            transform.Find(
+                GroundProbeName);
 
         if (existingProbe != null)
         {
@@ -1374,6 +1546,14 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
             return;
         }
+
+#if UNITY_EDITOR
+        if (!Application.isPlaying &&
+            UnityEditor.EditorUtility.IsPersistent(gameObject))
+        {
+            return;
+        }
+#endif
 
         GameObject probeObject =
             new(GroundProbeName);
@@ -1658,30 +1838,52 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         float vertical =
             Input.GetAxisRaw("Vertical");
 
+        if (!IsValidCameraTransform(
+                cameraTransform))
+        {
+            ResolveCamera();
+        }
+
+        if (!IsValidCameraTransform(
+                cameraTransform))
+        {
+            EnterSafetyShutdown(
+                "Movement input could not resolve a valid gameplay camera.");
+
+            return Vector3.zero;
+        }
+
         Vector3 forward =
-            cameraTransform != null
-                ? cameraTransform.forward
-                : transform.forward;
+            cameraTransform.forward;
 
         Vector3 right =
-            cameraTransform != null
-                ? cameraTransform.right
-                : transform.right;
+            cameraTransform.right;
 
         forward.y = 0f;
         right.y = 0f;
 
+        if (forward.sqrMagnitude <= 0.000001f ||
+            right.sqrMagnitude <= 0.000001f)
+        {
+            EnterSafetyShutdown(
+                "Movement input received invalid camera directions.");
+
+            return Vector3.zero;
+        }
+
         forward.Normalize();
         right.Normalize();
 
-        Vector3 input =
+        Vector3 movement =
             forward * vertical +
             right * horizontal;
 
-        return
-            Vector3.ClampMagnitude(
-                input,
-                1f);
+        if (movement.sqrMagnitude > 1f)
+        {
+            movement.Normalize();
+        }
+
+        return movement;
     }
 
     private void UpdateInputTimers()
@@ -1803,14 +2005,24 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     RaycastHit hit)
     {
         if (!trackMovingPlatforms ||
-            hit.collider == null)
+            hit.collider == null ||
+            playerRigidbody == null)
         {
             ClearGroundPlatform();
             return;
         }
 
-        currentGroundTransform =
+        Transform detectedGround =
             hit.collider.transform;
+
+        if (currentGroundTransform ==
+            detectedGround)
+        {
+            return;
+        }
+
+        currentGroundTransform =
+            detectedGround;
 
         currentGroundRigidbody =
             hit.rigidbody;
@@ -1846,14 +2058,54 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             return;
         }
 
-        Vector3 currentWorldPoint =
-            currentGroundTransform
-                .TransformPoint(
-                    currentGroundLocalPoint);
+        Vector3 currentPlatformPosition =
+            currentGroundTransform.position;
+
+        Quaternion currentPlatformRotation =
+            currentGroundTransform.rotation;
+
+        if (!IsFiniteVector(
+                currentPlatformPosition) ||
+            !IsFiniteQuaternion(
+                currentPlatformRotation))
+        {
+            ClearGroundPlatform();
+            return;
+        }
+
+        Vector3 positionDelta =
+            currentPlatformPosition -
+            previousGroundPosition;
+
+        Quaternion rotationDelta =
+            currentPlatformRotation *
+            Quaternion.Inverse(
+                previousGroundRotation);
+
+        if (!IsFiniteVector(
+                positionDelta) ||
+            !IsFiniteQuaternion(
+                rotationDelta))
+        {
+            ClearGroundPlatform();
+            return;
+        }
+
+        Vector3 playerOffset =
+            playerRigidbody.position -
+            previousGroundPosition;
+
+        Vector3 rotatedOffset =
+            rotationDelta *
+            playerOffset;
+
+        Vector3 rotationMovement =
+            rotatedOffset -
+            playerOffset;
 
         Vector3 platformMovement =
-            currentWorldPoint -
-            playerRigidbody.position;
+            positionDelta +
+            rotationMovement;
 
         if (!IsFiniteVector(
                 platformMovement))
@@ -1878,10 +2130,10 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         }
 
         previousGroundPosition =
-            currentGroundTransform.position;
+            currentPlatformPosition;
 
         previousGroundRotation =
-            currentGroundTransform.rotation;
+            currentPlatformRotation;
     }
 
     private void UpdateGrounding()
@@ -1926,54 +2178,113 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             transform.up *
             0.05f;
 
-        if (!Physics.SphereCast(
+        int hitCount =
+            Physics.SphereCastNonAlloc(
                 origin,
                 groundProbeRadius,
                 -transform.up,
-                out RaycastHit hit,
+                groundHits,
                 groundProbeDistance,
                 groundMask,
-                QueryTriggerInteraction.Ignore))
+                QueryTriggerInteraction.Ignore);
+
+        if (hitCount <= 0)
         {
             ClearGroundPlatform();
             return false;
         }
 
-        if (IsOwnCollider(
-                hit.collider))
+        RaycastHit closestHit =
+            default;
+
+        float closestDistance =
+            float.PositiveInfinity;
+
+        bool foundGround =
+            false;
+
+        for (int index = 0;
+             index < hitCount;
+             index++)
+        {
+            RaycastHit candidate =
+                groundHits[index];
+
+            groundHits[index] =
+                default;
+
+            if (candidate.collider == null)
+            {
+                continue;
+            }
+
+            if (IsOwnCollider(
+                    candidate.collider))
+            {
+                continue;
+            }
+
+            float candidateSlope =
+                Vector3.Angle(
+                    candidate.normal,
+                    Vector3.up);
+
+            if (!float.IsFinite(
+                    candidateSlope))
+            {
+                continue;
+            }
+
+            if (candidateSlope >
+                maximumSlopeAngle)
+            {
+                continue;
+            }
+
+            if (candidate.distance >=
+                closestDistance)
+            {
+                continue;
+            }
+
+            closestHit =
+                candidate;
+
+            closestDistance =
+                candidate.distance;
+
+            foundGround =
+                true;
+        }
+
+        if (!foundGround)
         {
             ClearGroundPlatform();
             return false;
         }
 
         normal =
-            hit.normal.normalized;
+            closestHit.normal.normalized;
 
         slopeAngle =
             Vector3.Angle(
                 normal,
                 Vector3.up);
 
-        if (!float.IsFinite(slopeAngle) ||
-            slopeAngle >
-                maximumSlopeAngle)
-        {
-            ClearGroundPlatform();
-            return false;
-        }
-
         CacheGroundPlatform(
-            hit);
+            closestHit);
 
         return true;
     }
 
     private void HandleLanding()
     {
-        if (currentState ==
-            MovementState.Grinding)
+        switch (currentState)
         {
-            return;
+            case MovementState.Grinding:
+            case MovementState.Spring:
+            case MovementState.Hurt:
+                return;
         }
 
         homingDirection =
@@ -1981,18 +2292,24 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
         stateTimer = 0f;
 
-        ChangeState(
-            MovementState.Ground);
+        if (currentState !=
+            MovementState.Ground)
+        {
+            ChangeState(
+                MovementState.Ground);
+        }
     }
 
     private void HandleLeavingGround()
     {
-        if (currentState ==
+        if (currentState !=
             MovementState.Ground)
         {
-            ChangeState(
-                MovementState.Air);
+            return;
         }
+
+        ChangeState(
+            MovementState.Air);
     }
 
     #endregion
@@ -2107,10 +2424,9 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     }
 
     private bool TryFindSpawnGround(
-        out RaycastHit hit)
+    out RaycastHit hit)
     {
-        hit =
-            default;
+        hit = default;
 
         if (playerRigidbody == null)
             return false;
@@ -2135,18 +2451,60 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             Vector3.up *
             searchHeight;
 
-        float distance =
-            searchHeight +
-            searchDistance;
+        RaycastHit[] hits =
+            Physics.SphereCastAll(
+                origin,
+                castRadius,
+                Vector3.down,
+                searchHeight +
+                searchDistance,
+                groundMask,
+                QueryTriggerInteraction.Ignore);
 
-        return Physics.SphereCast(
-            origin,
-            castRadius,
-            Vector3.down,
-            out hit,
-            distance,
-            groundMask,
-            QueryTriggerInteraction.Ignore);
+        float nearestDistance =
+            float.PositiveInfinity;
+
+        bool foundGround =
+            false;
+
+        foreach (RaycastHit candidate in hits)
+        {
+            if (candidate.collider == null ||
+                IsOwnCollider(
+                    candidate.collider))
+            {
+                continue;
+            }
+
+            float slopeAngle =
+                Vector3.Angle(
+                    candidate.normal,
+                    Vector3.up);
+
+            if (!float.IsFinite(slopeAngle) ||
+                slopeAngle >
+                    maximumSlopeAngle)
+            {
+                continue;
+            }
+
+            if (candidate.distance >=
+                nearestDistance)
+            {
+                continue;
+            }
+
+            nearestDistance =
+                candidate.distance;
+
+            hit =
+                candidate;
+
+            foundGround =
+                true;
+        }
+
+        return foundGround;
     }
 
     private void SnapRigidbodyToGround(
@@ -2177,22 +2535,17 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     private float GetColliderBottomOffset()
     {
-        Collider characterCollider =
-            GetComponent<Collider>();
+        if (playerCollider == null)
+        {
+            ResolveCollider();
+        }
 
-        characterCollider ??=
-            GetComponentInChildren<Collider>(
-                includeInactive: true);
-
-        characterCollider ??=
-            GetComponentInParent<Collider>();
-
-        if (characterCollider == null)
+        if (playerCollider == null)
             return 0f;
 
         float offset =
             transform.position.y -
-            characterCollider.bounds.min.y;
+            playerCollider.bounds.min.y;
 
         return Mathf.Max(
             0f,
@@ -2829,31 +3182,32 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     {
         if (playerRigidbody == null ||
             playerCollider == null ||
+            playerAnimator == null ||
+            !IsValidCameraTransform(cameraTransform) ||
+            groundProbe == null ||
             characterDefinition == null ||
             characterDefinition.movementProfile == null ||
-            characterDefinition.abilityProfile == null)
+            characterDefinition.abilityProfile == null ||
+            characterDefinition.animatorProfile == null)
         {
             return false;
         }
 
         if (!HasValidPhysicsOwnership())
+            return false;
+
+        if (!playerRigidbody.gameObject.activeInHierarchy ||
+            !groundProbe.gameObject.scene.IsValid() ||
+            !groundProbe.gameObject.activeInHierarchy)
         {
             return false;
         }
-
-        if (!playerRigidbody.gameObject.activeInHierarchy)
-            return false;
 
         if (!playerCollider.enabled)
-        {
             playerCollider.enabled = true;
-        }
 
-        if (playerAnimator != null &&
-            !playerAnimator.enabled)
-        {
+        if (!playerAnimator.enabled)
             playerAnimator.enabled = true;
-        }
 
         if (playerRigidbody.isKinematic &&
             !isStabilizingSpawn &&
@@ -2864,6 +3218,7 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
         if (!playerRigidbody.useGravity &&
             !isStabilizingSpawn &&
+            !isRecovering &&
             currentState != MovementState.Flying)
         {
             playerRigidbody.useGravity = true;
@@ -2875,26 +3230,42 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     private void AttemptRuntimeReferenceRecovery()
     {
         ResolveDependencies();
-
-        ApplyPhysicsSettings();
-
         ConfigureCollider();
+
+        if (playerRigidbody != null)
+        {
+            playerRigidbody.interpolation =
+                RigidbodyInterpolation.Interpolate;
+
+            playerRigidbody.collisionDetectionMode =
+                CollisionDetectionMode.ContinuousDynamic;
+
+            if (!isStabilizingSpawn &&
+                !isRecovering)
+            {
+                playerRigidbody.isKinematic = false;
+
+                if (currentState != MovementState.Flying)
+                {
+                    playerRigidbody.useGravity = true;
+                }
+            }
+
+            playerRigidbody.WakeUp();
+        }
 
         if (characterDefinition != null)
         {
             ApplyCharacterDefinition();
         }
 
-        if (playerAnimator != null &&
-            !playerAnimator.enabled)
+        if (playerAnimator != null)
         {
             playerAnimator.enabled = true;
         }
 
-        if (groundProbe == null)
-        {
-            ResolveGroundProbe();
-        }
+        ResolveCamera();
+        ResolveGroundProbe();
     }
 
     private bool ValidateRuntimePhysicsState(
@@ -2971,23 +3342,37 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         if (playerRigidbody == null)
             return false;
 
-        StopRigidbodyMotion();
+        Vector3 position =
+            playerRigidbody.position;
+
+        Vector3 linearVelocity =
+            playerRigidbody.linearVelocity;
+
+        Vector3 angularVelocity =
+            playerRigidbody.angularVelocity;
 
         if (!IsFiniteVector(
-                playerRigidbody.position))
+                position))
         {
             return PerformWorldRecovery();
         }
 
         playerRigidbody.linearVelocity =
-            Vector3.ClampMagnitude(
-                playerRigidbody.linearVelocity,
-                maximumLinearSpeed);
+            IsFiniteVector(linearVelocity)
+                ? Vector3.ClampMagnitude(
+                    linearVelocity,
+                    maximumLinearSpeed)
+                : Vector3.zero;
 
         playerRigidbody.angularVelocity =
-            Vector3.ClampMagnitude(
-                playerRigidbody.angularVelocity,
-                maximumAngularSpeed);
+            IsFiniteVector(angularVelocity)
+                ? Vector3.ClampMagnitude(
+                    angularVelocity,
+                    maximumAngularSpeed)
+                : Vector3.zero;
+
+        playerRigidbody.isKinematic = false;
+        playerRigidbody.WakeUp();
 
         return true;
     }
@@ -3035,19 +3420,27 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
                 halfExtents.z,
                 0.01f);
 
-        Collider[] overlaps =
-            Physics.OverlapBox(
+        int overlapCount =
+            Physics.OverlapBoxNonAlloc(
                 bounds.center,
                 halfExtents,
-                transform.rotation,
+                blockingOverlaps,
+                playerCollider.transform.rotation,
                 groundMask,
                 QueryTriggerInteraction.Ignore);
 
-        foreach (Collider overlap in overlaps)
+        for (int index = 0;
+             index < overlapCount;
+             index++)
         {
+            Collider overlap =
+                blockingOverlaps[index];
+
+            blockingOverlaps[index] =
+                null;
+
             if (overlap == null ||
-                IsOwnCollider(
-                    overlap))
+                IsOwnCollider(overlap))
             {
                 continue;
             }
@@ -3530,8 +3923,11 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     {
         if (!initialized ||
             !grounded ||
+            playerRigidbody == null ||
             currentState !=
-                MovementState.Ground)
+                MovementState.Ground ||
+            !CanUseAbility(
+                profile => profile.canRoll))
         {
             return false;
         }
@@ -3570,7 +3966,10 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         Vector3 input)
     {
         if (playerRigidbody == null)
+        {
+            StopRolling();
             return;
+        }
 
         if (!grounded)
         {
@@ -3672,6 +4071,7 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         return true;
     }
 
+
     private void UpdateHomingAttack()
     {
         if (playerRigidbody == null)
@@ -3750,23 +4150,74 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     #region External States
 
     private void UpdateSpringMovement(
-        Vector3 input)
+    Vector3 input)
     {
-        UpdateAirMovement(
-            input);
+        if (playerRigidbody == null)
+        {
+            ChangeState(
+                grounded
+                    ? MovementState.Ground
+                    : MovementState.Air);
 
-        if (playerRigidbody != null &&
-            playerRigidbody.linearVelocity.y <= 0f)
+            return;
+        }
+
+        if (!IsFiniteVector(
+                playerRigidbody.linearVelocity))
         {
             ChangeState(
                 MovementState.Air);
+
+            return;
         }
+
+        if (playerRigidbody.linearVelocity.y <= 0f)
+        {
+            ChangeState(
+                grounded
+                    ? MovementState.Ground
+                    : MovementState.Air);
+
+            return;
+        }
+
+        UpdateAirMovement(
+            input);
     }
 
     private void UpdateHurtMovement()
     {
-        stateTimer -=
-            Time.fixedDeltaTime;
+        if (playerRigidbody == null)
+        {
+            ChangeState(
+                grounded
+                    ? MovementState.Ground
+                    : MovementState.Air);
+
+            return;
+        }
+
+        if (!IsFiniteVector(
+                playerRigidbody.linearVelocity))
+        {
+            playerRigidbody.linearVelocity =
+                Vector3.zero;
+
+            stateTimer = 0f;
+
+            ChangeState(
+                grounded
+                    ? MovementState.Ground
+                    : MovementState.Air);
+
+            return;
+        }
+
+        stateTimer =
+            Mathf.Max(
+                0f,
+                stateTimer -
+                Time.fixedDeltaTime);
 
         if (stateTimer > 0f)
             return;
@@ -3778,57 +4229,123 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     }
 
     private void UpdateFlyingMovement(
-        Vector3 input)
+    Vector3 input)
     {
         if (playerRigidbody == null)
+        {
+            StopFlying();
             return;
+        }
 
-        float verticalInput = 0f;
+        if (!IsFiniteVector(
+                playerRigidbody.linearVelocity))
+        {
+            playerRigidbody.linearVelocity =
+                Vector3.zero;
+
+            StopFlying();
+            return;
+        }
+
+        if (!IsFiniteVector(input))
+        {
+            input =
+                Vector3.zero;
+        }
+
+        float verticalInput =
+            0f;
 
         if (Input.GetKey(jumpKey))
         {
-            verticalInput += 1f;
+            verticalInput +=
+                1f;
         }
 
         if (Input.GetKey(flyDownKey))
         {
-            verticalInput -= 1f;
+            verticalInput -=
+                1f;
+        }
+
+        Vector3 horizontalInput =
+            Vector3.ProjectOnPlane(
+                input,
+                Vector3.up);
+
+        if (horizontalInput.sqrMagnitude >
+            1f)
+        {
+            horizontalInput.Normalize();
         }
 
         Vector3 velocity =
-            input *
+            horizontalInput *
             flyingSpeed;
 
         velocity.y =
             verticalInput *
             flyingVerticalSpeed;
 
+        if (!IsFiniteVector(velocity))
+        {
+            playerRigidbody.linearVelocity =
+                Vector3.zero;
+
+            StopFlying();
+            return;
+        }
+
         playerRigidbody.linearVelocity =
             velocity;
 
-        if (input.sqrMagnitude >
+        if (horizontalInput.sqrMagnitude <=
             0.001f)
         {
-            RotateTowards(
-                input,
-                Vector3.up,
-                turnSpeed);
+            return;
         }
+
+        RotateTowards(
+            horizontalInput,
+            Vector3.up,
+            turnSpeed);
     }
 
     private void UpdatePowerActionMovement(
-        Vector3 input)
+    Vector3 input)
     {
+        if (playerRigidbody == null)
+        {
+            StopPowerAction();
+            return;
+        }
+
+        if (!IsFiniteVector(
+                playerRigidbody.linearVelocity))
+        {
+            playerRigidbody.linearVelocity =
+                Vector3.zero;
+
+            StopPowerAction();
+            return;
+        }
+
+        if (!IsFiniteVector(input))
+        {
+            input =
+                Vector3.zero;
+        }
+
         if (grounded)
         {
             UpdateGroundMovement(
                 input);
+
+            return;
         }
-        else
-        {
-            UpdateAirMovement(
-                input);
-        }
+
+        UpdateAirMovement(
+            input);
     }
 
     #endregion
@@ -3836,27 +4353,76 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     #region Rotation
 
     private void RotateTowards(
-        Vector3 direction,
-        Vector3 up,
-        float speed)
+    Vector3 direction,
+    Vector3 up,
+    float speed)
     {
+        if (playerRigidbody == null)
+            return;
+
+        if (!IsFiniteVector(direction) ||
+            !IsFiniteVector(up))
+        {
+            return;
+        }
+
         if (direction.sqrMagnitude <=
             0.001f)
         {
             return;
         }
 
+        if (up.sqrMagnitude <=
+            0.000001f)
+        {
+            up =
+                Vector3.up;
+        }
+
+        direction.Normalize();
+        up.Normalize();
+
+        if (Mathf.Abs(
+                Vector3.Dot(
+                    direction,
+                    up)) >=
+            0.999f)
+        {
+            return;
+        }
+
         Quaternion targetRotation =
             Quaternion.LookRotation(
-                direction.normalized,
+                direction,
                 up);
+
+        if (!IsFiniteQuaternion(
+                targetRotation))
+        {
+            return;
+        }
+
+        float rotationSpeed =
+            Mathf.Max(
+                0f,
+                speed);
+
+        float interpolation =
+            Mathf.Clamp01(
+                rotationSpeed *
+                Time.fixedDeltaTime);
 
         Quaternion nextRotation =
             Quaternion.Slerp(
                 playerRigidbody.rotation,
                 targetRotation,
-                speed *
-                Time.fixedDeltaTime);
+                interpolation);
+
+        if (!IsFiniteQuaternion(
+                nextRotation))
+        {
+            return;
+        }
 
         playerRigidbody.MoveRotation(
             nextRotation);
@@ -3870,29 +4436,59 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     {
         animatorParameters.Clear();
 
-        if (playerAnimator == null ||
-            playerAnimator.runtimeAnimatorController ==
-                null)
+        if (playerAnimator == null)
+            return;
+
+        if (!playerAnimator.enabled)
+        {
+            playerAnimator.enabled =
+                true;
+        }
+
+        RuntimeAnimatorController controller =
+            playerAnimator.runtimeAnimatorController;
+
+        if (controller == null)
+            return;
+
+        AnimatorControllerParameter[] parameters =
+            playerAnimator.parameters;
+
+        if (parameters == null ||
+            parameters.Length == 0)
         {
             return;
         }
 
-        foreach (
-            AnimatorControllerParameter parameter
-            in playerAnimator.parameters)
+        for (int index = 0;
+             index < parameters.Length;
+             index++)
         {
+            AnimatorControllerParameter parameter =
+                parameters[index];
+
             animatorParameters.Add(
                 parameter.nameHash);
         }
     }
 
     private bool HasAnimatorParameter(
-        int parameterHash)
+    int parameterHash)
     {
-        return
-            playerAnimator != null &&
-            animatorParameters.Contains(
-                parameterHash);
+        if (playerAnimator == null)
+            return false;
+
+        if (!playerAnimator.enabled)
+            return false;
+
+        if (playerAnimator.runtimeAnimatorController ==
+            null)
+        {
+            return false;
+        }
+
+        return animatorParameters.Contains(
+            parameterHash);
     }
 
     private void UpdateAnimator()
@@ -3903,14 +4499,37 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             return;
         }
 
+        if (!playerAnimator.enabled ||
+            playerAnimator.runtimeAnimatorController ==
+                null)
+        {
+            return;
+        }
+
         Vector3 velocity =
             playerRigidbody.linearVelocity;
+
+        if (!IsFiniteVector(velocity))
+        {
+            velocity =
+                Vector3.zero;
+        }
 
         Vector3 horizontalVelocity =
             new(
                 velocity.x,
                 0f,
                 velocity.z);
+
+        float horizontalSpeed =
+            horizontalVelocity.magnitude;
+
+        if (!float.IsFinite(
+                horizontalSpeed))
+        {
+            horizontalSpeed =
+                0f;
+        }
 
         if (HasAnimatorParameter(
                 GroundedHash))
@@ -3925,7 +4544,7 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
         {
             playerAnimator.SetFloat(
                 SpeedHash,
-                horizontalVelocity.magnitude);
+                horizontalSpeed);
         }
 
         if (HasAnimatorParameter(
@@ -3939,6 +4558,23 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     private void UpdateAnimatorState()
     {
+        if (playerAnimator == null)
+            return;
+
+        if (!playerAnimator.enabled ||
+            playerAnimator.runtimeAnimatorController ==
+                null)
+        {
+            return;
+        }
+
+        if (!IsValidMovementState(
+                currentState))
+        {
+            RecoverInvalidMovementState();
+            return;
+        }
+
         if (!HasAnimatorParameter(
                 StateHash))
         {
@@ -3956,7 +4592,8 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
     private bool ValidateConfiguration()
     {
-        bool valid = true;
+        bool valid =
+            true;
 
         valid &=
             ValidateReference(
@@ -3970,6 +4607,16 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
 
         valid &=
             ValidateReference(
+                playerCollider,
+                nameof(Collider));
+
+        valid &=
+            ValidateReference(
+                playerAnimator,
+                nameof(Animator));
+
+        valid &=
+            ValidateReference(
                 cameraTransform,
                 "Camera Transform");
 
@@ -3978,33 +4625,59 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
                 groundProbe,
                 GroundProbeName);
 
-        if (characterDefinition != null)
+        if (characterDefinition == null)
+            return false;
+
+        if (!ValidateCharacterDefinition(
+                characterDefinition))
         {
-            if (!characterDefinition.IsValid())
-            {
-                Debug.LogError(
-                    "UltimatePlayerMovement has an invalid CharacterDefinition.",
-                    this);
-
-                valid = false;
-            }
-
-            valid &=
-                ValidateReference(
-                    characterDefinition.movementProfile,
-                    nameof(CharacterMovementProfile));
-
-            valid &=
-                ValidateReference(
-                    characterDefinition.abilityProfile,
-                    nameof(CharacterAbilityProfile));
+            valid =
+                false;
         }
 
-        if (playerAnimator == null)
+        if (playerRigidbody != null)
         {
-            Debug.LogWarning(
-                "UltimatePlayerMovement could not find an Animator.",
+            if (playerRigidbody.isKinematic)
+            {
+                Debug.LogError(
+                    $"{nameof(UltimatePlayerMovement)} requires a non-kinematic Rigidbody on '{name}'.",
+                    this);
+
+                valid =
+                    false;
+            }
+        }
+
+        if (playerCollider != null &&
+            !playerCollider.enabled)
+        {
+            Debug.LogError(
+                $"{nameof(UltimatePlayerMovement)} requires an enabled Collider on '{name}'.",
                 this);
+
+            valid =
+                false;
+        }
+
+        if (playerAnimator != null &&
+            !playerAnimator.enabled)
+        {
+            Debug.LogError(
+                $"{nameof(UltimatePlayerMovement)} requires an enabled Animator on '{name}'.",
+                this);
+
+            valid =
+                false;
+        }
+
+        if (!ValidateTransformScale())
+        {
+            Debug.LogError(
+                $"{nameof(UltimatePlayerMovement)} detected an invalid transform scale on '{name}'.",
+                this);
+
+            valid =
+                false;
         }
 
         return valid;
@@ -4018,7 +4691,7 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
             return true;
 
         Debug.LogError(
-            $"UltimatePlayerMovement requires {displayName}.",
+            $"{nameof(UltimatePlayerMovement)} requires {displayName}.",
             this);
 
         return false;
@@ -4029,10 +4702,22 @@ public sealed class UltimatePlayerMovement : MonoBehaviour
     #region Debug
 
     private void LogStateChange(
-        string message)
+    string message)
     {
         if (!logStateChanges)
             return;
+
+        if (string.IsNullOrWhiteSpace(
+                message))
+        {
+            return;
+        }
+
+        if (shuttingDown ||
+            applicationQuitting)
+        {
+            return;
+        }
 
         Debug.Log(
             message,

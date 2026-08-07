@@ -124,12 +124,19 @@ public sealed class RailGrinding : MonoBehaviour
     #region Public API
 
     public TeamType CurrentTeam => currentTeam;
-    public bool IsGrinding => isGrinding;
     public bool IsCrouching => isCrouching;
     public float CurrentGrindSpeed => currentGrindSpeed;
     public float SplineT => splineT;
     public RailSpline CurrentRail => currentRail;
     public bool IsInitialized => isInitialized;
+
+    public bool IsGrinding
+    {
+        get
+        {
+            return isGrinding;
+        }
+    }
 
     public void SetTeamType(
     TeamType teamType)
