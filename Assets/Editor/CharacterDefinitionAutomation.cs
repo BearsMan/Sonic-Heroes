@@ -1324,8 +1324,8 @@ public static class CharacterDefinitionAutomation
     }
 
     private static bool IsGeneratedAssetPath(
-        string assetPath,
-        Type assetType)
+    string assetPath,
+    Type assetType)
     {
         if (string.IsNullOrWhiteSpace(
                 assetPath))
@@ -1340,12 +1340,25 @@ public static class CharacterDefinitionAutomation
             return false;
         }
 
+        /*
+        CharacterDefinitions anywhere beneath TeamsRoot
+        are owned by the automatic character system.
+        
+        This deliberately removes both:
+        
+        Legacy:
+        Team Sonic/
+             01 Team Sonic - 01 Sonic Character Definition.asset
+        
+         New:
+         Team Sonic/
+            Character Definitions/
+                 Sonic Character Definition.asset
+        */
         if (assetType ==
             typeof(CharacterDefinition))
         {
-            return assetPath.Contains(
-                $"/{DefinitionsFolder}/",
-                StringComparison.OrdinalIgnoreCase);
+            return true;
         }
 
         if (assetType ==

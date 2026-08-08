@@ -67,7 +67,7 @@ crashlytics-build.properties
 .idea/
 
 # VS Code
-.vscode/
+#.vscode/
 
 # Plastic SCM
 .plastic/

@@ -1,51 +1,112 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(CharacterSwitch))]
 public sealed class TeamSetup : MonoBehaviour
 {
+    #region Types
+
+    private enum TeamRole
+    {
+        Speed,
+        Fly,
+        Power,
+        Special
+    }
+
+    #endregion
+
+    #region Constants
+
+    private const string DefinitionsResourcePath =
+        "Teams";
+
+    private const string LeaderSlotName =
+        "Team Leader";
+
+    private const string LeftFollowerSlotName =
+        "Left Team Member";
+
+    private const string RightFollowerSlotName =
+        "Right Team Member";
+
+    private const string GroundCheckName =
+        "GroundCheck";
+
+    private const string LeftFollowTargetName =
+        "LeftPos";
+
+    private const string RightFollowTargetName =
+        "RightPos";
+
+    #endregion
+
     #region Inspector
 
     [Header("Team")]
-    [SerializeField] private TeamComposition team;
-
-    [Header("Formation Slots")]
-    private const string LeaderSlotName = "Team Leader";
-    private const string LeftFollowerSlotName = "Left Team Member";
-    private const string RightFollowerSlotName = "Right Team Member";
-
-    private Transform leaderSlot;
-    private Transform leftFollowerSlot;
-    private Transform rightFollowerSlot;
+    [SerializeField]
+    private TeamComposition team;
 
     [Header("Starting Formation")]
     [SerializeField]
     private CHARACTERTYPES startingLeader =
         CHARACTERTYPES.Speed;
 
+    [Header("Automatic Formation")]
+    [SerializeField]
+    private bool createMissingFormationObjects = true;
+
+    [SerializeField]
+    private Vector3 leftFollowerOffset =
+        new Vector3(
+            -1.5f,
+            0f,
+            -1.5f);
+
+    [SerializeField]
+    private Vector3 rightFollowerOffset =
+        new Vector3(
+            1.5f,
+            0f,
+            -1.5f);
+
+    [SerializeField]
+    private Vector3 groundCheckOffset =
+        new Vector3(
+            0f,
+            0.1f,
+            0f);
+
     [Header("HUD")]
-    [SerializeField] private HUD hud;
+    [SerializeField]
+    private HUD hud;
 
     [Header("Super Form")]
-    [SerializeField, Min(0.1f)] private float ringDrainInterval = 3f;
-    [SerializeField, Min(1)] private int ringsDrainedPerInterval = 1;
+    [SerializeField, Min(0.1f)]
+    private float ringDrainInterval =
+        3f;
 
-    [Header("Debugging")]
-    [SerializeField] private bool preserveFailedTeamForDebugging = true;
-    [SerializeField] private bool logStateChanges;
+    [SerializeField, Min(1)]
+    private int ringsDrainedPerInterval =
+        1;
+
+    [Header("Recovery")]
+    [SerializeField]
+    private bool preserveFailedTeamForDebugging = true;
+
+    [Header("Debug")]
+    [SerializeField]
+    private bool logStateChanges;
 
     #endregion
 
-    #region Constants
+    #region Runtime References
 
-    private const string GroundCheckName = "GroundCheck";
-    private const string LeftFollowTargetName = "LeftPos";
-    private const string RightFollowTargetName = "RightPos";
-
-    #endregion
-
-    #region Runtime State
+    private Transform leaderSlot;
+    private Transform leftFollowerSlot;
+    private Transform rightFollowerSlot;
 
     private Transform groundCheck;
     private Transform leftFollowTarget;
@@ -53,10 +114,30 @@ public sealed class TeamSetup : MonoBehaviour
 
     private CharacterSwitch characterSwitch;
 
+    #endregion
+
+    #region Definition Cache
+
+    private readonly Dictionary<string, CharacterDefinition>
+        definitionCache =
+            new Dictionary<string, CharacterDefinition>();
+
+    private CharacterDefinition speedDefinition;
+    private CharacterDefinition flyDefinition;
+    private CharacterDefinition powerDefinition;
+    private CharacterDefinition superDefinition;
+
+    private bool definitionsCached;
+
+    #endregion
+
+    #region Runtime State
+
     private Coroutine ringDrainRoutine;
     private WaitForSeconds ringDrainWait;
 
     private bool initialized;
+    private bool initializing;
     private bool shuttingDown;
     private bool superFormEventSubscribed;
 
@@ -64,24 +145,22 @@ public sealed class TeamSetup : MonoBehaviour
 
     #region Public API
 
-    public static TeamSetup Instance { get; private set; }
+    public static TeamSetup Instance
+    {
+        get;
+        private set;
+    }
 
-    public TeamComposition Team => team;
+    public TeamComposition Team =>
+        team;
 
     public PlayableTeam PlayableTeam =>
         team != null
             ? team.PlayableTeam
             : default;
 
-    public bool IsInitialized => initialized;
-
-    private Transform LeaderSlot => leaderSlot;
-    private Transform LeftFollowerSlot => leftFollowerSlot;
-    private Transform RightFollowerSlot => rightFollowerSlot;
-
-    private Transform GroundCheck => groundCheck;
-    private Transform LeftFollowTarget => leftFollowTarget;
-    private Transform RightFollowTarget => rightFollowTarget;
+    public bool IsInitialized =>
+        initialized;
 
     #endregion
 
@@ -92,11 +171,12 @@ public sealed class TeamSetup : MonoBehaviour
         if (!RegisterInstance())
         {
             enabled = false;
+
             return;
         }
 
         CacheComponents();
-        ResolveReferences();
+        ResolveSceneReferences();
         RebuildRingDrainWait();
     }
 
@@ -106,6 +186,7 @@ public sealed class TeamSetup : MonoBehaviour
             return;
 
         CacheComponents();
+        ResolveSceneReferences();
         SubscribeToEvents();
     }
 
@@ -113,6 +194,10 @@ public sealed class TeamSetup : MonoBehaviour
     {
         if (!InitializeTeam())
         {
+            Debug.LogError(
+                "TeamSetup failed to initialize.",
+                this);
+
             enabled = false;
         }
     }
@@ -120,7 +205,7 @@ public sealed class TeamSetup : MonoBehaviour
     private void OnDisable()
     {
         UnsubscribeFromEvents();
-        CleanupRuntimeState();
+        StopRingDrain();
     }
 
     private void OnDestroy()
@@ -148,7 +233,8 @@ public sealed class TeamSetup : MonoBehaviour
                 1,
                 ringsDrainedPerInterval);
 
-        if (!IsSupportedLeader(startingLeader))
+        if (!IsSupportedLeader(
+                startingLeader))
         {
             startingLeader =
                 CHARACTERTYPES.Speed;
@@ -164,154 +250,109 @@ public sealed class TeamSetup : MonoBehaviour
         if (initialized)
             return true;
 
-        CacheComponents();
-        ResolveReferences();
-        RebuildRingDrainWait();
-
-        if (!ValidateConfiguration())
+        if (initializing ||
+            shuttingDown)
         {
-            Debug.LogError(
-                "TeamSetup initialization stopped because the configuration is invalid.",
-                this);
-
             return false;
         }
 
-        if (!ResolveSlotHelpers())
+        initializing = true;
+
+        try
         {
-            Debug.LogError(
-                "TeamSetup initialization stopped because the leader-slot helpers are missing.",
-                this);
+            CacheComponents();
+            ResolveSceneReferences();
+            RebuildRingDrainWait();
 
-            return false;
+            if (!ValidateBaseConfiguration())
+                return false;
+
+            if (!EnsureFormationStructure())
+                return false;
+
+            if (!RefreshCharacterDefinitions())
+                return false;
+
+            ClearFormationSlots();
+
+            if (!EnsureFormationStructure())
+                return false;
+
+            if (!RepairFormationControllers())
+                return false;
+
+            Transform speedCharacter =
+                SpawnCharacter(
+                    team.SpeedCharacterPrefab,
+                    speedDefinition,
+                    leaderSlot);
+
+            Transform flyCharacter =
+                SpawnCharacter(
+                    team.FlyingCharacterPrefab,
+                    flyDefinition,
+                    leftFollowerSlot);
+
+            Transform powerCharacter =
+                SpawnCharacter(
+                    team.PowerCharacterPrefab,
+                    powerDefinition,
+                    rightFollowerSlot);
+
+            if (!ValidateSpawnedTeam(
+                    speedCharacter,
+                    flyCharacter,
+                    powerCharacter))
+            {
+                CleanupFailedTeam(
+                    speedCharacter,
+                    flyCharacter,
+                    powerCharacter);
+
+                return false;
+            }
+
+            if (!ConfigureCharacterSwitch(
+                    speedCharacter,
+                    flyCharacter,
+                    powerCharacter))
+            {
+                CleanupFailedTeam(
+                    speedCharacter,
+                    flyCharacter,
+                    powerCharacter);
+
+                return false;
+            }
+
+            GameInstance.currentTeam =
+                (int)team.PlayableTeam;
+
+            initialized = true;
+
+            RefreshHud();
+
+            LogStateChange(
+                $"Initialized team '{team.PlayableTeam}'.");
+
+            return true;
         }
-
-        ClearFormationSlots();
-
-        if (!ResolveSlotHelpers())
+        finally
         {
-            Debug.LogError(
-                "TeamSetup lost one or more permanent leader-slot helpers after clearing the formation.",
-                this);
-
-            return false;
+            initializing = false;
         }
-
-        if (!RepairFormationControllers())
-        {
-            Debug.LogError(
-                "TeamSetup could not repair the formation controllers.",
-                this);
-
-            return false;
-        }
-
-        Transform speedCharacter =
-            SpawnCharacter(
-                team.SpeedCharacterPrefab,
-                team.SpeedCharacterDefinition,
-                leaderSlot);
-
-        Transform flyingCharacter =
-            SpawnCharacter(
-                team.FlyingCharacterPrefab,
-                team.FlyingCharacterDefinition,
-                leftFollowerSlot);
-
-        Transform powerCharacter =
-            SpawnCharacter(
-                team.PowerCharacterPrefab,
-                team.PowerCharacterDefinition,
-                rightFollowerSlot);
-
-        if (speedCharacter == null ||
-            flyingCharacter == null ||
-            powerCharacter == null)
-        {
-            Debug.LogError(
-                "TeamSetup failed to spawn the complete team.",
-                this);
-
-            CleanupFailedTeam(
-                speedCharacter,
-                flyingCharacter,
-                powerCharacter);
-
-            return false;
-        }
-
-        if (!ResolveSlotHelpers())
-        {
-            Debug.LogError(
-                "TeamSetup could not restore the permanent helper references after spawning the team.",
-                this);
-
-            CleanupFailedTeam(
-                speedCharacter,
-                flyingCharacter,
-                powerCharacter);
-
-            return false;
-        }
-
-        if (!ValidateSpawnedCharacters(
-                speedCharacter,
-                flyingCharacter,
-                powerCharacter))
-        {
-            Debug.LogError(
-                "TeamSetup rejected one or more spawned characters.",
-                this);
-
-            CleanupFailedTeam(
-                speedCharacter,
-                flyingCharacter,
-                powerCharacter);
-
-            return false;
-        }
-
-        bool configured =
-            characterSwitch.ConfigureTeam(
-                speedCharacter,
-                flyingCharacter,
-                powerCharacter,
-                team.SpeedCharacterPrefab,
-                team.SuperCharacterPrefab,
-                startingLeader);
-
-        if (!configured)
-        {
-            Debug.LogError(
-                "CharacterSwitch rejected the spawned team.",
-                characterSwitch);
-
-            CleanupFailedTeam(
-                speedCharacter,
-                flyingCharacter,
-                powerCharacter);
-
-            return false;
-        }
-
-        GameInstance.currentTeam =
-            (int)team.PlayableTeam;
-
-        initialized = true;
-
-        RefreshHud();
-
-        LogStateChange(
-            $"Initialized team: {team.PlayableTeam}.");
-
-        return true;
     }
 
     private bool RebuildTeam()
     {
-        CleanupRuntimeState();
+        if (shuttingDown)
+            return false;
+
+        StopRingDrain();
 
         initialized = false;
+
+        InvalidateDefinitionCache();
 
         return InitializeTeam();
     }
@@ -322,13 +363,14 @@ public sealed class TeamSetup : MonoBehaviour
             Instance == this)
         {
             Instance = this;
+
             return true;
         }
 
         Debug.LogError(
-            $"Duplicate TeamSetup detected. Existing object: " +
-            $"'{Instance.gameObject.name}'. Duplicate object: " +
-            $"'{gameObject.name}'.",
+            $"Duplicate TeamSetup detected. " +
+            $"Existing: '{Instance.name}'. " +
+            $"Duplicate: '{name}'.",
             this);
 
         return false;
@@ -336,36 +378,575 @@ public sealed class TeamSetup : MonoBehaviour
 
     #endregion
 
-    #region Character Spawning
+    #region Definition Resolution
 
-    private Transform SpawnCharacter(
-     GameObject prefab,
-     CharacterDefinition definition,
-     Transform slot)
+    private bool RefreshCharacterDefinitions()
     {
-        if (prefab == null)
+        InvalidateRoleDefinitions();
+
+        if (!BuildDefinitionCache())
+            return false;
+
+        speedDefinition =
+            ResolveDefinition(
+                team.SpeedCharacterPrefab,
+                TeamRole.Speed);
+
+        flyDefinition =
+            ResolveDefinition(
+                team.FlyingCharacterPrefab,
+                TeamRole.Fly);
+
+        powerDefinition =
+            ResolveDefinition(
+                team.PowerCharacterPrefab,
+                TeamRole.Power);
+
+        if (team.SuperCharacterPrefab != null)
+        {
+            superDefinition =
+                ResolveDefinition(
+                    team.SuperCharacterPrefab,
+                    TeamRole.Special);
+        }
+
+        bool valid =
+            ValidateResolvedDefinition(
+                speedDefinition,
+                "Speed") &
+            ValidateResolvedDefinition(
+                flyDefinition,
+                "Fly") &
+            ValidateResolvedDefinition(
+                powerDefinition,
+                "Power");
+
+        if (team.SuperCharacterPrefab != null &&
+            superDefinition == null)
+        {
+            Debug.LogWarning(
+                $"TeamSetup could not resolve a Special CharacterDefinition " +
+                $"for '{team.SuperCharacterPrefab.name}'.",
+                this);
+        }
+
+        return valid;
+    }
+
+    private bool BuildDefinitionCache()
+    {
+        if (definitionsCached &&
+            definitionCache.Count > 0)
+        {
+            return true;
+        }
+
+        definitionCache.Clear();
+
+        CharacterDefinition[] definitions =
+            Resources.LoadAll<CharacterDefinition>(
+                DefinitionsResourcePath);
+
+        if (definitions == null ||
+            definitions.Length == 0)
         {
             Debug.LogError(
-                "TeamSetup cannot spawn a null character prefab.",
+                $"TeamSetup found no CharacterDefinition assets under " +
+                $"'Resources/{DefinitionsResourcePath}'.",
                 this);
 
+            definitionsCached = false;
+
+            return false;
+        }
+
+        foreach (CharacterDefinition definition
+                 in definitions)
+        {
+            if (!PrepareDefinition(
+                    definition))
+            {
+                continue;
+            }
+
+            string id =
+                NormalizeId(
+                    definition.characterId);
+
+            if (string.IsNullOrWhiteSpace(id))
+                continue;
+
+            if (definitionCache.TryGetValue(
+                    id,
+                    out CharacterDefinition existing))
+            {
+                definitionCache[id] =
+                    ChoosePreferredDefinition(
+                        existing,
+                        definition);
+
+                continue;
+            }
+
+            definitionCache.Add(
+                id,
+                definition);
+        }
+
+        definitionsCached =
+            definitionCache.Count > 0;
+
+        if (!definitionsCached)
+        {
+            Debug.LogError(
+                "TeamSetup did not find any valid CharacterDefinition assets.",
+                this);
+        }
+
+        return definitionsCached;
+    }
+
+    private static bool PrepareDefinition(
+        CharacterDefinition definition)
+    {
+        if (definition == null)
+            return false;
+
+        if (!definition.RepairRuntimeIdentity())
+            return false;
+
+        return definition.IsValid();
+    }
+
+    private CharacterDefinition ResolveDefinition(
+        GameObject prefab,
+        TeamRole expectedRole)
+    {
+        if (prefab == null)
+            return null;
+
+        if (CharacterDefinition.TryResolveIdentityFromName(
+                prefab.name,
+                out CharacterDefinition.CharacterIdentity identity))
+        {
+            CharacterDefinition exact =
+                FindDefinitionById(
+                    identity.CharacterId);
+
+            if (IsDefinitionCompatible(
+                    exact,
+                    expectedRole))
+            {
+                return exact;
+            }
+        }
+
+        return FindDefinitionByRole(
+            expectedRole);
+    }
+
+    private CharacterDefinition FindDefinitionById(
+        string characterId)
+    {
+        if (string.IsNullOrWhiteSpace(
+                characterId))
+        {
             return null;
         }
 
+        definitionCache.TryGetValue(
+            NormalizeId(
+                characterId),
+            out CharacterDefinition definition);
+
+        return definition;
+    }
+
+    private CharacterDefinition FindDefinitionByRole(
+        TeamRole expectedRole)
+    {
+        CharacterDefinition result = null;
+
+        foreach (CharacterDefinition definition
+                 in definitionCache.Values)
+        {
+            if (!IsDefinitionCompatible(
+                    definition,
+                    expectedRole))
+            {
+                continue;
+            }
+
+            if (!MatchesCurrentTeam(
+                    definition))
+            {
+                continue;
+            }
+
+            if (result != null)
+            {
+                Debug.LogError(
+                    $"TeamSetup found multiple CharacterDefinitions for " +
+                    $"role '{expectedRole}' on team '{team.PlayableTeam}'.",
+                    this);
+
+                return null;
+            }
+
+            result =
+                definition;
+        }
+
+        return result;
+    }
+
+    private bool MatchesCurrentTeam(
+        CharacterDefinition definition)
+    {
+        if (definition == null ||
+            team == null)
+        {
+            return false;
+        }
+
+        if (definition.team ==
+            CharacterDefinition.Team.Special)
+        {
+            return false;
+        }
+
+        string definitionTeam =
+            NormalizeTeamName(
+                definition.team.ToString());
+
+        string playableTeam =
+            NormalizeTeamName(
+                team.PlayableTeam.ToString());
+
+        return definitionTeam ==
+            playableTeam;
+    }
+
+    private static bool IsDefinitionCompatible(
+        CharacterDefinition definition,
+        TeamRole expectedRole)
+    {
+        if (definition == null ||
+            !definition.IsValid())
+        {
+            return false;
+        }
+
+        return expectedRole switch
+        {
+            TeamRole.Speed =>
+                definition.characterType ==
+                CharacterDefinition.CharacterType.Speed,
+
+            TeamRole.Fly =>
+                definition.characterType ==
+                CharacterDefinition.CharacterType.Fly,
+
+            TeamRole.Power =>
+                definition.characterType ==
+                CharacterDefinition.CharacterType.Power,
+
+            TeamRole.Special =>
+                definition.characterType ==
+                CharacterDefinition.CharacterType.Special,
+
+            _ =>
+                false
+        };
+    }
+
+    private static CharacterDefinition ChoosePreferredDefinition(
+        CharacterDefinition first,
+        CharacterDefinition second)
+    {
+        if (first == null)
+            return second;
+
+        if (second == null)
+            return first;
+
+        int firstScore =
+            ScoreDefinitionName(
+                first);
+
+        int secondScore =
+            ScoreDefinitionName(
+                second);
+
+        return secondScore > firstScore
+            ? second
+            : first;
+    }
+
+    private static int ScoreDefinitionName(
+        CharacterDefinition definition)
+    {
+        if (definition == null)
+            return 0;
+
+        if (!CharacterDefinition.TryGetIdentity(
+                definition.characterId,
+                out CharacterDefinition.CharacterIdentity identity))
+        {
+            return 0;
+        }
+
+        string expected =
+            NormalizeObjectName(
+                $"{identity.ShortName} Character Definition");
+
+        string actual =
+            NormalizeObjectName(
+                definition.name);
+
+        if (actual == expected)
+            return 100;
+
+        if (actual.Contains(
+                NormalizeObjectName(
+                    identity.ShortName)))
+        {
+            return 50;
+        }
+
+        return 1;
+    }
+
+    private bool ValidateResolvedDefinition(
+        CharacterDefinition definition,
+        string roleName)
+    {
         if (definition == null)
         {
             Debug.LogError(
-                $"TeamSetup could not resolve a CharacterDefinition for '{prefab.name}'.",
-                prefab);
+                $"TeamSetup could not automatically resolve the {roleName} CharacterDefinition.",
+                this);
 
+            return false;
+        }
+
+        if (!definition.IsValid())
+        {
+            Debug.LogError(
+                $"TeamSetup resolved an invalid {roleName} CharacterDefinition " +
+                $"'{definition.name}'.",
+                definition);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private void InvalidateDefinitionCache()
+    {
+        definitionsCached = false;
+
+        definitionCache.Clear();
+
+        InvalidateRoleDefinitions();
+    }
+
+    private void InvalidateRoleDefinitions()
+    {
+        speedDefinition = null;
+        flyDefinition = null;
+        powerDefinition = null;
+        superDefinition = null;
+    }
+
+    #endregion
+
+    #region Formation Structure
+
+    private bool EnsureFormationStructure()
+    {
+        ResolveFormationSlots();
+
+        if (!createMissingFormationObjects)
+        {
+            return ValidateFormationStructure();
+        }
+
+        leaderSlot ??=
+            CreateFormationObject(
+                transform,
+                LeaderSlotName,
+                Vector3.zero);
+
+        leftFollowerSlot ??=
+            CreateFormationObject(
+                transform,
+                LeftFollowerSlotName,
+                leftFollowerOffset);
+
+        rightFollowerSlot ??=
+            CreateFormationObject(
+                transform,
+                RightFollowerSlotName,
+                rightFollowerOffset);
+
+        if (leaderSlot == null ||
+            leftFollowerSlot == null ||
+            rightFollowerSlot == null)
+        {
+            return false;
+        }
+
+        groundCheck ??=
+            CreateFormationObject(
+                leaderSlot,
+                GroundCheckName,
+                groundCheckOffset);
+
+        leftFollowTarget ??=
+            CreateFormationObject(
+                leaderSlot,
+                LeftFollowTargetName,
+                leftFollowerOffset);
+
+        rightFollowTarget ??=
+            CreateFormationObject(
+                leaderSlot,
+                RightFollowTargetName,
+                rightFollowerOffset);
+
+        return ValidateFormationStructure();
+    }
+
+    private void ResolveFormationSlots()
+    {
+        leaderSlot ??=
+            FindDescendantByName(
+                transform,
+                LeaderSlotName);
+
+        leftFollowerSlot ??=
+            FindDescendantByName(
+                transform,
+                LeftFollowerSlotName);
+
+        rightFollowerSlot ??=
+            FindDescendantByName(
+                transform,
+                RightFollowerSlotName);
+
+        if (leaderSlot == null)
+            return;
+
+        groundCheck ??=
+            FindDescendantByName(
+                leaderSlot,
+                GroundCheckName);
+
+        leftFollowTarget ??=
+            FindDescendantByName(
+                leaderSlot,
+                LeftFollowTargetName);
+
+        rightFollowTarget ??=
+            FindDescendantByName(
+                leaderSlot,
+                RightFollowTargetName);
+    }
+
+    private bool ValidateFormationStructure()
+    {
+        bool valid = true;
+
+        valid &=
+            ValidateReference(
+                leaderSlot,
+                LeaderSlotName);
+
+        valid &=
+            ValidateReference(
+                leftFollowerSlot,
+                LeftFollowerSlotName);
+
+        valid &=
+            ValidateReference(
+                rightFollowerSlot,
+                RightFollowerSlotName);
+
+        valid &=
+            ValidateReference(
+                groundCheck,
+                GroundCheckName);
+
+        valid &=
+            ValidateReference(
+                leftFollowTarget,
+                LeftFollowTargetName);
+
+        valid &=
+            ValidateReference(
+                rightFollowTarget,
+                RightFollowTargetName);
+
+        return valid;
+    }
+
+    private static Transform CreateFormationObject(
+        Transform parent,
+        string objectName,
+        Vector3 localPosition)
+    {
+        if (parent == null ||
+            string.IsNullOrWhiteSpace(
+                objectName))
+        {
             return null;
         }
 
-        if (slot == null)
+        GameObject created =
+            new GameObject(
+                objectName);
+
+        Transform createdTransform =
+            created.transform;
+
+        createdTransform.SetParent(
+            parent,
+            false);
+
+        createdTransform.SetLocalPositionAndRotation(
+            localPosition,
+            Quaternion.identity);
+
+        createdTransform.localScale =
+            Vector3.one;
+
+        return createdTransform;
+    }
+
+    #endregion
+
+    #region Character Spawning
+
+    private Transform SpawnCharacter(
+        GameObject prefab,
+        CharacterDefinition definition,
+        Transform slot)
+    {
+        if (prefab == null ||
+            definition == null ||
+            slot == null)
+        {
+            return null;
+        }
+
+        if (!definition.IsValid())
         {
             Debug.LogError(
-                $"TeamSetup cannot spawn '{prefab.name}' because its formation slot is missing.",
-                this);
+                $"TeamSetup refused to spawn '{prefab.name}' with invalid " +
+                $"CharacterDefinition '{definition.name}'.",
+                definition);
 
             return null;
         }
@@ -377,44 +958,105 @@ public sealed class TeamSetup : MonoBehaviour
                 false);
 
         if (characterObject == null)
-        {
-            Debug.LogError(
-                $"TeamSetup failed to instantiate '{prefab.name}'.",
-                this);
-
             return null;
-        }
 
-        Transform characterTransform =
+        Transform character =
             characterObject.transform;
 
-        characterTransform.SetLocalPositionAndRotation(
+        character.SetLocalPositionAndRotation(
             Vector3.zero,
             Quaternion.identity);
 
-        characterTransform.localScale =
-            prefab.transform.localScale;
+        if (!IsFiniteVector(
+                prefab.transform.localScale) ||
+            IsZeroScale(
+                prefab.transform.localScale))
+        {
+            character.localScale =
+                Vector3.one;
+        }
+        else
+        {
+            character.localScale =
+                prefab.transform.localScale;
+        }
 
         if (!RepairVisualCharacter(
-                characterTransform,
+                character,
                 definition))
         {
-            Debug.LogError(
-                $"TeamSetup could not repair the visual character '{characterTransform.name}'.",
-                characterTransform);
-
-            Destroy(characterObject);
+            DestroyCharacter(
+                character);
 
             return null;
         }
 
-        return characterTransform;
+        return character;
     }
 
-    private bool ValidateSpawnedCharacters(
-    Transform speedCharacter,
-    Transform flyingCharacter,
-    Transform powerCharacter)
+    private bool RepairVisualCharacter(
+        Transform character,
+        CharacterDefinition definition)
+    {
+        if (character == null ||
+            definition == null ||
+            !definition.IsValid())
+        {
+            return false;
+        }
+
+        RemoveVisualPhysicsComponent<UltimatePlayerMovement>(
+            character);
+
+        RemoveVisualPhysicsComponent<Rigidbody>(
+            character);
+
+        Animator animator =
+            character.GetComponentInChildren<Animator>(
+                includeInactive: true);
+
+        if (animator == null)
+        {
+            Debug.LogError(
+                $"Visual character '{character.name}' has no Animator.",
+                character);
+
+            return false;
+        }
+
+        animator.enabled = true;
+
+        if (definition.animatorProfile != null)
+        {
+            if (definition.animatorProfile.animatorController != null)
+            {
+                animator.runtimeAnimatorController =
+                    definition.animatorProfile.animatorController;
+            }
+
+            if (definition.animatorProfile.avatar != null)
+            {
+                animator.avatar =
+                    definition.animatorProfile.avatar;
+            }
+        }
+
+        CharacterType characterType =
+            character.GetComponent<CharacterType>();
+
+        if (characterType == null)
+        {
+            characterType =
+                character.gameObject.AddComponent<CharacterType>();
+        }
+
+        return characterType != null;
+    }
+
+    private bool ValidateSpawnedTeam(
+        Transform speedCharacter,
+        Transform flyCharacter,
+        Transform powerCharacter)
     {
         bool valid = true;
 
@@ -425,8 +1067,8 @@ public sealed class TeamSetup : MonoBehaviour
 
         valid &=
             ValidateVisualCharacter(
-                flyingCharacter,
-                "Flying Character");
+                flyCharacter,
+                "Fly Character");
 
         valid &=
             ValidateVisualCharacter(
@@ -462,7 +1104,8 @@ public sealed class TeamSetup : MonoBehaviour
         if (animator == null)
         {
             Debug.LogError(
-                $"TeamSetup could not find an Animator on the spawned {displayName} '{character.name}'.",
+                $"TeamSetup could not find an Animator on " +
+                $"'{character.name}'.",
                 character);
 
             valid = false;
@@ -471,7 +1114,8 @@ public sealed class TeamSetup : MonoBehaviour
         if (renderer == null)
         {
             Debug.LogError(
-                $"TeamSetup could not find a Renderer on the spawned {displayName} '{character.name}'.",
+                $"TeamSetup could not find a Renderer on " +
+                $"'{character.name}'.",
                 character);
 
             valid = false;
@@ -480,14 +1124,14 @@ public sealed class TeamSetup : MonoBehaviour
         return valid;
     }
 
+    #endregion
+
+    #region Controller Repair
+
     private bool RepairFormationControllers()
     {
-        if (leaderSlot == null ||
-            leftFollowerSlot == null ||
-            rightFollowerSlot == null)
-        {
+        if (!ValidateFormationStructure())
             return false;
-        }
 
         if (!RepairLeaderController())
             return false;
@@ -509,6 +1153,9 @@ public sealed class TeamSetup : MonoBehaviour
 
     private bool RepairLeaderController()
     {
+        if (leaderSlot == null)
+            return false;
+
         Rigidbody leaderRigidbody =
             GetOrAddComponent<Rigidbody>(
                 leaderSlot.gameObject);
@@ -535,12 +1182,13 @@ public sealed class TeamSetup : MonoBehaviour
             leaderCollider);
 
         CharacterDefinition startingDefinition =
-            ResolveStartingCharacterDefinition();
+            ResolveStartingDefinition();
 
-        if (startingDefinition == null)
+        if (startingDefinition == null ||
+            !startingDefinition.IsValid())
         {
             Debug.LogError(
-                "TeamSetup could not resolve the starting CharacterDefinition.",
+                "TeamSetup could not resolve a valid starting CharacterDefinition.",
                 this);
 
             return false;
@@ -550,7 +1198,8 @@ public sealed class TeamSetup : MonoBehaviour
                 startingDefinition))
         {
             Debug.LogError(
-                "TeamSetup could not assign the starting CharacterDefinition to Team Leader.",
+                $"TeamSetup could not assign " +
+                $"'{startingDefinition.name}' to Team Leader.",
                 movement);
 
             return false;
@@ -588,79 +1237,21 @@ public sealed class TeamSetup : MonoBehaviour
         return true;
     }
 
-    private bool RepairVisualCharacter(
-        Transform character,
-        CharacterDefinition definition)
-    {
-        if (character == null ||
-            definition == null)
-        {
-            return false;
-        }
-
-        RemoveVisualPhysicsComponent<UltimatePlayerMovement>(
-    character);
-
-        RemoveVisualPhysicsComponent<Rigidbody>(
-            character);
-
-        Animator animator =
-            character.GetComponentInChildren<Animator>(
-                includeInactive: true);
-
-        if (animator == null)
-        {
-            Debug.LogError(
-                $"The visual character '{character.name}' has no Animator.",
-                character);
-
-            return false;
-        }
-
-        if (!animator.enabled)
-        {
-            animator.enabled = true;
-        }
-
-        if (definition.animatorProfile != null)
-        {
-            if (definition.animatorProfile.animatorController != null)
-            {
-                animator.runtimeAnimatorController =
-                    definition.animatorProfile.animatorController;
-            }
-
-            if (definition.animatorProfile.avatar != null)
-            {
-                animator.avatar =
-                    definition.animatorProfile.avatar;
-            }
-        }
-
-        CharacterType characterType =
-            character.GetComponent<CharacterType>();
-
-        characterType ??=
-            character.gameObject.AddComponent<CharacterType>();
-
-        return characterType != null;
-    }
-
-    private CharacterDefinition ResolveStartingCharacterDefinition()
+    private CharacterDefinition ResolveStartingDefinition()
     {
         return startingLeader switch
         {
             CHARACTERTYPES.Speed =>
-                team.SpeedCharacterDefinition,
+                speedDefinition,
 
             CHARACTERTYPES.Fly =>
-                team.FlyingCharacterDefinition,
+                flyDefinition,
 
             CHARACTERTYPES.Power =>
-                team.PowerCharacterDefinition,
+                powerDefinition,
 
             _ =>
-                team.SpeedCharacterDefinition
+                speedDefinition
         };
     }
 
@@ -681,73 +1272,194 @@ public sealed class TeamSetup : MonoBehaviour
     }
 
     private static void ConfigureLeaderRigidbody(
-        Rigidbody targetRigidbody)
+        Rigidbody target)
     {
-        if (targetRigidbody == null)
+        if (target == null)
             return;
 
-        targetRigidbody.useGravity = true;
-        targetRigidbody.isKinematic = false;
+        target.useGravity = true;
+        target.isKinematic = false;
 
-        targetRigidbody.interpolation =
+        target.interpolation =
             RigidbodyInterpolation.Interpolate;
 
-        targetRigidbody.collisionDetectionMode =
+        target.collisionDetectionMode =
             CollisionDetectionMode.ContinuousDynamic;
 
-        targetRigidbody.constraints =
+        target.constraints =
             RigidbodyConstraints.FreezeRotationX |
             RigidbodyConstraints.FreezeRotationY |
             RigidbodyConstraints.FreezeRotationZ;
+
+        SanitizeRigidbody(
+            target);
     }
 
     private static void ConfigureFollowerRigidbody(
-        Rigidbody targetRigidbody)
+        Rigidbody target)
     {
-        if (targetRigidbody == null)
+        if (target == null)
             return;
 
-        targetRigidbody.useGravity = false;
-        targetRigidbody.isKinematic = true;
+        target.useGravity = false;
+        target.isKinematic = true;
 
-        targetRigidbody.interpolation =
+        target.interpolation =
             RigidbodyInterpolation.Interpolate;
 
-        targetRigidbody.collisionDetectionMode =
+        target.collisionDetectionMode =
             CollisionDetectionMode.ContinuousSpeculative;
 
-        targetRigidbody.constraints =
+        target.constraints =
             RigidbodyConstraints.FreezeRotationX |
             RigidbodyConstraints.FreezeRotationY |
             RigidbodyConstraints.FreezeRotationZ;
+
+        SanitizeRigidbody(
+            target);
     }
 
     private static void ConfigureGameplayCollider(
-        CapsuleCollider targetCollider)
+        CapsuleCollider target)
     {
-        if (targetCollider == null)
+        if (target == null)
             return;
 
-        targetCollider.enabled = true;
-        targetCollider.isTrigger = false;
+        target.enabled = true;
+        target.isTrigger = false;
+        target.direction = 1;
 
-        targetCollider.direction = 1;
-
-        targetCollider.center =
+        target.center =
             new Vector3(
                 0f,
                 1f,
                 0f);
 
-        targetCollider.radius =
+        target.radius =
             Mathf.Max(
                 0.1f,
-                targetCollider.radius);
+                target.radius);
 
-        targetCollider.height =
+        target.height =
             Mathf.Max(
-                targetCollider.radius * 2f,
-                targetCollider.height);
+                target.radius * 2f,
+                target.height);
+    }
+
+    private static void SanitizeRigidbody(
+        Rigidbody target)
+    {
+        if (target == null)
+            return;
+
+        if (!IsFiniteVector(
+                target.linearVelocity))
+        {
+            target.linearVelocity =
+                Vector3.zero;
+        }
+
+        if (!IsFiniteVector(
+                target.angularVelocity))
+        {
+            target.angularVelocity =
+                Vector3.zero;
+        }
+    }
+
+    #endregion
+
+    #region Character Switch
+
+    private bool ConfigureCharacterSwitch(
+        Transform speedCharacter,
+        Transform flyCharacter,
+        Transform powerCharacter)
+    {
+        if (characterSwitch == null)
+            return false;
+
+        bool configured =
+            characterSwitch.ConfigureTeam(
+                speedCharacter,
+                flyCharacter,
+                powerCharacter,
+                team.SpeedCharacterPrefab,
+                team.SuperCharacterPrefab,
+                startingLeader);
+
+        if (!configured)
+        {
+            Debug.LogError(
+                "CharacterSwitch rejected the automatically built team.",
+                characterSwitch);
+        }
+
+        return configured;
+    }
+
+    #endregion
+
+    #region Formation Cleanup
+
+    private void ClearFormationSlots()
+    {
+        ClearSlot(
+            leaderSlot);
+
+        ClearSlot(
+            leftFollowerSlot);
+
+        ClearSlot(
+            rightFollowerSlot);
+    }
+
+    private static void ClearSlot(
+        Transform slot)
+    {
+        if (slot == null)
+            return;
+
+        for (int index =
+                 slot.childCount - 1;
+             index >= 0;
+             index--)
+        {
+            Transform child =
+                slot.GetChild(
+                    index);
+
+            if (child == null ||
+                IsPermanentSlotHelper(
+                    child))
+            {
+                continue;
+            }
+
+            child.gameObject.SetActive(
+                false);
+
+            Destroy(
+                child.gameObject);
+        }
+    }
+
+    private static bool IsPermanentSlotHelper(
+        Transform child)
+    {
+        if (child == null)
+            return false;
+
+        return
+            NamesMatch(
+                child.name,
+                GroundCheckName) ||
+            NamesMatch(
+                child.name,
+                LeftFollowTargetName) ||
+            NamesMatch(
+                child.name,
+                RightFollowTargetName);
     }
 
     private static void RemoveVisualPhysicsComponent<T>(
@@ -761,87 +1473,18 @@ public sealed class TeamSetup : MonoBehaviour
             visualRoot.GetComponentsInChildren<T>(
                 includeInactive: true);
 
-        foreach (T component in components)
+        foreach (T component
+                 in components)
         {
             if (component == null)
                 continue;
 
-            Destroy(component);
+            component.gameObject.SetActive(
+                false);
+
+            Destroy(
+                component);
         }
-    }
-
-    private bool ValidateCharacterMovement(
-        Transform character,
-        string displayName)
-    {
-        if (character == null)
-        {
-            Debug.LogError(
-                $"TeamSetup cannot validate a null {displayName}.",
-                this);
-
-            return false;
-        }
-
-        UltimatePlayerMovement movement =
-            character.GetComponentInChildren<UltimatePlayerMovement>(
-                includeInactive: true);
-
-        if (movement != null)
-            return true;
-
-        Debug.LogError(
-            $"TeamSetup could not find UltimatePlayerMovement on the spawned {displayName} '{character.name}'.",
-            character);
-
-        return false;
-    }
-
-    private void ClearFormationSlots()
-    {
-        ClearSlot(leaderSlot);
-        ClearSlot(leftFollowerSlot);
-        ClearSlot(rightFollowerSlot);
-    }
-
-    private static void ClearSlot(
-        Transform slot)
-    {
-        if (slot == null)
-        {
-            Debug.LogWarning(
-                "TeamSetup tried to clear a null formation slot.");
-
-            return;
-        }
-
-        for (int index = slot.childCount - 1;
-             index >= 0;
-             index--)
-        {
-            Transform child =
-                slot.GetChild(index);
-
-            if (child == null ||
-                IsPermanentSlotHelper(child))
-            {
-                continue;
-            }
-
-            Destroy(child.gameObject);
-        }
-    }
-
-    private static bool IsPermanentSlotHelper(
-        Transform child)
-    {
-        if (child == null)
-            return false;
-
-        return
-            child.name == GroundCheckName ||
-            child.name == LeftFollowTargetName ||
-            child.name == RightFollowTargetName;
     }
 
     #endregion
@@ -854,6 +1497,7 @@ public sealed class TeamSetup : MonoBehaviour
         if (isSuperForm)
         {
             StartRingDrain();
+
             return;
         }
 
@@ -933,7 +1577,9 @@ public sealed class TeamSetup : MonoBehaviour
     {
         ringDrainWait =
             new WaitForSeconds(
-                ringDrainInterval);
+                Mathf.Max(
+                    0.1f,
+                    ringDrainInterval));
     }
 
     #endregion
@@ -942,11 +1588,13 @@ public sealed class TeamSetup : MonoBehaviour
 
     private void SubscribeToEvents()
     {
-        if (superFormEventSubscribed ||
-            characterSwitch == null)
-        {
+        if (superFormEventSubscribed)
             return;
-        }
+
+        CacheComponents();
+
+        if (characterSwitch == null)
+            return;
 
         characterSwitch.SuperFormChanged +=
             HandleSuperFormChanged;
@@ -976,112 +1624,15 @@ public sealed class TeamSetup : MonoBehaviour
     {
         characterSwitch ??=
             GetComponent<CharacterSwitch>();
-
-        LogStateChange(
-            $"Character Switch: {(characterSwitch != null ? "Resolved" : "Missing")}");
     }
 
-    private void ResolveReferences()
+    private void ResolveSceneReferences()
     {
         hud ??=
             FindAnyObjectByType<HUD>(
                 FindObjectsInactive.Include);
 
-        leaderSlot ??=
-            FindDescendantByName(
-                transform,
-                LeaderSlotName);
-
-        leftFollowerSlot ??=
-            FindDescendantByName(
-                transform,
-                LeftFollowerSlotName);
-
-        rightFollowerSlot ??=
-            FindDescendantByName(
-                transform,
-                RightFollowerSlotName);
-
-        LogStateChange(
-            $"Leader Slot: {(leaderSlot != null ? "Resolved" : "Missing")}");
-
-        LogStateChange(
-            $"Left Follower Slot: {(leftFollowerSlot != null ? "Resolved" : "Missing")}");
-
-        LogStateChange(
-            $"Right Follower Slot: {(rightFollowerSlot != null ? "Resolved" : "Missing")}");
-
-        LogStateChange(
-            $"HUD: {(hud != null ? "Resolved" : "Missing")}");
-    }
-
-    private bool ResolveSlotHelpers()
-    {
-        if (leaderSlot == null)
-        {
-            groundCheck = null;
-            leftFollowTarget = null;
-            rightFollowTarget = null;
-
-            return false;
-        }
-
-        groundCheck =
-            FindDescendantByName(
-                leaderSlot,
-                GroundCheckName);
-
-        leftFollowTarget =
-            FindDescendantByName(
-                leaderSlot,
-                LeftFollowTargetName);
-
-        rightFollowTarget =
-            FindDescendantByName(
-                leaderSlot,
-                RightFollowTargetName);
-
-        bool valid = true;
-
-        valid &=
-            ValidateResolvedHelper(
-                groundCheck,
-                GroundCheckName);
-
-        valid &=
-            ValidateResolvedHelper(
-                leftFollowTarget,
-                LeftFollowTargetName);
-
-        valid &=
-            ValidateResolvedHelper(
-                rightFollowTarget,
-                RightFollowTargetName);
-
-        LogStateChange(
-            $"Ground Check: {(groundCheck != null ? "Resolved" : "Missing")}");
-
-        LogStateChange(
-            $"Left Follow Target: {(leftFollowTarget != null ? "Resolved" : "Missing")}");
-
-        LogStateChange(
-            $"Right Follow Target: {(rightFollowTarget != null ? "Resolved" : "Missing")}");
-
-        return valid;
-    }
-
-    private bool ValidateResolvedHelper(
-        Transform helper,
-        string helperName)
-    {
-        if (helper != null)
-            return true;
-
-        Debug.LogError(
-            $"TeamSetup could not find '{helperName}' under '{leaderSlot.name}'.",
-            this);
-
-        return false;
+        ResolveFormationSlots();
     }
 
     private static Transform FindDescendantByName(
@@ -1089,36 +1640,41 @@ public sealed class TeamSetup : MonoBehaviour
         string objectName)
     {
         if (root == null ||
-            string.IsNullOrWhiteSpace(objectName))
+            string.IsNullOrWhiteSpace(
+                objectName))
         {
             return null;
         }
-
-        string normalizedObjectName =
-            NormalizeObjectName(
-                objectName);
 
         Transform[] descendants =
             root.GetComponentsInChildren<Transform>(
                 includeInactive: true);
 
-        foreach (Transform descendant in descendants)
+        foreach (Transform descendant
+                 in descendants)
         {
             if (descendant == null)
                 continue;
 
-            string normalizedDescendantName =
-                NormalizeObjectName(
-                    descendant.name);
-
-            if (normalizedDescendantName ==
-                normalizedObjectName)
+            if (NamesMatch(
+                    descendant.name,
+                    objectName))
             {
                 return descendant;
             }
         }
 
         return null;
+    }
+
+    private static bool NamesMatch(
+        string first,
+        string second)
+    {
+        return NormalizeObjectName(
+                   first) ==
+               NormalizeObjectName(
+                   second);
     }
 
     private static string NormalizeObjectName(
@@ -1131,8 +1687,36 @@ public sealed class TeamSetup : MonoBehaviour
             .Replace(" ", string.Empty)
             .Replace("_", string.Empty)
             .Replace("-", string.Empty)
+            .Replace("(", string.Empty)
+            .Replace(")", string.Empty)
             .Trim()
             .ToLowerInvariant();
+    }
+
+    private static string NormalizeId(
+        string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        return value
+            .Trim()
+            .ToLowerInvariant()
+            .Replace("_", "-")
+            .Replace(" ", "-");
+    }
+
+    private static string NormalizeTeamName(
+        string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        return NormalizeObjectName(
+                value)
+            .Replace(
+                "team",
+                string.Empty);
     }
 
     #endregion
@@ -1141,10 +1725,15 @@ public sealed class TeamSetup : MonoBehaviour
 
     private void RefreshHud()
     {
-        if (hud == null)
+        if (hud == null ||
+            team == null)
+        {
             return;
+        }
 
-        hud.Setup(team);
+        hud.Setup(
+            team);
+
         hud.UpdateRings();
     }
 
@@ -1157,7 +1746,7 @@ public sealed class TeamSetup : MonoBehaviour
 
     #region Validation
 
-    private bool ValidateConfiguration()
+    private bool ValidateBaseConfiguration()
     {
         bool valid = true;
 
@@ -1171,39 +1760,6 @@ public sealed class TeamSetup : MonoBehaviour
                 characterSwitch,
                 "Character Switch");
 
-        if (!ValidateReference(
-                leaderSlot,
-                "Leader Slot"))
-        {
-            Debug.LogError(
-                $"Expected to find '{LeaderSlotName}' under '{transform.name}'.",
-                this);
-
-            valid = false;
-        }
-
-        if (!ValidateReference(
-                leftFollowerSlot,
-                "Left Follower Slot"))
-        {
-            Debug.LogError(
-                $"Expected to find '{LeftFollowerSlotName}' under '{transform.name}'.",
-                this);
-
-            valid = false;
-        }
-
-        if (!ValidateReference(
-                rightFollowerSlot,
-                "Right Follower Slot"))
-        {
-            Debug.LogError(
-                $"Expected to find '{RightFollowerSlotName}' under '{transform.name}'.",
-                this);
-
-            valid = false;
-        }
-
         if (team != null)
         {
             valid &=
@@ -1214,43 +1770,27 @@ public sealed class TeamSetup : MonoBehaviour
             valid &=
                 ValidateReference(
                     team.FlyingCharacterPrefab,
-                    "Flying Character Prefab");
+                    "Fly Character Prefab");
 
             valid &=
                 ValidateReference(
                     team.PowerCharacterPrefab,
                     "Power Character Prefab");
 
-            valid &=
-                ValidateReference(
-                    team.SuperCharacterPrefab,
-                    "Super Character Prefab");
-
-            valid &=
-                ValidateReference(
-                    team.SpeedCharacterDefinition,
-                    "Speed Character Definition");
-
-            valid &=
-                ValidateReference(
-                    team.FlyingCharacterDefinition,
-                    "Flying Character Definition");
-
-            valid &=
-                ValidateReference(
-                    team.PowerCharacterDefinition,
-                    "Power Character Definition");
-
-            valid &=
-                ValidateReference(
-                    team.SuperCharacterDefinition,
-                    "Super Character Definition");
+            if (team.SuperCharacterPrefab == null)
+            {
+                Debug.LogWarning(
+                    "TeamSetup has no Super Character Prefab. " +
+                    "Normal team initialization can continue.",
+                    this);
+            }
         }
 
-        if (!IsSupportedLeader(startingLeader))
+        if (!IsSupportedLeader(
+                startingLeader))
         {
             Debug.LogError(
-                $"Unsupported starting leader: {startingLeader}.",
+                $"Unsupported starting leader '{startingLeader}'.",
                 this);
 
             valid = false;
@@ -1259,7 +1799,7 @@ public sealed class TeamSetup : MonoBehaviour
         if (hud == null)
         {
             Debug.LogWarning(
-                "TeamSetup HUD reference is not assigned.",
+                "TeamSetup HUD reference is missing.",
                 this);
         }
 
@@ -1274,19 +1814,37 @@ public sealed class TeamSetup : MonoBehaviour
             return true;
 
         Debug.LogError(
-            $"TeamSetup: '{displayName}' is missing on '{gameObject.name}'.",
+            $"TeamSetup: '{displayName}' is missing on '{name}'.",
             this);
 
         return false;
     }
 
     private static bool IsSupportedLeader(
-        CHARACTERTYPES characterType)
+        CHARACTERTYPES type)
     {
         return
-            characterType == CHARACTERTYPES.Speed ||
-            characterType == CHARACTERTYPES.Fly ||
-            characterType == CHARACTERTYPES.Power;
+            type == CHARACTERTYPES.Speed ||
+            type == CHARACTERTYPES.Fly ||
+            type == CHARACTERTYPES.Power;
+    }
+
+    private static bool IsFiniteVector(
+        Vector3 value)
+    {
+        return
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z);
+    }
+
+    private static bool IsZeroScale(
+        Vector3 scale)
+    {
+        return
+            Mathf.Abs(scale.x) <= Mathf.Epsilon ||
+            Mathf.Abs(scale.y) <= Mathf.Epsilon ||
+            Mathf.Abs(scale.z) <= Mathf.Epsilon;
     }
 
     #endregion
@@ -1295,52 +1853,63 @@ public sealed class TeamSetup : MonoBehaviour
 
     private void CleanupFailedTeam(
         Transform speedCharacter,
-        Transform flyingCharacter,
+        Transform flyCharacter,
         Transform powerCharacter)
     {
         if (preserveFailedTeamForDebugging)
         {
             Debug.LogWarning(
-                "The failed team was preserved in the Hierarchy for debugging.",
+                "Failed team preserved for debugging.",
                 this);
 
             return;
         }
 
-        DestroyCharacter(speedCharacter);
-        DestroyCharacter(flyingCharacter);
-        DestroyCharacter(powerCharacter);
+        DestroyCharacter(
+            speedCharacter);
+
+        DestroyCharacter(
+            flyCharacter);
+
+        DestroyCharacter(
+            powerCharacter);
     }
 
-    private void CleanupRuntimeState()
+    private static void DestroyCharacter(
+        Transform character)
     {
-        StopRingDrain();
+        if (character == null)
+            return;
+
+        character.gameObject.SetActive(
+            false);
+
+        Destroy(
+            character.gameObject);
     }
 
     private void CleanupDestroyedState()
     {
-        CleanupRuntimeState();
+        StopRingDrain();
 
         initialized = false;
+        initializing = false;
+
+        leaderSlot = null;
+        leftFollowerSlot = null;
+        rightFollowerSlot = null;
 
         groundCheck = null;
         leftFollowTarget = null;
         rightFollowTarget = null;
 
         characterSwitch = null;
+        hud = null;
 
         ringDrainRoutine = null;
         ringDrainWait = null;
-    }
 
-    private static void DestroyCharacter(
-        Transform character)
-    {
-        if (character != null)
-        {
-            Destroy(
-                character.gameObject);
-        }
+        InvalidateDefinitionCache();
     }
 
     #endregion

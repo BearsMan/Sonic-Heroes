@@ -18,8 +18,8 @@ MonoBehaviour:
   powerCharacterPrefab: {fileID: 8801897155344615322, guid: 7aef050c3a7de444fbea14b8f68d2fbc, type: 3}
   superCharacterPrefab: {fileID: 1702013014726208151, guid: bed9355b86e571b499e1b7825bfcc5af, type: 3}
   speedCharacterDefinition: {fileID: 11400000, guid: 85beb481ba4088342a569b0043904e78, type: 2}
-  flyingCharacterDefinition: {fileID: 11400000, guid: 643c482ca6856f34e948aa1e6e69c666, type: 2}
-  powerCharacterDefinition: {fileID: 11400000, guid: 040ad14f6dfc5ef4a8a88713f97df9cc, type: 2}
+  flyingCharacterDefinition: {fileID: 11400000, guid: 17328bd2b2e7a2d4a8408659a638b6c9, type: 2}
+  powerCharacterDefinition: {fileID: 11400000, guid: 5f5fa3f9393dfbc4ebdb73a6ff68a6ef, type: 2}
   superCharacterDefinition: {fileID: 11400000, guid: 225ae88f0d713a54f92eafac46c36909, type: 2}
   speedCharacterData: {fileID: 11400000, guid: ebad3f886425e2d4f9c554bf118828d9, type: 2}
   flyingCharacterData: {fileID: 11400000, guid: 9da8e5264bff7e74eb917837703d51e7, type: 2}
