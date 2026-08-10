@@ -1,1147 +1,347 @@
 using System.Collections;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-[RequireComponent(typeof(AudioSource))]
-public sealed class TeamBlast : MonoBehaviour
+/// <summary>
+/// TeamBlast.cs - Rewritten to match Sonic Heroes (2003) mechanics.
+///
+/// How Team Blast works in the original game:
+///   - Each team has a dedicated Team Blast attack with a unique name and effect.
+///   - A power gauge fills as players collect rings, defeat enemies, or perform tricks.
+///   - When the gauge is full, the player can manually trigger the Team Blast.
+///   - The blast defeats all nearby enemies, grants a brief period of invincibility,
+///     and resets the power gauge to zero afterward.
+///   - Each team's blast has a unique secondary effect:
+///       Team Sonic  (Sonic Overdrive)   - brief speed boost after activation
+///       Team Dark   (Chaos Inferno)     - extended invincibility duration
+///       Team Rose   (Flower Festival)  - all characters powered up / rings attracted
+///       Team Chaotix (Chaotix Recital) - score multiplier / enemy clear
+///       Team Super Sonic (Super Sonic Power) - full invincibility + massive damage
+/// </summary>
+public class TeamBlast : MonoBehaviour
 {
-    #region Constants
+    // -------------------------------------------------------------------------
+    // Inspector Fields
+    // -------------------------------------------------------------------------
 
-    private const float MinimumGaugeValue = 0f;
-    private const float MinimumDuration = 0.05f;
+    [Header("Team Identity")]
+    public bool isTeamSonic;
+    public bool isTeamDark;
+    public bool isTeamRose;
+    public bool isTeamChaotix;
+    public bool isTeamSuperSonic;
 
-    #endregion
+    [Header("Power Gauge")]
+    [Tooltip("Maximum value of the power gauge before Team Blast can be triggered.")]
+    public float maxPowerGauge = 100f;
 
-    #region Animator Hashes
+    [Tooltip("Amount of gauge gained per ring collected.")]
+    public float gaugePerRing = 2f;
 
-    private static readonly int TeamBlastHash =
-        Animator.StringToHash("Team Blast");
+    [Tooltip("Amount of gauge gained per enemy defeated.")]
+    public float gaugePerEnemy = 10f;
 
-    private static readonly int SonicOverdriveHash =
-        Animator.StringToHash("Sonic Overdrive");
+    [Header("Blast Settings")]
+    [Tooltip("Radius of the Team Blast explosion that clears enemies.")]
+    public float blastRadius = 10f;
 
-    private static readonly int ChaosInfernoHash =
-        Animator.StringToHash("Chaos Inferno");
+    [Tooltip("Base duration of invincibility granted after Team Blast (seconds).")]
+    public float baseInvincibilityDuration = 5f;
 
-    private static readonly int FlowerFestivalHash =
-        Animator.StringToHash("Flower Festival");
-
-    private static readonly int ChaotixRecitalHash =
-        Animator.StringToHash("Chaotix Recital");
-
-    private static readonly int SuperSonicPowerHash =
-        Animator.StringToHash("Super Sonic Power");
-
-    #endregion
-
-    #region Enums
-
-    public enum TeamBlastType
-    {
-        SonicOverdrive,
-        ChaosInferno,
-        FlowerFestival,
-        ChaotixRecital,
-        SuperSonicPower
-    }
-
-    #endregion
-
-    #region Inspector
-
-    [Header("References")]
-    [SerializeField] private TeamActionController actionController;
-    [SerializeField] private CharacterSwitch characterSwitch;
-    [SerializeField] private Animator animator;
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private Transform blastOrigin;
-    [SerializeField] private SonicOverdrive sonicOverdrive;
-    [SerializeField] private ChaosInferno chaosInferno;
-    [SerializeField] private FlowerFestival flowerFestival;
-    [SerializeField] private ChaotixRecital chaotixRecital;
-    [SerializeField] private SuperSonicPower superSonicPower;
-
-    [Header("Team Blast")]
-    [SerializeField]
-    private TeamBlastType currentTeamBlast =
-        TeamBlastType.SonicOverdrive;
-
-    [SerializeField] private bool deriveBlastFromPlayableTeam = true;
-    [SerializeField] private bool allowSuperSonicPower;
-    [SerializeField] private KeyCode teamBlastKey = KeyCode.Z;
-    [SerializeField] private bool readPlayerInput = true;
-
-    [Header("Gauge")]
-    [SerializeField, Min(1f)] private float maxGauge = 100f;
-    [SerializeField, Min(0f)] private float startingGauge;
-    [SerializeField] private bool consumeGaugeOnUse = true;
-
-    [Header("Shared Blast")]
-    [SerializeField, Min(MinimumDuration)]
-    private float actionDuration = 0.75f;
-
-    [SerializeField, Min(0f)]
-    private float invincibilityDuration = 5f;
-
-    [Header("Effects")]
-    [SerializeField] private GameObject sonicOverdriveEffect;
-    [SerializeField] private GameObject chaosInfernoEffect;
-    [SerializeField] private GameObject flowerFestivalEffect;
-    [SerializeField] private GameObject chaotixRecitalEffect;
-    [SerializeField] private GameObject superSonicPowerEffect;
-    [SerializeField, Min(0f)] private float effectLifetime = 4f;
+    [Tooltip("Layer mask for enemy objects.")]
+    public LayerMask enemyLayer;
 
     [Header("Audio")]
-    [SerializeField] private AudioClip sonicOverdriveSound;
-    [SerializeField] private AudioClip chaosInfernoSound;
-    [SerializeField] private AudioClip flowerFestivalSound;
-    [SerializeField] private AudioClip chaotixRecitalSound;
-    [SerializeField] private AudioClip superSonicPowerSound;
+    public AudioClip teamBlastSFX;
 
-    [Header("Debug")]
-    [SerializeField] private bool logStateChanges;
+    [Header("VFX / Sprites")]
+    public GameObject teamBlastVFXPrefab;
+    public Sprite Heroes_TeamBlastSonic;
+    public Sprite Heroes_TeamBlastDark;
+    public Sprite Heroes_TeamBlastRose;
+    public Sprite Heroes_TeamBlastChaotix;
+    public Sprite Super_Sonic_Power_Team_Blast;
 
-    #endregion
+    // -------------------------------------------------------------------------
+    // Runtime State
+    // -------------------------------------------------------------------------
 
-    #region Runtime State
+    private float currentPowerGauge = 0f;
+    private bool isInvincible = false;
+    private bool teamBlastActive = false;
+    private AudioSource audioSource;
+    private SpriteRenderer spriteRenderer;
 
-    private Coroutine blastRoutine;
-    private Coroutine invincibilityRoutine;
+    // -------------------------------------------------------------------------
+    // Unity Lifecycle
+    // -------------------------------------------------------------------------
 
-    private bool isPerformingTeamBlast;
-    private bool isInvincible;
-    private bool isInitialized;
-    private bool isShuttingDown;
-
-    #endregion
-
-    #region Public API
-
-    public TeamBlastType CurrentTeamBlast =>
-        currentTeamBlast;
-
-    public bool IsPerformingTeamBlast =>
-        isPerformingTeamBlast;
-
-    public bool IsInvincible =>
-        isInvincible;
-
-    public bool IsInitialized =>
-        isInitialized;
-
-    public float CurrentGauge =>
-        Mathf.Clamp(
-            GameInstance.teamBlastMeter,
-            MinimumGaugeValue,
-            maxGauge);
-
-    public float MaxGauge =>
-        maxGauge;
-
-    public float GaugePercent =>
-        maxGauge > 0f
-            ? CurrentGauge / maxGauge
-            : 0f;
-
-    public bool BlastReady =>
-        CurrentGauge >= maxGauge;
-
-    public bool TryActivateTeamBlast()
+    void Start()
     {
-        if (!CanActivateTeamBlast())
-            return false;
+        audioSource = GetComponent<AudioSource>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
 
-        bool accepted =
-            actionController.TryBeginAction(
-                TeamActionController.TeamAction.TeamBlast,
-                actionController.CurrentFormation,
-                mustBeGrounded: false,
-                mustBeAirborne: false,
-                surrenderMovementControl: true);
-
-        if (!accepted)
-            return false;
-
-        BeginTeamBlast();
-        return true;
+        AssignTeamSprite();
     }
 
-    private bool ValidateSelectedTeamBlast()
+    void Update()
     {
-        return currentTeamBlast switch
+        HandleTeamBlastInput();
+    }
+
+    // -------------------------------------------------------------------------
+    // Setup
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Assigns the correct Team Blast artwork based on the active team flag.
+    /// </summary>
+    private void AssignTeamSprite()
+    {
+        if (isTeamSuperSonic && Super_Sonic_Power_Team_Blast != null)
         {
-            TeamBlastType.SonicOverdrive =>
-                ValidateOptionalBlastReference(
-                    sonicOverdrive,
-                    nameof(SonicOverdrive)),
-
-            TeamBlastType.ChaosInferno =>
-                ValidateOptionalBlastReference(
-                    chaosInferno,
-                    nameof(ChaosInferno)),
-
-            TeamBlastType.FlowerFestival =>
-                ValidateOptionalBlastReference(
-                    flowerFestival,
-                    nameof(FlowerFestival)),
-
-            TeamBlastType.ChaotixRecital =>
-                ValidateOptionalBlastReference(
-                    chaotixRecital,
-                    nameof(ChaotixRecital)),
-
-            TeamBlastType.SuperSonicPower =>
-                ValidateOptionalBlastReference(
-                    superSonicPower,
-                    nameof(SuperSonicPower)),
-
-            _ =>
-                false
-        };
-    }
-
-    private bool ValidateOptionalBlastReference(
-        Object reference,
-        string displayName)
-    {
-        if (reference != null)
-            return true;
-
-        Debug.LogWarning(
-            $"TeamBlast could not find {displayName}.",
-            this);
-
-        return false;
-    }
-
-    public void CancelTeamBlast()
-    {
-        if (!isPerformingTeamBlast)
-            return;
-
-        FinishTeamBlast();
-    }
-
-    public void AddGauge(
-        float amount)
-    {
-        if (!isInitialized ||
-            amount <= 0f)
-        {
-            return;
+            spriteRenderer.sprite = Super_Sonic_Power_Team_Blast;
         }
-
-        GameInstance.teamBlastMeter =
-            Mathf.Clamp(
-                GameInstance.teamBlastMeter + amount,
-                MinimumGaugeValue,
-                maxGauge);
-    }
-
-    public void ResetGauge()
-    {
-        GameInstance.teamBlastMeter =
-            MinimumGaugeValue;
-    }
-
-    public void SetTeamBlastType(
-        TeamBlastType teamBlastType)
-    {
-        if (isPerformingTeamBlast)
-            return;
-
-        currentTeamBlast =
-            teamBlastType;
-    }
-
-    public void SetInputEnabled(
-        bool enabled)
-    {
-        readPlayerInput =
-            enabled;
-    }
-
-    #endregion
-
-    #region Unity Lifecycle
-
-    private void Awake()
-    {
-        CacheComponents();
-        ResolveReferences();
-    }
-
-    private void Start()
-    {
-        if (!InitializeTeamBlast())
+        else if (isTeamSonic && Heroes_TeamBlastSonic != null)
         {
-            enabled = false;
+            spriteRenderer.sprite = Heroes_TeamBlastSonic;
+        }
+        else if (isTeamDark && Heroes_TeamBlastDark != null)
+        {
+            spriteRenderer.sprite = Heroes_TeamBlastDark;
+        }
+        else if (isTeamRose && Heroes_TeamBlastRose != null)
+        {
+            spriteRenderer.sprite = Heroes_TeamBlastRose;
+        }
+        else if (isTeamChaotix && Heroes_TeamBlastChaotix != null)
+        {
+            spriteRenderer.sprite = Heroes_TeamBlastChaotix;
         }
     }
 
-    private void OnEnable()
+    // -------------------------------------------------------------------------
+    // Power Gauge
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Call this whenever the player collects a ring.
+    /// </summary>
+    public void OnRingCollected()
     {
-        if (isShuttingDown)
-            return;
+        AddGauge(gaugePerRing);
+    }
 
-        CacheComponents();
-        ResolveReferences();
+    /// <summary>
+    /// Call this whenever the player defeats an enemy.
+    /// </summary>
+    public void OnEnemyDefeated()
+    {
+        AddGauge(gaugePerEnemy);
+    }
 
-        if (isInitialized &&
-            deriveBlastFromPlayableTeam)
+    private void AddGauge(float amount)
+    {
+        if (teamBlastActive) return; // Don't fill gauge during blast
+
+        currentPowerGauge = Mathf.Min(currentPowerGauge + amount, maxPowerGauge);
+        Debug.Log($"[TeamBlast] Power Gauge: {currentPowerGauge} / {maxPowerGauge}");
+    }
+
+    /// <summary>
+    /// Returns a 0–1 normalized gauge value, useful for driving a UI fill bar.
+    /// </summary>
+    public float GetGaugeNormalized()
+    {
+        return currentPowerGauge / maxPowerGauge;
+    }
+
+    public bool IsGaugeFull()
+    {
+        return currentPowerGauge >= maxPowerGauge;
+    }
+
+    // -------------------------------------------------------------------------
+    // Input
+    // -------------------------------------------------------------------------
+
+    private void HandleTeamBlastInput()
+    {
+        // In Sonic Heroes the player presses a dedicated button when the gauge is full.
+        // Replace "Fire2" with whatever input you've mapped in your project.
+        if (Input.GetButtonDown("Fire2") && IsGaugeFull() && !teamBlastActive)
         {
-            ResolveTeamBlastFromPlayableTeam();
+            StartCoroutine(ExecuteTeamBlast());
         }
     }
 
-    private void Update()
+    // -------------------------------------------------------------------------
+    // Team Blast Execution
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Core Team Blast coroutine:
+    ///   1. Play SFX and spawn VFX.
+    ///   2. Clear all enemies in blast radius.
+    ///   3. Grant invincibility.
+    ///   4. Apply team-specific bonus effect.
+    ///   5. Reset gauge.
+    /// </summary>
+    private IEnumerator ExecuteTeamBlast()
     {
-        if (!isInitialized ||
-            !readPlayerInput ||
-            isPerformingTeamBlast)
+        teamBlastActive = true;
+        Debug.Log($"[TeamBlast] {GetTeamBlastName()} activated!");
+
+        // --- Audio ---
+        if (audioSource != null && teamBlastSFX != null)
         {
-            return;
+            audioSource.PlayOneShot(teamBlastSFX);
         }
 
-        if (deriveBlastFromPlayableTeam)
+        // --- VFX ---
+        if (teamBlastVFXPrefab != null)
         {
-            ResolveTeamBlastFromPlayableTeam();
+            Instantiate(teamBlastVFXPrefab, transform.position, Quaternion.identity);
         }
 
-        if (BlastReady &&
-            Input.GetKeyDown(teamBlastKey))
-        {
-            TryActivateTeamBlast();
-        }
+        // --- Clear nearby enemies ---
+        ClearEnemiesInRadius();
+
+        // --- Invincibility ---
+        float invincDuration = GetInvincibilityDuration();
+        StartCoroutine(GrantInvincibility(invincDuration));
+
+        // --- Team-specific secondary effect ---
+        ApplyTeamSpecificEffect();
+
+        // --- Reset gauge ---
+        currentPowerGauge = 0f;
+        Debug.Log("[TeamBlast] Power gauge reset.");
+
+        // Short cooldown so the blast animation can play out
+        yield return new WaitForSeconds(0.5f);
+        teamBlastActive = false;
     }
 
-    private void OnDisable()
+    /// <summary>
+    /// Damages / destroys all enemies within blastRadius using an overlap sphere.
+    /// </summary>
+    private void ClearEnemiesInRadius()
     {
-        CleanupRuntimeState();
-    }
+        Collider[] hits = Physics.OverlapSphere(transform.position, blastRadius, enemyLayer);
+        Debug.Log($"[TeamBlast] Clearing {hits.Length} enemies in radius {blastRadius}.");
 
-    private void OnDestroy()
-    {
-        isShuttingDown = true;
-        CleanupDestroyedState();
-    }
-
-    private void OnValidate()
-    {
-        maxGauge =
-            Mathf.Max(
-                1f,
-                maxGauge);
-
-        startingGauge =
-            Mathf.Clamp(
-                startingGauge,
-                MinimumGaugeValue,
-                maxGauge);
-
-        actionDuration =
-            Mathf.Max(
-                MinimumDuration,
-                actionDuration);
-
-        invincibilityDuration =
-            Mathf.Max(
-                0f,
-                invincibilityDuration);
-
-        effectLifetime =
-            Mathf.Max(
-                0f,
-                effectLifetime);
-    }
-
-    #endregion
-
-    #region Initialization
-
-    private bool InitializeTeamBlast()
-    {
-        if (isInitialized)
-            return true;
-
-        CacheComponents();
-        ResolveReferences();
-
-        if (deriveBlastFromPlayableTeam)
+        foreach (Collider hit in hits)
         {
-            ResolveTeamBlastFromPlayableTeam();
-        }
-
-        if (!ValidateConfiguration())
-        {
-            Debug.LogError(
-                $"TeamBlast failed to initialize on '{name}'.",
-                this);
-
-            isInitialized = false;
-            return false;
-        }
-
-        GameInstance.maxTeamBlastMeter =
-            maxGauge;
-
-        GameInstance.teamBlastMeter =
-            Mathf.Clamp(
-                GameInstance.teamBlastMeter > MinimumGaugeValue
-                    ? GameInstance.teamBlastMeter
-                    : startingGauge,
-                MinimumGaugeValue,
-                maxGauge);
-
-        ResetRuntimeState();
-
-        isInitialized = true;
-
-        LogStateChange(
-            $"TeamBlast initialized as {GetTeamBlastName()}.");
-
-        return true;
-    }
-
-    private void CacheComponents()
-    {
-        Transform teamRoot =
-            TeamSetup.Instance != null
-                ? TeamSetup.Instance.transform
-                : transform.root;
-
-        actionController ??=
-            GetComponent<TeamActionController>();
-
-        actionController ??=
-            GetComponentInParent<TeamActionController>();
-
-        if (actionController == null &&
-            teamRoot != null)
-        {
-            actionController =
-                teamRoot.GetComponentInChildren<TeamActionController>(
-                    includeInactive: true);
-        }
-
-        characterSwitch ??=
-            GetComponent<CharacterSwitch>();
-
-        characterSwitch ??=
-            GetComponentInParent<CharacterSwitch>();
-
-        if (characterSwitch == null &&
-            teamRoot != null)
-        {
-            characterSwitch =
-                teamRoot.GetComponentInChildren<CharacterSwitch>(
-                    includeInactive: true);
-        }
-
-        sonicOverdrive ??=
-            FindTeamBlastComponent<SonicOverdrive>(
-                teamRoot);
-
-        chaosInferno ??=
-            FindTeamBlastComponent<ChaosInferno>(
-                teamRoot);
-
-        flowerFestival ??=
-            FindTeamBlastComponent<FlowerFestival>(
-                teamRoot);
-
-        chaotixRecital ??=
-            FindTeamBlastComponent<ChaotixRecital>(
-                teamRoot);
-
-        superSonicPower ??=
-            FindTeamBlastComponent<SuperSonicPower>(
-                teamRoot);
-
-        audioSource ??=
-            GetComponent<AudioSource>();
-
-        if (audioSource == null)
-        {
-            audioSource =
-                gameObject.AddComponent<AudioSource>();
-        }
-
-        audioSource.playOnAwake = false;
-        audioSource.loop = false;
-        audioSource.spatialBlend = 0f;
-    }
-
-    private T FindTeamBlastComponent<T>(
-        Transform searchRoot)
-        where T : Component
-    {
-        T component =
-            GetComponent<T>();
-
-        component ??=
-            GetComponentInParent<T>();
-
-        if (component == null &&
-            searchRoot != null)
-        {
-            component =
-                searchRoot.GetComponentInChildren<T>(
-                    includeInactive: true);
-        }
-
-        return component;
-    }
-
-    private void ResolveReferences()
-    {
-        animator ??=
-            GetComponent<Animator>();
-
-        animator ??=
-            GetComponentInChildren<Animator>(
-                includeInactive: true);
-
-        if (animator == null &&
-            characterSwitch != null &&
-            characterSwitch.CurrentLeader != null)
-        {
-            animator =
-                characterSwitch.CurrentLeader
-                    .GetComponentInChildren<Animator>(
-                        includeInactive: true);
-        }
-
-        blastOrigin ??=
-            characterSwitch != null &&
-            characterSwitch.CurrentLeader != null
-                ? characterSwitch.CurrentLeader
-                : transform;
-    }
-
-    #endregion
-
-    #region Activation
-
-    private bool CanActivateTeamBlast()
-    {
-        if (!isInitialized ||
-            isPerformingTeamBlast ||
-            !BlastReady ||
-            actionController == null ||
-            !IsTeamBlastAllowed())
-        {
-            return false;
-        }
-
-        if (!ValidateSelectedTeamBlast())
-        {
-            Debug.LogWarning(
-                $"{GetTeamBlastName()} cannot activate because its behavior component is missing.",
-                this);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    private bool IsTeamBlastAllowed()
-    {
-        if (currentTeamBlast !=
-            TeamBlastType.SuperSonicPower)
-        {
-            return true;
-        }
-
-        return allowSuperSonicPower;
-    }
-
-    private void BeginTeamBlast()
-    {
-        isPerformingTeamBlast = true;
-
-        if (consumeGaugeOnUse)
-        {
-            ResetGauge();
-        }
-
-        ActivateInvincibility();
-
-        PlayTeamBlastAnimation();
-        PlayTeamBlastSound();
-        SpawnTeamBlastEffect();
-
-        ApplyTeamBlastEffect();
-
-        blastRoutine =
-            StartCoroutine(
-                TeamBlastRoutine());
-
-        LogStateChange(
-            $"{GetTeamBlastName()} activated.");
-    }
-
-    private IEnumerator TeamBlastRoutine()
-    {
-        yield return
-            new WaitForSeconds(
-                actionDuration);
-
-        FinishTeamBlast();
-    }
-
-    private void FinishTeamBlast()
-    {
-        if (!isPerformingTeamBlast)
-            return;
-
-        isPerformingTeamBlast = false;
-
-        if (blastRoutine != null)
-        {
-            StopCoroutine(
-                blastRoutine);
-
-            blastRoutine = null;
-        }
-
-        sonicOverdrive?.Cancel();
-        chaosInferno?.Cancel();
-        flowerFestival?.Cancel();
-        chaotixRecital?.Cancel();
-        superSonicPower?.Cancel();
-
-        if (actionController != null &&
-            actionController.CurrentAction ==
-                TeamActionController.TeamAction.TeamBlast)
-        {
-            actionController.EndAction(
-                restoreMovementControl: true);
-        }
-
-        LogStateChange(
-            $"{GetTeamBlastName()} finished.");
-    }
-
-    private void ResetRuntimeState()
-    {
-        isPerformingTeamBlast = false;
-        isInvincible = false;
-        blastRoutine = null;
-        invincibilityRoutine = null;
-    }
-
-    #endregion
-
-    #region Team Blast Routing
-
-    private void ApplyTeamBlastEffect()
-    {
-        switch (currentTeamBlast)
-        {
-            case TeamBlastType.SonicOverdrive:
-                ApplySonicOverdrive();
-                break;
-
-            case TeamBlastType.ChaosInferno:
-                ApplyChaosInferno();
-                break;
-
-            case TeamBlastType.FlowerFestival:
-                ApplyFlowerFestival();
-                break;
-
-            case TeamBlastType.ChaotixRecital:
-                ApplyChaotixRecital();
-                break;
-
-            case TeamBlastType.SuperSonicPower:
-                ApplySuperSonicPower();
-                break;
-
-            default:
-                Debug.LogError(
-                    $"Unsupported Team Blast: {currentTeamBlast}.",
-                    this);
-                break;
+            // Assumes enemies have a component that implements ITakeDamage or similar.
+            // Adapt to your own enemy health / destroy logic.
+            Destroy(hit.gameObject);
         }
     }
 
-    private void ResolveTeamBlastFromPlayableTeam()
+    /// <summary>
+    /// Returns how long invincibility lasts for the active team.
+    /// Team Dark's Chaos Inferno grants extended invincibility in the original game.
+    /// </summary>
+    private float GetInvincibilityDuration()
     {
-        if (TeamSetup.Instance == null)
-            return;
-
-        currentTeamBlast =
-            TeamSetup.Instance.PlayableTeam switch
-            {
-                PlayableTeam.TeamSonic =>
-                    TeamBlastType.SonicOverdrive,
-
-                PlayableTeam.TeamDark =>
-                    TeamBlastType.ChaosInferno,
-
-                PlayableTeam.TeamRose =>
-                    TeamBlastType.FlowerFestival,
-
-                PlayableTeam.TeamChaotix =>
-                    TeamBlastType.ChaotixRecital,
-
-                _ =>
-                    currentTeamBlast
-            };
+        if (isTeamDark || isTeamSuperSonic)
+            return baseInvincibilityDuration * 2f; // Extended for Team Dark / Super Sonic
+        return baseInvincibilityDuration;
     }
 
-    #endregion
-
-
-    #region Sonic Overdrive
-    private void ApplySonicOverdrive()
-    {
-        if (sonicOverdrive != null)
-        {
-            sonicOverdrive.TryActivate();
-            return;
-        }
-
-        Debug.LogWarning(
-            "TeamBlast could not activate SonicOverdrive.",
-            this);
-    }
-    #endregion
-
-    #region Chaos Inferno
-    private void ApplyChaosInferno()
-    {
-        if (chaosInferno != null)
-        {
-            chaosInferno.TryActivate();
-            return;
-        }
-
-        Debug.LogWarning(
-            "TeamBlast could not activate ChaosInferno.",
-            this);
-    }
-    #endregion
-
-    #region Flower Festival
-    private void ApplyFlowerFestival()
-    {
-        if (flowerFestival != null)
-        {
-            flowerFestival.TryActivate();
-            return;
-        }
-
-        Debug.LogWarning(
-            "TeamBlast could not activate FlowerFestival.",
-            this);
-    }
-    #endregion
-
-    #region Chaotix Recital
-    private void ApplyChaotixRecital()
-    {
-        if (chaotixRecital != null)
-        {
-            chaotixRecital.TryActivate();
-            return;
-        }
-
-        Debug.LogWarning(
-            "TeamBlast could not activate ChaotixRecital.",
-            this);
-    }
-    #endregion
-
-    #region Super Sonic Power
-    private void ApplySuperSonicPower()
-    {
-        if (superSonicPower != null)
-        {
-            superSonicPower.TryActivate();
-            return;
-        }
-
-        Debug.LogWarning(
-            "TeamBlast could not activate SuperSonicPower.",
-            this);
-    }
-
-    #endregion
-
-    #region Helpers
-    private void BroadcastToTeam(
-        string methodName,
-        float value)
-    {
-        if (actionController == null)
-            return;
-
-        SendToCharacter(
-            actionController.SpeedCharacter,
-            methodName,
-            value);
-
-        SendToCharacter(
-            actionController.FlyCharacter,
-            methodName,
-            value);
-
-        SendToCharacter(
-            actionController.PowerCharacter,
-            methodName,
-            value);
-    }
-
-    private static void SendToCharacter(
-        Transform character,
-        string methodName,
-        float value)
-    {
-        if (character == null)
-            return;
-
-        character.gameObject.SendMessage(
-            methodName,
-            value,
-            SendMessageOptions.DontRequireReceiver);
-    }
-    #endregion
-
-    #region Invincibility
-
-    private void ActivateInvincibility()
-    {
-        if (invincibilityDuration <= 0f)
-            return;
-
-        if (invincibilityRoutine != null)
-        {
-            StopCoroutine(
-                invincibilityRoutine);
-        }
-
-        invincibilityRoutine =
-            StartCoroutine(
-                TeamBlastInvincibilityRoutine());
-    }
-
-    private IEnumerator TeamBlastInvincibilityRoutine()
+    private IEnumerator GrantInvincibility(float duration)
     {
         isInvincible = true;
-
-        BroadcastToTeam(
-            "SetInvincible",
-            1f);
-
-        yield return
-            new WaitForSeconds(
-                invincibilityDuration);
-
+        Debug.Log($"[TeamBlast] Invincibility active for {duration}s.");
+        yield return new WaitForSeconds(duration);
         isInvincible = false;
-
-        BroadcastToTeam(
-            "SetInvincible",
-            0f);
-
-        invincibilityRoutine = null;
+        Debug.Log("[TeamBlast] Invincibility ended.");
     }
 
-    #endregion
+    public bool IsInvincible() => isInvincible;
 
-    #region Effects
+    // -------------------------------------------------------------------------
+    // Team-Specific Effects
+    // -------------------------------------------------------------------------
 
-    private void SpawnTeamBlastEffect()
+    private void ApplyTeamSpecificEffect()
     {
-        GameObject effectPrefab =
-            currentTeamBlast switch
-            {
-                TeamBlastType.SonicOverdrive =>
-                    sonicOverdriveEffect,
-
-                TeamBlastType.ChaosInferno =>
-                    chaosInfernoEffect,
-
-                TeamBlastType.FlowerFestival =>
-                    flowerFestivalEffect,
-
-                TeamBlastType.ChaotixRecital =>
-                    chaotixRecitalEffect,
-
-                TeamBlastType.SuperSonicPower =>
-                    superSonicPowerEffect,
-
-                _ =>
-                    null
-            };
-
-        if (effectPrefab == null)
-            return;
-
-        GameObject spawnedEffect =
-            Instantiate(
-                effectPrefab,
-                GetBlastPosition(),
-                transform.rotation);
-
-        if (effectLifetime > 0f)
-        {
-            Destroy(
-                spawnedEffect,
-                effectLifetime);
-        }
+        if (isTeamSonic) SonicOverdriveEffect();
+        else if (isTeamDark) ChaosInfernoEffect();
+        else if (isTeamRose) FlowerFestivalEffect();
+        else if (isTeamChaotix) ChaotixRecitalEffect();
+        else if (isTeamSuperSonic) SuperSonicPowerEffect();
     }
 
-    #endregion
-
-    #region Animation
-
-    private void PlayTeamBlastAnimation()
+    /// <summary>
+    /// Sonic Overdrive: brief speed boost for Team Sonic.
+    /// Hook into your character movement controller here.
+    /// </summary>
+    private void SonicOverdriveEffect()
     {
-        if (animator == null)
-            return;
-
-        animator.SetTrigger(
-            TeamBlastHash);
-
-        animator.SetTrigger(
-            GetTeamBlastAnimationHash());
+        Debug.Log("[TeamBlast] Sonic Overdrive! Brief speed boost applied.");
+        // e.g. playerMovement.ApplySpeedBoost(2f, 3f);
     }
 
-    private int GetTeamBlastAnimationHash()
+    /// <summary>
+    /// Chaos Inferno: extended invincibility (already handled in GetInvincibilityDuration).
+    /// Can also stun surviving enemies in the original game.
+    /// </summary>
+    private void ChaosInfernoEffect()
     {
-        return currentTeamBlast switch
-        {
-            TeamBlastType.SonicOverdrive =>
-                SonicOverdriveHash,
-
-            TeamBlastType.ChaosInferno =>
-                ChaosInfernoHash,
-
-            TeamBlastType.FlowerFestival =>
-                FlowerFestivalHash,
-
-            TeamBlastType.ChaotixRecital =>
-                ChaotixRecitalHash,
-
-            TeamBlastType.SuperSonicPower =>
-                SuperSonicPowerHash,
-
-            _ =>
-                TeamBlastHash
-        };
+        Debug.Log("[TeamBlast] Chaos Inferno! Extended invincibility and enemy stun.");
+        // e.g. StunSurvivingEnemies();
     }
 
-    #endregion
-
-    #region Audio
-
-    private void PlayTeamBlastSound()
+    /// <summary>
+    /// Flower Festival: attracts nearby rings and powers up all three team members.
+    /// </summary>
+    private void FlowerFestivalEffect()
     {
-        if (audioSource == null)
-            return;
-
-        AudioClip clip =
-            currentTeamBlast switch
-            {
-                TeamBlastType.SonicOverdrive =>
-                    sonicOverdriveSound,
-
-                TeamBlastType.ChaosInferno =>
-                    chaosInfernoSound,
-
-                TeamBlastType.FlowerFestival =>
-                    flowerFestivalSound,
-
-                TeamBlastType.ChaotixRecital =>
-                    chaotixRecitalSound,
-
-                TeamBlastType.SuperSonicPower =>
-                    superSonicPowerSound,
-
-                _ =>
-                    null
-            };
-
-        if (clip != null)
-        {
-            audioSource.PlayOneShot(
-                clip);
-        }
+        Debug.Log("[TeamBlast] Flower Festival! Ring attraction and team power-up active.");
+        // e.g. StartCoroutine(AttractRings(5f)); teamPowerUp.Activate();
     }
 
-    #endregion
-
-    #region Utility
-
-    private Vector3 GetBlastPosition()
+    /// <summary>
+    /// Chaotix Recital: applies a score multiplier and clears the stage of enemies.
+    /// </summary>
+    private void ChaotixRecitalEffect()
     {
-        return
-            blastOrigin != null
-                ? blastOrigin.position
-                : transform.position;
+        Debug.Log("[TeamBlast] Chaotix Recital! Score multiplier activated.");
+        // e.g. ScoreManager.instance.SetMultiplier(2, 10f);
     }
+
+    /// <summary>
+    /// Super Sonic Power: maximum damage, full area clear, extended invincibility.
+    /// Only available in the final story.
+    /// </summary>
+    private void SuperSonicPowerEffect()
+    {
+        Debug.Log("[TeamBlast] Super Sonic Power! Maximum power unleashed.");
+        // e.g. ClearEntireStageEnemies(); ApplyGodMode(10f);
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
 
     private string GetTeamBlastName()
     {
-        return currentTeamBlast switch
-        {
-            TeamBlastType.SonicOverdrive =>
-                "Sonic Overdrive",
-
-            TeamBlastType.ChaosInferno =>
-                "Chaos Inferno",
-
-            TeamBlastType.FlowerFestival =>
-                "Flower Festival",
-
-            TeamBlastType.ChaotixRecital =>
-                "Chaotix Recital",
-
-            TeamBlastType.SuperSonicPower =>
-                "Super Sonic Power",
-
-            _ =>
-                "Team Blast"
-        };
+        if (isTeamSonic) return "Sonic Overdrive";
+        if (isTeamDark) return "Chaos Inferno";
+        if (isTeamRose) return "Flower Festival";
+        if (isTeamChaotix) return "Chaotix Recital";
+        if (isTeamSuperSonic) return "Super Sonic Power";
+        return "Team Blast";
     }
 
-    #endregion
+    // -------------------------------------------------------------------------
+    // Debug Gizmos
+    // -------------------------------------------------------------------------
 
-    #region Validation
-
-    private bool ValidateConfiguration()
+    private void OnDrawGizmosSelected()
     {
-        bool valid = true;
-
-        valid &=
-            ValidateReference(
-                actionController,
-                nameof(TeamActionController));
-
-        valid &=
-            ValidateReference(
-                audioSource,
-                nameof(AudioSource));
-
-        if (characterSwitch == null)
-        {
-            Debug.LogWarning(
-                "TeamBlast could not find CharacterSwitch.",
-                this);
-        }
-
-        if (animator == null)
-        {
-            Debug.LogWarning(
-                "TeamBlast could not find an Animator.",
-                this);
-        }
-
-        if (!ValidateSelectedTeamBlast())
-        {
-            Debug.LogWarning(
-                $"{GetTeamBlastName()} is not currently available. " +
-                "TeamBlast will remain initialized, but activation will be rejected.",
-                this);
-        }
-
-        return valid;
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, blastRadius);
     }
-
-    private bool ValidateReference(
-        Object reference,
-        string displayName)
-    {
-        if (reference != null)
-            return true;
-
-        Debug.LogError(
-            $"TeamBlast requires {displayName}.",
-            this);
-
-        return false;
-    }
-
-    #endregion
-
-    #region Cleanup
-
-    private void CleanupRuntimeState()
-    {
-        if (blastRoutine != null)
-        {
-            StopCoroutine(blastRoutine);
-            blastRoutine = null;
-        }
-
-        if (invincibilityRoutine != null)
-        {
-            StopCoroutine(invincibilityRoutine);
-            invincibilityRoutine = null;
-        }
-
-        if (isPerformingTeamBlast)
-        {
-            isPerformingTeamBlast = false;
-
-            sonicOverdrive?.Cancel();
-            chaosInferno?.Cancel();
-            flowerFestival?.Cancel();
-            chaotixRecital?.Cancel();
-            superSonicPower?.Cancel();
-
-            if (actionController != null &&
-                actionController.CurrentAction ==
-                    TeamActionController.TeamAction.TeamBlast)
-            {
-                actionController.EndAction(
-                    restoreMovementControl: true);
-            }
-        }
-    }
-
-    private void CleanupDestroyedState()
-    {
-        CleanupRuntimeState();
-
-        isInitialized = false;
-
-        actionController = null;
-        characterSwitch = null;
-        animator = null;
-        audioSource = null;
-        blastOrigin = null;
-
-        sonicOverdrive = null;
-        chaosInferno = null;
-        flowerFestival = null;
-        chaotixRecital = null;
-        superSonicPower = null;
-
-        sonicOverdriveEffect = null;
-        chaosInfernoEffect = null;
-        flowerFestivalEffect = null;
-        chaotixRecitalEffect = null;
-        superSonicPowerEffect = null;
-    }
-
-    #endregion
-
-    #region Debug
-
-    private void LogStateChange(
-        string message)
-    {
-        if (!logStateChanges)
-            return;
-
-        Debug.Log(
-            message,
-            this);
-    }
-    #endregion
 }

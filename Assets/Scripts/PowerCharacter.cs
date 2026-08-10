@@ -163,13 +163,13 @@ public abstract class PowerCharacter : BaseCharacter
     // Hammer Down (Vector - Team Chaotix):
     //   Vector jumps into the air, puts his hands together into a collective fist above
     //   his head, and as he falls, thrusts his collective fist downward onto the opponent
-    //   beneath him with his full playerRigidbody weight. The strike has enough force to smash through
+    //   beneath him with his full body weight. The strike has enough force to smash through
     //   metal and create fiery shockwaves on impact with the ground. Vector gives off a
     //   green aura while falling.
 
     // Body Press (Big the Cat - Team Rose):
     //   Big jumps into the air while spreading his arms and legs and pointing his belly
-    //   straight down, then slams his entire playerRigidbody weight down with enough force to create
+    //   straight down, then slams his entire body weight down with enough force to create
     //   fiery shockwaves on the ground. Big gives off a purple aura while falling.
     //   After hitting a surface, Big bounces slightly back into the air. The Body Press
     //   can be used repeatedly by pressing the Action button again after bouncing or

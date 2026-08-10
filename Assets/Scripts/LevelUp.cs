@@ -80,16 +80,14 @@ public class LevelUp : MonoBehaviour
 
     public IEnumerator LevelUpCharacter(GameObject speedCharacter)
     {
-        if (speedCharacter != null)
+        if (speedCharacter != null &&
+            speedCharacter.TryGetComponent(out UltimatePlayerMovement movement))
         {
-            TeamActionController controller = speedCharacter.GetComponent<TeamActionController>();
+            if (movement.leftFollower != null)
+                movement.leftFollower.SetActive(true);
 
-            if (controller == null)
-            {
-                controller = speedCharacter.GetComponentInParent<TeamActionController>();
-            }
-
-            controller?.EnableFollowers();
+            if (movement.rightFollower != null)
+                movement.rightFollower.SetActive(true);
         }
 
         yield return null;

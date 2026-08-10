@@ -8,8 +8,7 @@ public class Fan : MonoBehaviour
         if (player)
         {
 
-            player.LaunchFromSpring(
-    Vector3.up * 5f);
+            player.Launch(Vector3.up, 5);
 
 
 

@@ -1,4 +1,4 @@
-using UnityEngine;
+using Unity.Mathematics;
 using UnityEngine.SceneManagement;
 
 public static class GameInstance
@@ -11,17 +11,12 @@ public static class GameInstance
     public static int scoreCount;
     public static int currentTeam;
     public static int livesCount;
-    public static int nextEmeraldIndex = 0;
-    public static bool[] emerald = new bool [7];
+    public static bool[] emerald;
+    public static bool greenEmerald, blueEmerald, yellowEmerald, whiteEmerald, lightBlueEmerald, purpleEmerald, redEmerald;
     public static TeamComposition TeamComp;
     public static int speedScore, flyScore, powerScore, bonusScore;
     public static int speedLevelUp, flyLevelUp, powerLevelUp;
     private static int saveSlot;
-    public static float teamBlastMeter = 0f;
-    public static float maxTeamBlastMeter = 100f;
-    public static bool hasSpecialKey = false;
-    public static bool lastStoryUnlocked = false;
-    public static string returnScene;
     public static int LevelScore
     {
         get
@@ -87,7 +82,7 @@ public static class GameInstance
         }
 
         scoreCount += points;
-        UpdateData?.Invoke();
+        UpdateData.Invoke();
     }
 
     public static int RemoveRings()

@@ -7,7 +7,7 @@ public class TrickZone : MonoBehaviour
         UltimatePlayerMovement player = other.GetComponent<UltimatePlayerMovement>();
         if (player)
         {
-            player.SetTrickZoneActive(true);
+            player.TrickZone = true;
         }
     }
 
@@ -16,7 +16,7 @@ public class TrickZone : MonoBehaviour
         UltimatePlayerMovement player = other.GetComponent<UltimatePlayerMovement>();
         if (player)
         {
-            player.SetTrickZoneActive(false);
+            player.TrickZone = false;
         }
     }
 }

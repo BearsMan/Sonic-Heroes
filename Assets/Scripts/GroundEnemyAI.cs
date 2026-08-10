@@ -1,11 +1,9 @@
-using System;
 using UnityEngine;
 using UnityEngine.AI;
 
-[DisallowMultipleComponent]
-public sealed class GroundEnemyAI : AIController
+public class GroundEnemyAI : AIController
 {
-    #region Types
+    #region Ground State
 
     public enum GroundMovementState
     {
@@ -13,55 +11,66 @@ public sealed class GroundEnemyAI : AIController
         ApproachingLedge,
         Blocked,
         OffNavMesh,
-        Recovering
+        Recovering,
+        Stuck
     }
 
     #endregion
 
-    #region Constants
+    #region Ground Navigation
 
-    private const float MinimumDirectionSqrMagnitude =
-        0.0001f;
+    [Header("Ground Navigation")]
 
-    private const float MinimumNavMeshSampleRadius =
-        0.1f;
+    [SerializeField]
+    private bool preventLedgeFalls = true;
 
-    private const int ProbeHitCapacity =
-        16;
+    [SerializeField]
+    private bool detectWalls = true;
+
+    [SerializeField, Min(0.01f)]
+    private float forwardGroundCheckDistance = 0.75f;
+
+    [SerializeField, Min(0.01f)]
+    private float groundCheckDepth = 1.5f;
+
+    [SerializeField, Min(0.01f)]
+    private float wallCheckRadius = 0.25f;
+
+    [SerializeField, Min(0.01f)]
+    private float wallCheckDistance = 0.6f;
+
+    [SerializeField]
+    private LayerMask groundLayers = ~0;
+
+    [SerializeField]
+    private LayerMask obstacleLayers = ~0;
 
     #endregion
 
-    #region Inspector
+    #region Slopes
 
-    [Header("Ground Navigation")]
-    [SerializeField] private bool preventLedgeFalls = true;
-    [SerializeField] private bool detectWalls = true;
-    [SerializeField] private bool recoverToNavMeshAutomatically = true;
-
-    [SerializeField, Min(0.01f)]
-    private float forwardProbeDistance = 0.75f;
-
-    [SerializeField, Min(0.01f)]
-    private float groundProbeDepth = 1.5f;
-
-    [SerializeField, Min(0.01f)]
-    private float wallProbeRadius = 0.25f;
-
-    [SerializeField, Min(0.01f)]
-    private float wallProbeDistance = 0.6f;
+    [Header("Slopes")]
 
     [SerializeField]
-    private LayerMask navigationBlockingLayers = ~0;
+    private bool validateSlopes = true;
 
-    [SerializeField]
-    private LayerMask validGroundLayers = ~0;
+    [SerializeField, Range(0f, 89f)]
+    private float maximumSlopeAngle = 55f;
 
-    [Header("NavMesh Recovery")]
-    [SerializeField, Min(MinimumNavMeshSampleRadius)]
-    private float navMeshSampleRadius = 3f;
+    #endregion
+
+    #region NavMesh
+
+    [Header("NavMesh")]
 
     [SerializeField, Min(0.1f)]
-    private float navMeshRecoveryInterval = 0.5f;
+    private float navMeshSampleRadius = 3f;
+
+    [SerializeField]
+    private bool recoverToNavMesh = true;
+
+    [SerializeField, Min(0.1f)]
+    private float recoveryInterval = 0.5f;
 
     [SerializeField, Min(1)]
     private int maximumRecoveryAttempts = 5;
@@ -69,8 +78,14 @@ public sealed class GroundEnemyAI : AIController
     [SerializeField, Min(0f)]
     private float recoveryHeightOffset = 0.1f;
 
+    #endregion
+
+    #region Stuck Detection
+
     [Header("Stuck Detection")]
-    [SerializeField] private bool detectStuckMovement = true;
+
+    [SerializeField]
+    private bool detectStuckMovement = true;
 
     [SerializeField, Min(0.1f)]
     private float stuckCheckInterval = 1f;
@@ -79,54 +94,52 @@ public sealed class GroundEnemyAI : AIController
     private float minimumMovementDistance = 0.05f;
 
     [SerializeField, Min(1)]
-    private int maximumStuckChecks = 3;
+    private int stuckChecksBeforeRecovery = 3;
+
+    #endregion
+
+    #region Knockback Recovery
 
     [Header("Knockback Recovery")]
-    [SerializeField] private bool recoverAfterKnockback = true;
+
+    [SerializeField]
+    private bool recoverAfterKnockback = true;
 
     [SerializeField, Min(0f)]
     private float knockbackRecoveryDelay = 0.2f;
 
+    #endregion
+
+    #region Debug
+
     [Header("Debug")]
+
     [SerializeField]
     private GroundMovementState groundMovementState =
         GroundMovementState.Stable;
 
-    [SerializeField] private bool logGroundSafety;
+    [SerializeField]
+    private bool drawGroundChecks = true;
 
     #endregion
 
     #region Runtime State
 
-    private readonly RaycastHit[] probeHits =
-        new RaycastHit[ProbeHitCapacity];
+    private Vector3 lastValidGroundPosition;
+    private Vector3 previousStuckPosition;
 
-    private Vector3 previousCheckedPosition;
-    private Vector3 lastValidNavMeshPosition;
-
-    private float navMeshRecoveryTimer;
-    private float stuckCheckTimer;
-    private float knockbackRecoveryTimer;
+    private float recoveryTimer;
+    private float stuckTimer;
+    private float knockbackTimer;
 
     private int recoveryAttempts;
-    private int consecutiveStuckChecks;
+    private int stuckChecks;
 
     private bool knockbackRecoveryPending;
-    private bool navMeshLossReported;
 
     #endregion
 
-    #region Events
-
-    public event Action<GroundEnemyAI> LedgeDetected;
-    public event Action<GroundEnemyAI> WallDetected;
-    public event Action<GroundEnemyAI> NavMeshLost;
-    public event Action<GroundEnemyAI, Vector3> NavMeshRecovered;
-    public event Action<GroundEnemyAI> MovementStuck;
-
-    #endregion
-
-    #region Public API
+    #region Properties
 
     public GroundMovementState CurrentGroundMovementState =>
         groundMovementState;
@@ -136,29 +149,8 @@ public sealed class GroundEnemyAI : AIController
         Agent.enabled &&
         Agent.isOnNavMesh;
 
-    public Vector3 LastValidNavMeshPosition =>
-        lastValidNavMeshPosition;
-
-    public bool RecoverToNavMesh()
-    {
-        return TryRecoverToNavMesh(
-            forceRecovery: true);
-    }
-
-    public void NotifyKnockbackEnded()
-    {
-        if (!recoverAfterKnockback ||
-            IsDead)
-        {
-            return;
-        }
-
-        knockbackRecoveryPending =
-            true;
-
-        knockbackRecoveryTimer =
-            knockbackRecoveryDelay;
-    }
+    public Vector3 LastValidGroundPosition =>
+        lastValidGroundPosition;
 
     #endregion
 
@@ -168,26 +160,14 @@ public sealed class GroundEnemyAI : AIController
     {
         base.Awake();
 
-        previousCheckedPosition =
-            transform.position;
-
-        lastValidNavMeshPosition =
-            transform.position;
-
-        ResetGroundRuntimeState();
+        InitializeGroundRuntime();
     }
 
     protected override void OnEnable()
     {
         base.OnEnable();
 
-        previousCheckedPosition =
-            transform.position;
-
-        lastValidNavMeshPosition =
-            transform.position;
-
-        ResetGroundRuntimeState();
+        InitializeGroundRuntime();
     }
 
     protected override void Update()
@@ -196,59 +176,51 @@ public sealed class GroundEnemyAI : AIController
 
         if (!IsInitialized ||
             IsDead ||
-            CurrentState == AIState.Disabled)
+            CurrentState ==
+                AIState.Disabled)
         {
             return;
         }
 
-        UpdateGroundRecoveryTimers();
+        UpdateRecoveryTimer();
+        UpdateKnockbackRecovery();
         UpdateStuckDetection();
-    }
-
-    protected override void OnDestroy()
-    {
-        LedgeDetected = null;
-        WallDetected = null;
-        NavMeshLost = null;
-        NavMeshRecovered = null;
-        MovementStuck = null;
-
-        base.OnDestroy();
+        UpdateValidGroundPosition();
     }
 
     protected override void OnValidate()
     {
         base.OnValidate();
 
-        forwardProbeDistance =
+        forwardGroundCheckDistance =
             Mathf.Max(
                 0.01f,
-                forwardProbeDistance);
+                forwardGroundCheckDistance);
 
-        groundProbeDepth =
+        groundCheckDepth =
             Mathf.Max(
                 0.01f,
-                groundProbeDepth);
+                groundCheckDepth);
 
-        wallProbeRadius =
+        wallCheckRadius =
             Mathf.Max(
                 0.01f,
-                wallProbeRadius);
+                wallCheckRadius);
 
-        wallProbeDistance =
+        wallCheckDistance =
             Mathf.Max(
                 0.01f,
-                wallProbeDistance);
+                wallCheckDistance);
 
         navMeshSampleRadius =
             Mathf.Max(
-                MinimumNavMeshSampleRadius,
+                0.1f,
                 navMeshSampleRadius);
 
-        navMeshRecoveryInterval =
+        recoveryInterval =
             Mathf.Max(
                 0.1f,
-                navMeshRecoveryInterval);
+                recoveryInterval);
 
         maximumRecoveryAttempts =
             Mathf.Max(
@@ -270,51 +242,15 @@ public sealed class GroundEnemyAI : AIController
                 0f,
                 minimumMovementDistance);
 
-        maximumStuckChecks =
+        stuckChecksBeforeRecovery =
             Mathf.Max(
                 1,
-                maximumStuckChecks);
+                stuckChecksBeforeRecovery);
 
         knockbackRecoveryDelay =
             Mathf.Max(
                 0f,
                 knockbackRecoveryDelay);
-    }
-
-    protected override void OnDrawGizmosSelected()
-    {
-        base.OnDrawGizmosSelected();
-
-        Vector3 origin =
-            transform.position +
-            Vector3.up *
-            wallProbeRadius;
-
-        Vector3 forward =
-            GetPlanarForward();
-
-        Gizmos.DrawWireSphere(
-            origin +
-            forward *
-            wallProbeDistance,
-            wallProbeRadius);
-
-        Vector3 ledgeOrigin =
-            transform.position +
-            forward *
-            forwardProbeDistance +
-            Vector3.up *
-            0.1f;
-
-        Gizmos.DrawLine(
-            ledgeOrigin,
-            ledgeOrigin +
-            Vector3.down *
-            groundProbeDepth);
-
-        Gizmos.DrawWireSphere(
-            transform.position,
-            navMeshSampleRadius);
     }
 
     #endregion
@@ -327,40 +263,43 @@ public sealed class GroundEnemyAI : AIController
             base.Initialize();
 
         if (!initialized)
+        {
             return false;
+        }
 
-        previousCheckedPosition =
-            transform.position;
-
-        lastValidNavMeshPosition =
-            transform.position;
-
-        ResetGroundRuntimeState();
+        InitializeGroundRuntime();
 
         return true;
     }
 
-    private void ResetGroundRuntimeState()
+    private void InitializeGroundRuntime()
     {
-        navMeshRecoveryTimer =
+        if (IsFiniteVector(
+                transform.position))
+        {
+            lastValidGroundPosition =
+                transform.position;
+
+            previousStuckPosition =
+                transform.position;
+        }
+
+        recoveryTimer =
             0f;
 
-        stuckCheckTimer =
+        stuckTimer =
             stuckCheckInterval;
 
-        knockbackRecoveryTimer =
+        knockbackTimer =
             0f;
 
         recoveryAttempts =
             0;
 
-        consecutiveStuckChecks =
+        stuckChecks =
             0;
 
         knockbackRecoveryPending =
-            false;
-
-        navMeshLossReported =
             false;
 
         groundMovementState =
@@ -374,7 +313,9 @@ public sealed class GroundEnemyAI : AIController
     protected override void UpdatePatrolState()
     {
         if (!CanContinueGroundMovement())
+        {
             return;
+        }
 
         base.UpdatePatrolState();
     }
@@ -382,7 +323,9 @@ public sealed class GroundEnemyAI : AIController
     protected override void UpdateChaseState()
     {
         if (!CanContinueGroundMovement())
+        {
             return;
+        }
 
         base.UpdateChaseState();
     }
@@ -390,7 +333,9 @@ public sealed class GroundEnemyAI : AIController
     protected override void UpdateReturningState()
     {
         if (!CanContinueGroundMovement())
+        {
             return;
+        }
 
         base.UpdateReturningState();
     }
@@ -398,23 +343,31 @@ public sealed class GroundEnemyAI : AIController
     protected override bool MoveAgentTo(
         Vector3 destination)
     {
-        if (!CanMoveToward(
+        if (!CanContinueGroundMovement())
+        {
+            return false;
+        }
+
+        if (!IsFiniteVector(
                 destination))
         {
-            StopAgent();
+            return false;
+        }
+
+        if (!TryResolveDestination(
+                destination,
+                out Vector3 resolvedDestination))
+        {
+            groundMovementState =
+                GroundMovementState.OffNavMesh;
 
             return false;
         }
 
-        bool destinationIsValid =
-            TryResolveNavMeshDestination(
-                destination,
-                out Vector3 resolvedDestination);
-
-        if (!destinationIsValid)
+        if (!CanMoveToward(
+                resolvedDestination))
         {
-            groundMovementState =
-                GroundMovementState.OffNavMesh;
+            StopAgent();
 
             return false;
         }
@@ -434,30 +387,28 @@ public sealed class GroundEnemyAI : AIController
 
     #endregion
 
-    #region Ground Safety
+    #region Ground Movement Validation
 
     private bool CanContinueGroundMovement()
     {
-        if (!recoverToNavMeshAutomatically)
-        {
-            return IsOnNavMesh;
-        }
-
         if (IsOnNavMesh)
         {
             recoveryAttempts =
                 0;
 
-            lastValidNavMeshPosition =
-                transform.position;
-
-            navMeshLossReported =
-                false;
+            if (IsFiniteVector(
+                    transform.position))
+            {
+                lastValidGroundPosition =
+                    transform.position;
+            }
 
             if (groundMovementState ==
-                GroundMovementState.Recovering ||
+                    GroundMovementState.OffNavMesh ||
                 groundMovementState ==
-                GroundMovementState.OffNavMesh)
+                    GroundMovementState.Recovering ||
+                groundMovementState ==
+                    GroundMovementState.Stuck)
             {
                 groundMovementState =
                     GroundMovementState.Stable;
@@ -469,19 +420,16 @@ public sealed class GroundEnemyAI : AIController
         groundMovementState =
             GroundMovementState.OffNavMesh;
 
-        if (!navMeshLossReported)
-        {
-            navMeshLossReported =
-                true;
-
-            NavMeshLost?.Invoke(
-                this);
-        }
-
         StopAgent();
 
-        return TryRecoverToNavMesh(
-            forceRecovery: false);
+        if (!recoverToNavMesh)
+        {
+            return false;
+        }
+
+        return
+            TryRecoverToNavMesh(
+                false);
     }
 
     private bool CanMoveToward(
@@ -494,8 +442,14 @@ public sealed class GroundEnemyAI : AIController
         direction.y =
             0f;
 
+        if (!IsFiniteVector(
+                direction))
+        {
+            return false;
+        }
+
         if (direction.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
+            0.0001f)
         {
             return true;
         }
@@ -503,33 +457,21 @@ public sealed class GroundEnemyAI : AIController
         direction.Normalize();
 
         if (detectWalls &&
-            HasBlockingWall(
+            HasBlockingObstacle(
                 direction))
         {
             groundMovementState =
                 GroundMovementState.Blocked;
 
-            WallDetected?.Invoke(
-                this);
-
-            LogGroundState(
-                "Movement blocked by a wall.");
-
             return false;
         }
 
         if (preventLedgeFalls &&
-            !HasGroundAhead(
+            !HasValidGroundAhead(
                 direction))
         {
             groundMovementState =
                 GroundMovementState.ApproachingLedge;
-
-            LedgeDetected?.Invoke(
-                this);
-
-            LogGroundState(
-                "Movement stopped before a ledge.");
 
             return false;
         }
@@ -537,143 +479,132 @@ public sealed class GroundEnemyAI : AIController
         return true;
     }
 
-    private bool HasBlockingWall(
+    #endregion
+
+    #region Wall Detection
+
+    private bool HasBlockingObstacle(
         Vector3 direction)
     {
         Vector3 origin =
             transform.position +
             Vector3.up *
-            wallProbeRadius;
+                wallCheckRadius;
 
-        int hitCount =
-            Physics.SphereCastNonAlloc(
+        if (!Physics.SphereCast(
                 origin,
-                wallProbeRadius,
+                wallCheckRadius,
                 direction,
-                probeHits,
-                wallProbeDistance,
-                navigationBlockingLayers,
-                QueryTriggerInteraction.Ignore);
-
-        for (int index = 0;
-             index < hitCount;
-             index++)
+                out RaycastHit hit,
+                wallCheckDistance,
+                obstacleLayers,
+                QueryTriggerInteraction.Ignore))
         {
-            Collider candidate =
-                probeHits[index].collider;
-
-            if (candidate == null ||
-                IsOwnCollider(
-                    candidate))
-            {
-                continue;
-            }
-
-            return true;
+            return false;
         }
 
-        return false;
+        return
+            hit.collider != null &&
+            !IsOwnCollider(
+                hit.collider);
     }
 
-    private bool HasGroundAhead(
+    #endregion
+
+    #region Ledge Detection
+
+    private bool HasValidGroundAhead(
         Vector3 direction)
     {
         Vector3 origin =
             transform.position +
             direction *
-            forwardProbeDistance +
+                forwardGroundCheckDistance +
             Vector3.up *
-            0.1f;
+                0.1f;
 
-        int hitCount =
-            Physics.RaycastNonAlloc(
+        if (!Physics.Raycast(
                 origin,
                 Vector3.down,
-                probeHits,
-                groundProbeDepth,
-                validGroundLayers,
-                QueryTriggerInteraction.Ignore);
-
-        for (int index = 0;
-             index < hitCount;
-             index++)
-        {
-            Collider candidate =
-                probeHits[index].collider;
-
-            if (candidate == null ||
-                IsOwnCollider(
-                    candidate))
-            {
-                continue;
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private bool TryResolveNavMeshDestination(
-        Vector3 requestedDestination,
-        out Vector3 resolvedDestination)
-    {
-        resolvedDestination =
-            requestedDestination;
-
-        if (!IsFiniteVector(
-                requestedDestination))
+                out RaycastHit hit,
+                groundCheckDepth,
+                groundLayers,
+                QueryTriggerInteraction.Ignore))
         {
             return false;
         }
 
-        if (NavMesh.SamplePosition(
-                requestedDestination,
-                out NavMeshHit hit,
-                navMeshSampleRadius,
-                NavMesh.AllAreas))
+        if (hit.collider == null ||
+            IsOwnCollider(
+                hit.collider))
         {
-            resolvedDestination =
-                hit.position;
+            return false;
+        }
 
+        if (!validateSlopes)
+        {
             return true;
         }
 
-        return false;
+        float slopeAngle =
+            Vector3.Angle(
+                hit.normal,
+                Vector3.up);
+
+        return
+            float.IsFinite(
+                slopeAngle) &&
+            slopeAngle <=
+                maximumSlopeAngle;
     }
 
     #endregion
 
-    #region NavMesh Recovery
+    #region NavMesh Destination
 
-    private void UpdateGroundRecoveryTimers()
+    private bool TryResolveDestination(
+        Vector3 destination,
+        out Vector3 resolvedDestination)
     {
-        if (navMeshRecoveryTimer > 0f)
+        resolvedDestination =
+            destination;
+
+        if (!IsFiniteVector(
+                destination))
         {
-            navMeshRecoveryTimer =
-                Mathf.Max(
-                    0f,
-                    navMeshRecoveryTimer -
-                    Time.deltaTime);
+            return false;
         }
 
-        if (!knockbackRecoveryPending)
-            return;
+        if (!NavMesh.SamplePosition(
+                destination,
+                out NavMeshHit hit,
+                navMeshSampleRadius,
+                NavMesh.AllAreas))
+        {
+            return false;
+        }
 
-        knockbackRecoveryTimer =
-            Mathf.Max(
-                0f,
-                knockbackRecoveryTimer -
-                Time.deltaTime);
+        if (!IsFiniteVector(
+                hit.position))
+        {
+            return false;
+        }
 
-        if (knockbackRecoveryTimer > 0f)
-            return;
+        resolvedDestination =
+            hit.position;
 
-        knockbackRecoveryPending =
-            false;
+        return true;
+    }
 
-        TryRecoverToNavMesh(
-            forceRecovery: true);
+    #endregion
+
+    #region Recovery
+
+    public bool RecoverToNavMesh()
+    {
+        return
+            TryRecoverToNavMesh(
+                true);
     }
 
     private bool TryRecoverToNavMesh(
@@ -697,54 +628,107 @@ public sealed class GroundEnemyAI : AIController
         }
 
         if (!forceRecovery &&
-            navMeshRecoveryTimer > 0f)
+            recoveryTimer > 0f)
         {
             return false;
         }
 
-        if (recoveryAttempts >=
-            maximumRecoveryAttempts)
-        {
-            LogGroundState(
-                "Maximum NavMesh recovery attempts reached.");
-
-            if (!TryRecoverToLastValidPosition())
-            {
-                ReturnHome();
-            }
-
-            return false;
-        }
-
-        navMeshRecoveryTimer =
-            navMeshRecoveryInterval;
-
-        recoveryAttempts++;
+        recoveryTimer =
+            recoveryInterval;
 
         groundMovementState =
             GroundMovementState.Recovering;
 
-        Vector3 sampleOrigin =
+        Vector3 samplePosition =
             transform.position;
 
+        if (!IsFiniteVector(
+                samplePosition))
+        {
+            samplePosition =
+                lastValidGroundPosition;
+        }
+
+        if (TryFindRecoveryPosition(
+                samplePosition,
+                out Vector3 recoveryPosition))
+        {
+            return
+                ApplyRecoveryPosition(
+                    recoveryPosition);
+        }
+
+        recoveryAttempts++;
+
+        if (recoveryAttempts <
+            maximumRecoveryAttempts)
+        {
+            return false;
+        }
+
+        recoveryAttempts =
+            0;
+
+        if (TryFindRecoveryPosition(
+                lastValidGroundPosition,
+                out recoveryPosition))
+        {
+            return
+                ApplyRecoveryPosition(
+                    recoveryPosition);
+        }
+
+        if (TryFindRecoveryPosition(
+                HomePosition,
+                out recoveryPosition))
+        {
+            return
+                ApplyRecoveryPosition(
+                    recoveryPosition);
+        }
+
+        ReturnHome();
+
+        return false;
+    }
+
+    private bool TryFindRecoveryPosition(
+        Vector3 source,
+        out Vector3 recoveryPosition)
+    {
+        recoveryPosition =
+            Vector3.zero;
+
+        if (!IsFiniteVector(
+                source))
+        {
+            return false;
+        }
+
         if (!NavMesh.SamplePosition(
-                sampleOrigin,
+                source,
                 out NavMeshHit hit,
                 navMeshSampleRadius,
                 NavMesh.AllAreas))
         {
-            LogGroundState(
-                $"NavMesh recovery attempt {recoveryAttempts} failed.");
-
             return false;
         }
 
-        Vector3 recoveryPosition =
+        recoveryPosition =
             hit.position +
             Vector3.up *
-            recoveryHeightOffset;
+                recoveryHeightOffset;
 
-        if (!IsFiniteVector(
+        return
+            IsFiniteVector(
+                recoveryPosition);
+    }
+
+    private bool ApplyRecoveryPosition(
+        Vector3 recoveryPosition)
+    {
+        if (Agent == null ||
+            !IsFiniteVector(
                 recoveryPosition))
         {
             return false;
@@ -764,11 +748,12 @@ public sealed class GroundEnemyAI : AIController
         {
             transform.position =
                 recoveryPosition;
+
+            Physics.SyncTransforms();
         }
 
-        Physics.SyncTransforms();
-
-        if (!Agent.isOnNavMesh)
+        if (!Agent.enabled ||
+            !Agent.isOnNavMesh)
         {
             return false;
         }
@@ -779,29 +764,63 @@ public sealed class GroundEnemyAI : AIController
         recoveryAttempts =
             0;
 
-        consecutiveStuckChecks =
+        stuckChecks =
             0;
 
-        previousCheckedPosition =
+        lastValidGroundPosition =
+            transform.position;
+
+        previousStuckPosition =
             transform.position;
 
         groundMovementState =
             GroundMovementState.Stable;
 
-        lastValidNavMeshPosition =
-            recoveryPosition;
+        return true;
+    }
 
-        navMeshLossReported =
+    #endregion
+
+    #region Knockback Recovery
+
+    public void NotifyKnockbackEnded()
+    {
+        if (!recoverAfterKnockback ||
+            IsDead)
+        {
+            return;
+        }
+
+        knockbackRecoveryPending =
+            true;
+
+        knockbackTimer =
+            knockbackRecoveryDelay;
+    }
+
+    private void UpdateKnockbackRecovery()
+    {
+        if (!knockbackRecoveryPending)
+        {
+            return;
+        }
+
+        knockbackTimer =
+            Mathf.Max(
+                0f,
+                knockbackTimer -
+                    Time.deltaTime);
+
+        if (knockbackTimer > 0f)
+        {
+            return;
+        }
+
+        knockbackRecoveryPending =
             false;
 
-        NavMeshRecovered?.Invoke(
-            this,
-            recoveryPosition);
-
-        LogGroundState(
-            "Recovered to the NavMesh.");
-
-        return true;
+        TryRecoverToNavMesh(
+            true);
     }
 
     #endregion
@@ -811,26 +830,26 @@ public sealed class GroundEnemyAI : AIController
     private void UpdateStuckDetection()
     {
         if (!detectStuckMovement ||
-            CurrentState != AIState.Patrol &&
-            CurrentState != AIState.Chase &&
-            CurrentState != AIState.Returning)
+            !ShouldBeMoving())
         {
-            previousCheckedPosition =
-                transform.position;
-
-            consecutiveStuckChecks =
+            stuckChecks =
                 0;
+
+            previousStuckPosition =
+                transform.position;
 
             return;
         }
 
-        stuckCheckTimer -=
+        stuckTimer -=
             Time.deltaTime;
 
-        if (stuckCheckTimer > 0f)
+        if (stuckTimer > 0f)
+        {
             return;
+        }
 
-        stuckCheckTimer =
+        stuckTimer =
             stuckCheckInterval;
 
         Vector3 currentPosition =
@@ -839,12 +858,12 @@ public sealed class GroundEnemyAI : AIController
         if (!IsFiniteVector(
                 currentPosition) ||
             !IsFiniteVector(
-                previousCheckedPosition))
+                previousStuckPosition))
         {
-            previousCheckedPosition =
+            previousStuckPosition =
                 currentPosition;
 
-            consecutiveStuckChecks =
+            stuckChecks =
                 0;
 
             return;
@@ -853,185 +872,112 @@ public sealed class GroundEnemyAI : AIController
         float movedDistance =
             Vector3.Distance(
                 currentPosition,
-                previousCheckedPosition);
+                previousStuckPosition);
+
+        previousStuckPosition =
+            currentPosition;
 
         if (!float.IsFinite(
                 movedDistance))
         {
-            previousCheckedPosition =
-                currentPosition;
-
-            consecutiveStuckChecks =
+            stuckChecks =
                 0;
 
             return;
         }
 
-        previousCheckedPosition =
-            currentPosition;
-
-        bool expectsMovement =
-            Agent != null &&
-            Agent.enabled &&
-            Agent.hasPath &&
-            !Agent.isStopped;
-
-        if (!expectsMovement ||
-            movedDistance >=
+        if (movedDistance >=
             minimumMovementDistance)
         {
-            consecutiveStuckChecks =
+            stuckChecks =
                 0;
 
             return;
         }
 
-        consecutiveStuckChecks++;
+        stuckChecks++;
 
-        if (consecutiveStuckChecks <
-            maximumStuckChecks)
+        if (stuckChecks <
+            stuckChecksBeforeRecovery)
         {
             return;
         }
 
-        consecutiveStuckChecks =
+        stuckChecks =
             0;
 
-        MovementStuck?.Invoke(
-            this);
-
-        LogGroundState(
-            "Ground enemy appears to be stuck.");
+        groundMovementState =
+            GroundMovementState.Stuck;
 
         if (!TryRecoverToNavMesh(
-                forceRecovery: true))
+                true))
         {
             ReturnHome();
         }
     }
 
+    private bool ShouldBeMoving()
+    {
+        if (Agent == null ||
+            !Agent.enabled ||
+            !Agent.isOnNavMesh ||
+            Agent.isStopped ||
+            !Agent.hasPath)
+        {
+            return false;
+        }
+
+        return
+            CurrentState ==
+                AIState.Patrol ||
+            CurrentState ==
+                AIState.Chase ||
+            CurrentState ==
+                AIState.Returning;
+    }
+
     #endregion
 
-    #region Runtime Safety
+    #region Valid Ground Position
 
-    protected override bool RunRuntimeSafetyChecks()
+    private void UpdateValidGroundPosition()
     {
-        if (!base.RunRuntimeSafetyChecks())
-            return false;
-
-        if (!recoverToNavMeshAutomatically)
-            return true;
-
-        if (IsOnNavMesh)
+        if (!IsOnNavMesh ||
+            !IsFiniteVector(
+                transform.position))
         {
-            lastValidNavMeshPosition =
-                transform.position;
-
-            navMeshLossReported =
-                false;
-        }
-        else if (CurrentState != AIState.Dead &&
-                 CurrentState != AIState.Disabled)
-        {
-            TryRecoverToNavMesh(
-                forceRecovery: false);
+            return;
         }
 
-        return true;
+        lastValidGroundPosition =
+            transform.position;
+    }
+
+    private void UpdateRecoveryTimer()
+    {
+        if (recoveryTimer <= 0f)
+        {
+            return;
+        }
+
+        recoveryTimer =
+            Mathf.Max(
+                0f,
+                recoveryTimer -
+                    Time.deltaTime);
     }
 
     #endregion
 
     #region Helpers
 
-    private bool TryRecoverToLastValidPosition()
-    {
-        if (Agent == null ||
-            !IsFiniteVector(
-                lastValidNavMeshPosition))
-        {
-            return false;
-        }
-
-        if (!NavMesh.SamplePosition(
-                lastValidNavMeshPosition,
-                out NavMeshHit hit,
-                navMeshSampleRadius,
-                NavMesh.AllAreas))
-        {
-            return false;
-        }
-
-        Vector3 recoveryPosition =
-            hit.position +
-            Vector3.up *
-            recoveryHeightOffset;
-
-        if (!IsFiniteVector(
-                recoveryPosition))
-        {
-            return false;
-        }
-
-        if (!Agent.enabled)
-        {
-            Agent.enabled =
-                true;
-        }
-
-        bool warped =
-            Agent.Warp(
-                recoveryPosition);
-
-        if (!warped)
-        {
-            transform.position =
-                recoveryPosition;
-        }
-
-        Physics.SyncTransforms();
-
-        if (!Agent.isOnNavMesh)
-        {
-            return false;
-        }
-
-        Agent.isStopped =
-            false;
-
-        recoveryAttempts =
-            0;
-
-        consecutiveStuckChecks =
-            0;
-
-        previousCheckedPosition =
-            transform.position;
-
-        lastValidNavMeshPosition =
-            transform.position;
-
-        navMeshLossReported =
-            false;
-
-        groundMovementState =
-            GroundMovementState.Stable;
-
-        NavMeshRecovered?.Invoke(
-            this,
-            transform.position);
-
-        LogGroundState(
-            "Recovered to the last valid NavMesh position.");
-
-        return true;
-    }
-
     private bool IsOwnCollider(
         Collider candidate)
     {
         if (candidate == null)
+        {
             return false;
+        }
 
         Transform candidateTransform =
             candidate.transform;
@@ -1051,24 +997,77 @@ public sealed class GroundEnemyAI : AIController
         forward.y =
             0f;
 
-        if (forward.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
+        if (!IsFiniteVector(
+                forward) ||
+            forward.sqrMagnitude <=
+                0.0001f)
         {
-            return Vector3.forward;
+            return
+                Vector3.forward;
         }
 
-        return forward.normalized;
+        return
+            forward.normalized;
     }
 
-    private void LogGroundState(
-        string message)
-    {
-        if (!logGroundSafety)
-            return;
+    #endregion
 
-        Debug.Log(
-            $"{nameof(GroundEnemyAI)} on '{name}': {message}",
-            this);
+    #region Gizmos
+
+    protected override void OnDrawGizmosSelected()
+    {
+        base.OnDrawGizmosSelected();
+
+        if (!drawGroundChecks)
+        {
+            return;
+        }
+
+        Vector3 forward =
+            GetPlanarForward();
+
+        Vector3 wallOrigin =
+            transform.position +
+            Vector3.up *
+                wallCheckRadius;
+
+        Gizmos.DrawLine(
+            wallOrigin,
+            wallOrigin +
+                forward *
+                    wallCheckDistance);
+
+        Gizmos.DrawWireSphere(
+            wallOrigin +
+                forward *
+                    wallCheckDistance,
+            wallCheckRadius);
+
+        Vector3 groundOrigin =
+            transform.position +
+            forward *
+                forwardGroundCheckDistance +
+            Vector3.up *
+                0.1f;
+
+        Gizmos.DrawLine(
+            groundOrigin,
+            groundOrigin +
+                Vector3.down *
+                    groundCheckDepth);
+
+        Gizmos.DrawWireSphere(
+            transform.position,
+            navMeshSampleRadius);
+
+        if (Application.isPlaying &&
+            IsFiniteVector(
+                lastValidGroundPosition))
+        {
+            Gizmos.DrawWireSphere(
+                lastValidGroundPosition,
+                0.25f);
+        }
     }
 
     #endregion

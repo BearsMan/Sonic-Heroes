@@ -1,172 +1,72 @@
 using UnityEngine;
+
 public class Ring : MonoBehaviour
 {
-    [Header("Pickup")]
-    [SerializeField] private AudioClip clip;
-    [SerializeField] private Sprite ringPickUp;
-    [SerializeField] private Collider physicalCollider;
-    [SerializeField, Min(0f)] private float teamBlastGaugeAmount = 2f;
-
-    [Header("Light Speed Dash")]
-    [SerializeField] private bool canBeDashedThrough = true;
-    [SerializeField, Min(0.1f)] private float chainRange = 5f;
-
-    [Header("Phase")]
-    [SerializeField, Min(0f)] private float phaseRecoveryTime = 1f;
-
-    [Header("Debug")]
-    [SerializeField] private bool logPickups;
-
-    private GameObject audioObjectPrefab;
-    private bool isPhased;
-    private bool isCollected;
-
-    public bool CanBeDashedThrough =>
-        canBeDashedThrough &&
-        !isCollected &&
-        enabled &&
-        gameObject.activeInHierarchy;
-
-    public float ChainRange => chainRange;
-
-    public Vector3 DashPosition =>
-        physicalCollider != null
-            ? physicalCollider.bounds.center
-            : transform.position;
-
-    private void Awake()
+    GameObject source;
+    public AudioClip clip;
+    public Collider physicalCollider;
+    private bool phased = false;
+    // Start is called before the first frame update
+    void Start()
     {
-        ResolveReferences();
-        LoadAudioObject();
+        source = Resources.Load<GameObject>("Audio Object");
+        // Using the Resources folder in the Assests folder you can load up any kind of object
+        // With this above line of code. It loads up a GameObject named "Audio Object" From the Resources folder 
+        // And applies it to the source variable
     }
 
-    private void ResolveReferences()
-    {
-        if (physicalCollider == null)
-            physicalCollider = GetComponent<Collider>();
-        if (physicalCollider == null)
-            physicalCollider = GetComponentInChildren<Collider>();
-    }
 
-    private void LoadAudioObject()
-    {
-        audioObjectPrefab = Resources.Load<GameObject>("Audio Object");
-        if (audioObjectPrefab == null)
-        {
-            Debug.LogWarning(
-                "Ring could not find Resources/Audio Object.",
-                this);
-        }
-    }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (isCollected || isPhased || other == null)
-            return;
-        TryCollect(other);
-    }
-
-    public bool TryCollect(Collider collector)
-    {
-        if (isCollected || isPhased || collector == null)
-            return false;
-        UltimatePlayerMovement player =
-            collector.GetComponentInParent<UltimatePlayerMovement>();
-        FollowerNavigation follower =
-            collector.GetComponentInParent<FollowerNavigation>();
-        if (player == null && follower == null)
-            return false;
-        CharacterType characterType =
-            collector.GetComponentInParent<CharacterType>();
-        if (characterType == null)
+        Debug.Log("Ring Trigger fired" + other.name);
+        if (phased)
         {
-            Debug.LogWarning(
-                $"Ring could not find CharacterType on {collector.name}.",
-                this);
-            return false;
-        }
-        Collect(characterType);
-        return true;
-    }
-
-    private void Collect(CharacterType characterType)
-    {
-        if (isCollected || characterType == null)
             return;
-        isCollected = true;
-        if (physicalCollider != null)
-            physicalCollider.enabled = false;
-        PlayPickupSound();
-        GameInstance.AddRings(characterType.type);
-        TeamBlast teamBlast = Object.FindAnyObjectByType<TeamBlast>();
-        if (teamBlast != null)
-            teamBlast.AddGauge(teamBlastGaugeAmount);
-        HUD hud = Object.FindAnyObjectByType<HUD>();
-        if (hud != null && ringPickUp != null)
-            hud.ShowPickUp(ringPickUp);
-        if (logPickups)
+        }
+
+        UltimatePlayerMovement player = other.GetComponent<UltimatePlayerMovement>();
+        FollowerNavigation ai = other.GetComponent<FollowerNavigation>();
+        if (player || ai)
         {
-            Debug.Log(
-                $"Ring collected. Rings: {GameInstance.currentRings}",
-                this);
+            GameObject ao = Instantiate(source, transform.position, Quaternion.identity);
+            if (ao != null && ao.TryGetComponent<AudioObject>(out var audioObj))
+            {
+                audioObj.Setup(clip, transform);
+            }
+
+            GameInstance.AddRings(other.GetComponentInChildren<CharacterType>().type);
+            Debug.Log("Rings after pickup" + GameInstance.currentRings);
+            var hud = Object.FindAnyObjectByType<HUD>();
+
+            if (hud != null)
+            {
+                hud.UpdateRings();
+                hud.AddPower(1);
+            }
+
+            Destroy (gameObject);
         }
-        Destroy(gameObject);
-    }
 
-    private void PlayPickupSound()
-    {
-        if (audioObjectPrefab == null || clip == null)
-            return;
-        GameObject audioObject = Instantiate(
-            audioObjectPrefab,
-            transform.position,
-            Quaternion.identity);
-        if (audioObject.TryGetComponent(out AudioObject audio))
-            audio.Setup(clip, transform);
-        else
-            Destroy(audioObject);
-    }
-
-    public void StartPhase()
-    {
-        if (isCollected)
-            return;
-        ResolveReferences();
-        CancelInvoke(nameof(EndPhase));
-        isPhased = true;
-        if (physicalCollider != null)
-            physicalCollider.isTrigger = true;
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (!isPhased || other == null)
-            return;
-        UltimatePlayerMovement player =
-            other.GetComponentInParent<UltimatePlayerMovement>();
-        if (player == null)
-            return;
-        if (physicalCollider != null)
-            physicalCollider.isTrigger = false;
-        CancelInvoke(nameof(EndPhase));
-        Invoke(nameof(EndPhase), phaseRecoveryTime);
     }
 
     private void EndPhase()
     {
-        isPhased = false;
+        phased = false;
     }
 
-    private void OnDisable()
+    public void StartPhase()
     {
-        CancelInvoke();
+        physicalCollider.isTrigger = true;
+        phased = true;
     }
 
-    private void OnValidate()
+    private void OnTriggerExit(Collider other)
     {
-        chainRange = Mathf.Max(0.1f, chainRange);
-        teamBlastGaugeAmount = Mathf.Max(0f, teamBlastGaugeAmount);
-        phaseRecoveryTime = Mathf.Max(0f, phaseRecoveryTime);
-        ResolveReferences();
+        if (other.TryGetComponent(out UltimatePlayerMovement player) && phased)
+        {
+            physicalCollider.isTrigger = false;
+            Invoke("EndPhase", 1);
+        }
     }
 }

@@ -1,212 +1,235 @@
-using System;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-public sealed class FlyingEnemyAI : AIController
+public class FlyingEnemyAI : AIController
 {
-    #region Types
+    #region Flight State
 
-    public enum FlightMovementState
+    public enum FlightState
     {
-        Stable,
+        Hovering,
+        Patrolling,
+        Chasing,
+        Attacking,
         Ascending,
         Descending,
-        AvoidingObstacle,
-        ReturningToFlightArea,
+        Avoiding,
+        Returning,
+        Stunned,
         Recovering,
-        Disabled
+        Dead
     }
 
     #endregion
 
-    #region Constants
-
-    private const float MinimumDirectionSqrMagnitude =
-        0.0001f;
-
-    private const float MinimumFlightHeight =
-        0.1f;
-
-    private const int ObstacleHitCapacity =
-        16;
-
-    #endregion
-
-    #region Inspector
+    #region Flight Movement
 
     [Header("Flight Movement")]
-    [SerializeField, Min(0f)] private float flightSpeed = 8f;
-    [SerializeField, Min(0f)] private float flightAcceleration = 20f;
-    [SerializeField, Min(0f)] private float flightDeceleration = 25f;
-    [SerializeField, Min(0f)] private float rotationSpeed = 360f;
-    [SerializeField, Min(0f)] private float arrivalDistance = 0.75f;
 
-    [Header("Hover")]
-    [SerializeField] private bool enableHover = true;
-    [SerializeField, Min(0f)] private float hoverAmplitude = 0.25f;
-    [SerializeField, Min(0f)] private float hoverFrequency = 1.5f;
-    [SerializeField, Min(0f)] private float hoverSmoothing = 8f;
+    [SerializeField, Min(0.1f)]
+    private float flightSpeed = 8f;
 
-    [Header("Altitude")]
-    [SerializeField] private bool maintainFlightAltitude = true;
-    [SerializeField, Min(MinimumFlightHeight)] private float preferredFlightHeight = 4f;
-    [SerializeField, Min(MinimumFlightHeight)] private float minimumFlightHeight = 1.5f;
-    [SerializeField, Min(MinimumFlightHeight)] private float maximumFlightHeight = 12f;
-    [SerializeField, Min(0f)] private float altitudeCorrectionSpeed = 6f;
-    [SerializeField, Min(0.01f)] private float groundProbeDistance = 30f;
-    [SerializeField] private LayerMask groundLayers = ~0;
+    [SerializeField, Min(0f)]
+    private float flightAcceleration = 20f;
 
-    [Header("Target Positioning")]
-    [SerializeField] private bool maintainTargetAltitudeOffset = true;
-    [SerializeField] private float targetAltitudeOffset = 2f;
-    [SerializeField, Min(0f)] private float chaseStoppingDistance = 4f;
-    [SerializeField] private bool circleTarget;
-    [SerializeField, Min(0f)] private float circleRadius = 5f;
-    [SerializeField, Min(0f)] private float circleSpeed = 45f;
+    [SerializeField, Min(0f)]
+    private float flightDeceleration = 25f;
 
-    [Header("Obstacle Avoidance")]
-    [SerializeField] private bool avoidObstacles = true;
-    [SerializeField, Min(0.01f)] private float obstacleProbeRadius = 0.5f;
-    [SerializeField, Min(0.01f)] private float obstacleProbeDistance = 2.5f;
-    [SerializeField, Min(0f)] private float avoidanceStrength = 8f;
-    [SerializeField, Min(0f)] private float avoidanceDuration = 0.35f;
-    [SerializeField] private LayerMask obstacleLayers = ~0;
+    [SerializeField, Min(0f)]
+    private float rotationSpeed = 360f;
 
-    [Header("Flight Area")]
-    [SerializeField] private bool constrainToFlightArea = true;
-    [SerializeField, Min(0f)] private float maximumHorizontalDistanceFromHome = 25f;
-    [SerializeField, Min(0f)] private float maximumVerticalDistanceFromHome = 15f;
-    [SerializeField, Min(0f)] private float flightAreaReturnSpeed = 10f;
-
-    [Header("Stuck Detection")]
-    [SerializeField] private bool detectStuckMovement = true;
-    [SerializeField, Min(0.1f)] private float stuckCheckInterval = 1f;
-    [SerializeField, Min(0f)] private float minimumMovementDistance = 0.05f;
-    [SerializeField, Min(1)] private int maximumStuckChecks = 3;
-
-    [Header("Recovery")]
-    [SerializeField] private bool recoverAutomatically = true;
-    [SerializeField, Min(0.1f)] private float recoveryInterval = 0.5f;
-    [SerializeField, Min(1)] private int maximumRecoveryAttempts = 5;
-    [SerializeField, Min(0f)] private float knockbackRecoveryDelay = 0.2f;
-
-    [Header("Physics")]
-    [SerializeField] private Rigidbody flightRigidbody;
-    [SerializeField] private bool useRigidbodyMovement = true;
-    [SerializeField] private bool disableGravity = true;
-    [SerializeField] private bool freezeRigidbodyRotation = true;
-
-    [Header("Runtime Safety")]
-    [SerializeField] private bool restoreFlightComponents = true;
-    [SerializeField, Min(1f)] private float maximumSafeFlightSpeed = 100f;
-    [SerializeField, Min(0.01f)] private float minimumValidScale = 0.01f;
-
-    [Header("Debug")]
-    [SerializeField]
-    private FlightMovementState flightMovementState =
-        FlightMovementState.Stable;
-
-    [SerializeField] private bool logFlightSafety;
+    [SerializeField, Min(0.01f)]
+    private float arrivalDistance = 0.75f;
 
     #endregion
 
-    #region Runtime State
+    #region Hover
 
-    private readonly RaycastHit[] obstacleHits =
-        new RaycastHit[ObstacleHitCapacity];
+    [Header("Hover")]
 
+    [SerializeField]
+    private bool enableHover = true;
+
+    [SerializeField, Min(0f)]
+    private float hoverAmplitude = 0.25f;
+
+    [SerializeField, Min(0f)]
+    private float hoverFrequency = 1.5f;
+
+    [SerializeField, Min(0f)]
+    private float hoverSmoothing = 8f;
+
+    #endregion
+
+    #region Altitude
+
+    [Header("Altitude")]
+
+    [SerializeField]
+    private bool maintainAltitude = true;
+
+    [SerializeField, Min(0.1f)]
+    private float preferredHeight = 4f;
+
+    [SerializeField, Min(0.1f)]
+    private float minimumHeight = 1.5f;
+
+    [SerializeField, Min(0.1f)]
+    private float maximumHeight = 12f;
+
+    [SerializeField, Min(0f)]
+    private float altitudeCorrectionSpeed = 6f;
+
+    [SerializeField, Min(0.1f)]
+    private float groundCheckDistance = 30f;
+
+    [SerializeField]
+    private LayerMask groundLayers = ~0;
+
+    #endregion
+
+    #region Target Flight
+
+    [Header("Target Flight")]
+
+    [SerializeField]
+    private float targetHeightOffset = 2f;
+
+    [SerializeField, Min(0f)]
+    private float targetStoppingDistance = 4f;
+
+    [SerializeField]
+    private bool circleTarget;
+
+    [SerializeField, Min(0f)]
+    private float circleRadius = 5f;
+
+    [SerializeField, Min(0f)]
+    private float circleSpeed = 45f;
+
+    #endregion
+
+    #region Obstacle Avoidance
+
+    [Header("Obstacle Avoidance")]
+
+    [SerializeField]
+    private bool avoidObstacles = true;
+
+    [SerializeField, Min(0.05f)]
+    private float obstacleRadius = 0.5f;
+
+    [SerializeField, Min(0.1f)]
+    private float obstacleDistance = 3f;
+
+    [SerializeField, Min(0f)]
+    private float avoidanceStrength = 2f;
+
+    [SerializeField]
+    private LayerMask obstacleLayers = ~0;
+
+    #endregion
+
+    #region Flight Area
+
+    [Header("Flight Area")]
+
+    [SerializeField]
+    private bool stayNearHome = true;
+
+    [SerializeField, Min(0f)]
+    private float maximumHorizontalDistance = 25f;
+
+    [SerializeField, Min(0f)]
+    private float maximumVerticalDistance = 15f;
+
+    [SerializeField, Min(0f)]
+    private float returnSpeedMultiplier = 1.5f;
+
+    #endregion
+
+    #region Recovery
+
+    [Header("Recovery")]
+
+    [SerializeField]
+    private bool recoverWhenStuck = true;
+
+    [SerializeField, Min(0.1f)]
+    private float stuckCheckInterval = 1f;
+
+    [SerializeField, Min(0f)]
+    private float minimumMovementDistance = 0.05f;
+
+    [SerializeField, Min(1)]
+    private int stuckChecksBeforeRecovery = 3;
+
+    [SerializeField, Min(0f)]
+    private float recoveryHeight = 2f;
+
+    #endregion
+
+    #region Physics
+
+    [Header("Physics")]
+
+    [SerializeField]
+    private Rigidbody flightRigidbody;
+
+    [SerializeField]
+    private bool useRigidbodyMovement = true;
+
+    [SerializeField]
+    private bool disableGravity = true;
+
+    [SerializeField]
+    private bool freezePhysicsRotation = true;
+
+    [SerializeField, Min(1f)]
+    private float maximumSafeSpeed = 100f;
+
+    #endregion
+
+    #region Debug
+
+    [Header("Debug")]
+
+    [SerializeField]
+    private FlightState flightState =
+        FlightState.Hovering;
+
+    [SerializeField]
+    private bool drawFlightDebug = true;
+
+    #endregion
+
+    #region Runtime
+
+    private Vector3 desiredDestination;
     private Vector3 currentVelocity;
-    private Vector3 desiredVelocity;
-    private Vector3 avoidanceDirection;
-    private Vector3 previousCheckedPosition;
-    private Vector3 lastValidFlightPosition;
-    private Vector3 baseHoverPosition;
+    private Vector3 lastValidPosition;
+    private Vector3 previousStuckPosition;
 
     private float hoverOffset;
     private float circleAngle;
-    private float avoidanceTimer;
-    private float stuckCheckTimer;
-    private float recoveryTimer;
-    private float knockbackRecoveryTimer;
+    private float stuckTimer;
 
-    private int consecutiveStuckChecks;
-    private int recoveryAttempts;
+    private int stuckChecks;
 
-    private bool movementRequested;
-    private bool knockbackRecoveryPending;
-    private bool initializedFlight;
-    private bool shuttingDownFlight;
+    private bool hasFlightDestination;
+    private bool flightInitialized;
 
     #endregion
 
-    #region Events
+    #region Properties
 
-    public event Action<FlyingEnemyAI> ObstacleDetected;
-    public event Action<FlyingEnemyAI> FlightAreaExited;
-    public event Action<FlyingEnemyAI, Vector3> FlightRecovered;
-    public event Action<FlyingEnemyAI> MovementStuck;
-    public event Action<FlyingEnemyAI, FlightMovementState> FlightStateChanged;
+    public FlightState CurrentFlightState =>
+        flightState;
 
-    #endregion
-
-    #region Public API
-
-    public FlightMovementState CurrentFlightMovementState =>
-        flightMovementState;
-
-    public Vector3 CurrentFlightVelocity =>
+    public Vector3 FlightVelocity =>
         currentVelocity;
 
-    public Vector3 LastValidFlightPosition =>
-        lastValidFlightPosition;
-
     public bool IsFlightInitialized =>
-        initializedFlight;
-
-    public bool RecoverFlight()
-    {
-        return TryRecoverFlight(
-            forceRecovery: true);
-    }
-
-    public void NotifyKnockbackEnded()
-    {
-        if (!recoverAutomatically ||
-            IsDead)
-        {
-            return;
-        }
-
-        knockbackRecoveryPending =
-            true;
-
-        knockbackRecoveryTimer =
-            knockbackRecoveryDelay;
-    }
-
-    public bool SetFlightPosition(
-        Vector3 position)
-    {
-        if (!IsFiniteVector(
-                position))
-        {
-            return false;
-        }
-
-        ApplyFlightPosition(
-            position);
-
-        lastValidFlightPosition =
-            position;
-
-        currentVelocity =
-            Vector3.zero;
-
-        desiredVelocity =
-            Vector3.zero;
-
-        return true;
-    }
+        flightInitialized;
 
     #endregion
 
@@ -217,20 +240,21 @@ public sealed class FlyingEnemyAI : AIController
         base.Awake();
 
         ResolveFlightReferences();
-        ConfigureFlightComponents();
-        InitializeFlightRuntime();
+        ConfigureFlight();
+        InitializeFlight();
     }
 
     protected override void OnEnable()
     {
         base.OnEnable();
 
-        if (shuttingDownFlight)
-            return;
-
         ResolveFlightReferences();
-        ConfigureFlightComponents();
-        InitializeFlightRuntime();
+        ConfigureFlight();
+
+        if (!flightInitialized)
+        {
+            InitializeFlight();
+        }
     }
 
     protected override void Update()
@@ -238,26 +262,30 @@ public sealed class FlyingEnemyAI : AIController
         base.Update();
 
         if (!IsInitialized ||
+            !flightInitialized ||
             IsDead ||
-            CurrentState ==
-                AIState.Disabled)
+            CurrentState == AIState.Disabled)
         {
             return;
         }
 
-        UpdateFlightTimers();
         UpdateHover();
         UpdateStuckDetection();
-        ValidateFlightArea();
+
+        if (stayNearHome &&
+            IsOutsideFlightArea(
+                transform.position))
+        {
+            ReturnHome();
+        }
     }
 
     private void FixedUpdate()
     {
         if (!IsInitialized ||
-            !initializedFlight ||
+            !flightInitialized ||
             IsDead ||
-            CurrentState ==
-                AIState.Disabled)
+            CurrentState == AIState.Disabled)
         {
             return;
         }
@@ -274,16 +302,11 @@ public sealed class FlyingEnemyAI : AIController
 
     protected override void OnDestroy()
     {
-        shuttingDownFlight =
-            true;
+        flightInitialized =
+            false;
 
-        ObstacleDetected = null;
-        FlightAreaExited = null;
-        FlightRecovered = null;
-        MovementStuck = null;
-        FlightStateChanged = null;
-
-        flightRigidbody = null;
+        flightRigidbody =
+            null;
 
         base.OnDestroy();
     }
@@ -294,7 +317,7 @@ public sealed class FlyingEnemyAI : AIController
 
         flightSpeed =
             Mathf.Max(
-                0f,
+                0.1f,
                 flightSpeed);
 
         flightAcceleration =
@@ -314,7 +337,7 @@ public sealed class FlyingEnemyAI : AIController
 
         arrivalDistance =
             Mathf.Max(
-                0f,
+                0.01f,
                 arrivalDistance);
 
         hoverAmplitude =
@@ -332,41 +355,36 @@ public sealed class FlyingEnemyAI : AIController
                 0f,
                 hoverSmoothing);
 
-        preferredFlightHeight =
+        minimumHeight =
             Mathf.Max(
-                MinimumFlightHeight,
-                preferredFlightHeight);
+                0.1f,
+                minimumHeight);
 
-        minimumFlightHeight =
+        maximumHeight =
             Mathf.Max(
-                MinimumFlightHeight,
-                minimumFlightHeight);
+                minimumHeight,
+                maximumHeight);
 
-        maximumFlightHeight =
-            Mathf.Max(
-                minimumFlightHeight,
-                maximumFlightHeight);
-
-        preferredFlightHeight =
+        preferredHeight =
             Mathf.Clamp(
-                preferredFlightHeight,
-                minimumFlightHeight,
-                maximumFlightHeight);
+                preferredHeight,
+                minimumHeight,
+                maximumHeight);
 
         altitudeCorrectionSpeed =
             Mathf.Max(
                 0f,
                 altitudeCorrectionSpeed);
 
-        groundProbeDistance =
+        groundCheckDistance =
             Mathf.Max(
-                0.01f,
-                groundProbeDistance);
+                0.1f,
+                groundCheckDistance);
 
-        chaseStoppingDistance =
+        targetStoppingDistance =
             Mathf.Max(
                 0f,
-                chaseStoppingDistance);
+                targetStoppingDistance);
 
         circleRadius =
             Mathf.Max(
@@ -378,40 +396,35 @@ public sealed class FlyingEnemyAI : AIController
                 0f,
                 circleSpeed);
 
-        obstacleProbeRadius =
+        obstacleRadius =
             Mathf.Max(
-                0.01f,
-                obstacleProbeRadius);
+                0.05f,
+                obstacleRadius);
 
-        obstacleProbeDistance =
+        obstacleDistance =
             Mathf.Max(
-                0.01f,
-                obstacleProbeDistance);
+                0.1f,
+                obstacleDistance);
 
         avoidanceStrength =
             Mathf.Max(
                 0f,
                 avoidanceStrength);
 
-        avoidanceDuration =
+        maximumHorizontalDistance =
             Mathf.Max(
                 0f,
-                avoidanceDuration);
+                maximumHorizontalDistance);
 
-        maximumHorizontalDistanceFromHome =
+        maximumVerticalDistance =
             Mathf.Max(
                 0f,
-                maximumHorizontalDistanceFromHome);
+                maximumVerticalDistance);
 
-        maximumVerticalDistanceFromHome =
+        returnSpeedMultiplier =
             Mathf.Max(
                 0f,
-                maximumVerticalDistanceFromHome);
-
-        flightAreaReturnSpeed =
-            Mathf.Max(
-                0f,
-                flightAreaReturnSpeed);
+                returnSpeedMultiplier);
 
         stuckCheckInterval =
             Mathf.Max(
@@ -423,81 +436,20 @@ public sealed class FlyingEnemyAI : AIController
                 0f,
                 minimumMovementDistance);
 
-        maximumStuckChecks =
+        stuckChecksBeforeRecovery =
             Mathf.Max(
                 1,
-                maximumStuckChecks);
+                stuckChecksBeforeRecovery);
 
-        recoveryInterval =
-            Mathf.Max(
-                0.1f,
-                recoveryInterval);
-
-        maximumRecoveryAttempts =
-            Mathf.Max(
-                1,
-                maximumRecoveryAttempts);
-
-        knockbackRecoveryDelay =
+        recoveryHeight =
             Mathf.Max(
                 0f,
-                knockbackRecoveryDelay);
+                recoveryHeight);
 
-        maximumSafeFlightSpeed =
+        maximumSafeSpeed =
             Mathf.Max(
                 1f,
-                maximumSafeFlightSpeed);
-
-        minimumValidScale =
-            Mathf.Max(
-                0.01f,
-                minimumValidScale);
-
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
-        {
-            ResolveFlightReferences();
-            ConfigureFlightComponents();
-        }
-#endif
-    }
-
-    protected override void OnDrawGizmosSelected()
-    {
-        base.OnDrawGizmosSelected();
-
-        Vector3 origin =
-            transform.position;
-
-        Vector3 forward =
-            GetFlightForward();
-
-        Gizmos.DrawWireSphere(
-            origin +
-            forward *
-            obstacleProbeDistance,
-            obstacleProbeRadius);
-
-        Gizmos.DrawLine(
-            origin,
-            origin +
-            Vector3.down *
-            groundProbeDistance);
-
-        if (maximumHorizontalDistanceFromHome >
-            0f)
-        {
-            Gizmos.DrawWireSphere(
-                Application.isPlaying
-                    ? HomePosition
-                    : transform.position,
-                maximumHorizontalDistanceFromHome);
-        }
-
-        Gizmos.DrawLine(
-            origin,
-            origin +
-            currentVelocity);
+                maximumSafeSpeed);
     }
 
     #endregion
@@ -510,21 +462,21 @@ public sealed class FlyingEnemyAI : AIController
             base.Initialize();
 
         if (!initialized)
+        {
             return false;
+        }
 
         ResolveFlightReferences();
-        ConfigureFlightComponents();
-        InitializeFlightRuntime();
+        ConfigureFlight();
+        InitializeFlight();
 
-        return initializedFlight;
+        return
+            flightInitialized;
     }
 
     private void ResolveFlightReferences()
     {
-        if (flightRigidbody != null)
-            return;
-
-        flightRigidbody =
+        flightRigidbody ??=
             GetComponent<Rigidbody>();
 
         flightRigidbody ??=
@@ -535,7 +487,7 @@ public sealed class FlyingEnemyAI : AIController
                 includeInactive: true);
     }
 
-    private void ConfigureFlightComponents()
+    private void ConfigureFlight()
     {
         if (Agent != null)
         {
@@ -545,40 +497,40 @@ public sealed class FlyingEnemyAI : AIController
             Agent.updateRotation =
                 false;
 
-            Agent.isStopped =
-                true;
+            if (Agent.enabled &&
+                Agent.isOnNavMesh)
+            {
+                Agent.isStopped =
+                    true;
+
+                Agent.ResetPath();
+            }
         }
 
         if (flightRigidbody == null)
-            return;
-
-        flightRigidbody.useGravity =
-            !disableGravity;
-
-        flightRigidbody.isKinematic =
-            !useRigidbodyMovement;
-
-        flightRigidbody.interpolation =
-            RigidbodyInterpolation.Interpolate;
-
-        flightRigidbody.collisionDetectionMode =
-            CollisionDetectionMode.ContinuousDynamic;
-
-        if (freezeRigidbodyRotation)
         {
-            flightRigidbody.constraints =
-                RigidbodyConstraints.FreezeRotation;
+            return;
         }
 
-        flightRigidbody.WakeUp();
+        if (disableGravity)
+        {
+            flightRigidbody.useGravity =
+                false;
+        }
+
+        if (freezePhysicsRotation)
+        {
+            flightRigidbody.constraints |=
+                RigidbodyConstraints.FreezeRotation;
+        }
     }
 
-    private void InitializeFlightRuntime()
+    private void InitializeFlight()
     {
         if (!IsFiniteVector(
                 transform.position))
         {
-            initializedFlight =
+            flightInitialized =
                 false;
 
             return;
@@ -587,19 +539,13 @@ public sealed class FlyingEnemyAI : AIController
         currentVelocity =
             Vector3.zero;
 
-        desiredVelocity =
-            Vector3.zero;
-
-        avoidanceDirection =
-            Vector3.zero;
-
-        previousCheckedPosition =
+        desiredDestination =
             transform.position;
 
-        lastValidFlightPosition =
+        lastValidPosition =
             transform.position;
 
-        baseHoverPosition =
+        previousStuckPosition =
             transform.position;
 
         hoverOffset =
@@ -608,44 +554,69 @@ public sealed class FlyingEnemyAI : AIController
         circleAngle =
             0f;
 
-        avoidanceTimer =
-            0f;
-
-        stuckCheckTimer =
+        stuckTimer =
             stuckCheckInterval;
 
-        recoveryTimer =
-            0f;
-
-        knockbackRecoveryTimer =
-            0f;
-
-        consecutiveStuckChecks =
+        stuckChecks =
             0;
 
-        recoveryAttempts =
-            0;
-
-        movementRequested =
+        hasFlightDestination =
             false;
 
-        knockbackRecoveryPending =
-            false;
+        flightState =
+            FlightState.Hovering;
 
-        ChangeFlightState(
-            FlightMovementState.Stable);
-
-        initializedFlight =
+        flightInitialized =
             true;
     }
 
     #endregion
 
-    #region AI State Overrides
+    #region Grounding
 
     protected override void UpdateGrounding()
     {
+        // Flying enemies deliberately ignore
+        // ground-based AI grounding.
     }
+
+    protected override void UpdateInAirState()
+    {
+        SetState(
+            Target != null
+                ? AIState.Chase
+                : AIState.Idle);
+    }
+
+    #endregion
+
+    #region Idle
+
+    protected override void UpdateIdleState()
+    {
+        StopFlightMovement();
+
+        flightState =
+            FlightState.Hovering;
+
+        if (TryAcquireTarget())
+        {
+            SetState(
+                AIState.Chase);
+
+            return;
+        }
+
+        if (HasPatrolPoint())
+        {
+            SetState(
+                AIState.Patrol);
+        }
+    }
+
+    #endregion
+
+    #region Patrol
 
     protected override void UpdatePatrolState()
     {
@@ -668,16 +639,19 @@ public sealed class FlyingEnemyAI : AIController
             return;
         }
 
-        Vector3 patrolDestination =
+        flightState =
+            FlightState.Patrolling;
+
+        Vector3 destination =
             ResolveFlightDestination(
                 patrolPoint.position,
-                maintainPreferredAltitude: false);
+                false);
 
         MoveAgentTo(
-            patrolDestination);
+            destination);
 
         if (!HasReachedFlightPosition(
-                patrolDestination,
+                destination,
                 arrivalDistance))
         {
             return;
@@ -687,19 +661,28 @@ public sealed class FlyingEnemyAI : AIController
         AdvancePatrolPoint();
     }
 
+    #endregion
+
+    #region Chase
+
     protected override void UpdateChaseState()
     {
         if (Target == null ||
-            !Target.gameObject.activeInHierarchy)
+            !Target.gameObject.activeInHierarchy ||
+            !IsFiniteVector(
+                Target.position))
         {
             ReturnHome();
+
             return;
         }
 
-        if (IsOutsideFlightArea(
+        if (stayNearHome &&
+            IsOutsideFlightArea(
                 transform.position))
         {
             ReturnHome();
+
             return;
         }
 
@@ -714,17 +697,20 @@ public sealed class FlyingEnemyAI : AIController
         if (!float.IsFinite(
                 distance))
         {
-            TryRecoverFlight(
-                forceRecovery: true);
+            RecoverFlight();
 
             return;
         }
 
+        flightState =
+            FlightState.Chasing;
+
         if (distance <=
-            chaseStoppingDistance)
+            targetStoppingDistance)
         {
             StopFlightMovement();
-            FaceFlightTarget();
+            FaceTarget();
+
             return;
         }
 
@@ -732,28 +718,54 @@ public sealed class FlyingEnemyAI : AIController
             destination);
     }
 
+    #endregion
+
+    #region Attack
+
+    protected override void UpdateAttackState()
+    {
+        flightState =
+            FlightState.Attacking;
+
+        StopFlightMovement();
+
+        if (Target != null)
+        {
+            FaceTarget();
+        }
+
+        base.UpdateAttackState();
+    }
+
+    #endregion
+
+    #region Returning
+
     protected override void UpdateReturningState()
     {
+        flightState =
+            FlightState.Returning;
+
         Vector3 destination =
             ResolveFlightDestination(
                 HomePosition,
-                maintainPreferredAltitude: true);
+                true);
 
-        float previousSpeed =
+        float originalSpeed =
             flightSpeed;
 
-        if (flightAreaReturnSpeed >
-            0f)
+        if (returnSpeedMultiplier > 0f)
         {
             flightSpeed =
-                flightAreaReturnSpeed;
+                originalSpeed *
+                returnSpeedMultiplier;
         }
 
         MoveAgentTo(
             destination);
 
         flightSpeed =
-            previousSpeed;
+            originalSpeed;
 
         if (!HasReachedFlightPosition(
                 destination,
@@ -764,30 +776,23 @@ public sealed class FlyingEnemyAI : AIController
 
         StopFlightMovement();
 
-        recoveryAttempts =
+        stuckChecks =
             0;
 
-        ChangeFlightState(
-            FlightMovementState.Stable);
-
         SetState(
-            HasValidPatrolPoints()
+            HasPatrolPoint()
                 ? AIState.Patrol
                 : AIState.Idle);
     }
 
-    protected override void UpdateInAirState()
-    {
-        SetState(
-            Target != null
-                ? AIState.Chase
-                : AIState.Idle);
-    }
+    #endregion
+
+    #region Flight Destination
 
     protected override bool MoveAgentTo(
         Vector3 destination)
     {
-        if (!initializedFlight ||
+        if (!flightInitialized ||
             IsDead ||
             !IsFiniteVector(
                 destination))
@@ -795,56 +800,13 @@ public sealed class FlyingEnemyAI : AIController
             return false;
         }
 
-        Vector3 resolvedDestination =
+        desiredDestination =
             ResolveFlightDestination(
                 destination,
-                maintainPreferredAltitude: true);
+                true);
 
-        Vector3 direction =
-            resolvedDestination -
-            transform.position;
-
-        if (direction.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
-        {
-            desiredVelocity =
-                Vector3.zero;
-
-            movementRequested =
-                false;
-
-            return true;
-        }
-
-        direction.Normalize();
-
-        avoidanceDirection =
-            CalculateObstacleAvoidance(
-                direction);
-
-        Vector3 finalDirection =
-            direction +
-            avoidanceDirection *
-            avoidanceStrength;
-
-        if (finalDirection.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
-        {
-            finalDirection =
-                direction;
-        }
-
-        finalDirection.Normalize();
-
-        desiredVelocity =
-            finalDirection *
-            flightSpeed;
-
-        movementRequested =
+        hasFlightDestination =
             true;
-
-        UpdateFlightStateForDirection(
-            desiredVelocity);
 
         return true;
     }
@@ -864,9 +826,10 @@ public sealed class FlyingEnemyAI : AIController
         }
     }
 
-    protected override void FaceTarget()
+    private void StopFlightMovement()
     {
-        FaceFlightTarget();
+        hasFlightDestination =
+            false;
     }
 
     #endregion
@@ -875,35 +838,51 @@ public sealed class FlyingEnemyAI : AIController
 
     private void UpdateFlightMovement()
     {
-        if (!movementRequested)
+        Vector3 desiredVelocity =
+            Vector3.zero;
+
+        if (hasFlightDestination)
         {
-            currentVelocity =
-                Vector3.MoveTowards(
-                    currentVelocity,
-                    Vector3.zero,
-                    flightDeceleration *
-                    Time.fixedDeltaTime);
+            Vector3 direction =
+                desiredDestination -
+                GetCurrentPosition();
+
+            if (direction.sqrMagnitude >
+                0.0001f)
+            {
+                direction.Normalize();
+
+                direction =
+                    ApplyObstacleAvoidance(
+                        direction);
+
+                desiredVelocity =
+                    direction *
+                    flightSpeed;
+            }
         }
-        else
-        {
-            currentVelocity =
-                Vector3.MoveTowards(
-                    currentVelocity,
-                    desiredVelocity,
-                    flightAcceleration *
-                    Time.fixedDeltaTime);
-        }
+
+        float accelerationRate =
+            hasFlightDestination
+                ? flightAcceleration
+                : flightDeceleration;
+
+        currentVelocity =
+            Vector3.MoveTowards(
+                currentVelocity,
+                desiredVelocity,
+                accelerationRate *
+                Time.fixedDeltaTime);
 
         currentVelocity =
             Vector3.ClampMagnitude(
                 currentVelocity,
-                maximumSafeFlightSpeed);
+                maximumSafeSpeed);
 
         if (!IsFiniteVector(
                 currentVelocity))
         {
-            TryRecoverFlight(
-                forceRecovery: true);
+            RecoverFlight();
 
             return;
         }
@@ -911,14 +890,14 @@ public sealed class FlyingEnemyAI : AIController
         Vector3 nextPosition =
             GetCurrentPosition() +
             currentVelocity *
-            Time.fixedDeltaTime;
+                Time.fixedDeltaTime;
 
         nextPosition =
-            ApplyAltitudeConstraints(
+            ApplyAltitude(
                 nextPosition);
 
-        if (enableHover &&
-            !movementRequested)
+        if (!hasFlightDestination &&
+            enableHover)
         {
             nextPosition.y +=
                 hoverOffset;
@@ -927,13 +906,12 @@ public sealed class FlyingEnemyAI : AIController
         if (!IsFiniteVector(
                 nextPosition))
         {
-            TryRecoverFlight(
-                forceRecovery: true);
+            RecoverFlight();
 
             return;
         }
 
-        ApplyFlightPosition(
+        ApplyPosition(
             nextPosition);
 
         RotateTowardVelocity();
@@ -941,119 +919,67 @@ public sealed class FlyingEnemyAI : AIController
         if (!IsOutsideFlightArea(
                 nextPosition))
         {
-            lastValidFlightPosition =
+            lastValidPosition =
                 nextPosition;
         }
 
-        movementRequested =
-            false;
+        UpdateDirectionalFlightState();
     }
 
-    private Vector3 ApplyAltitudeConstraints(
-        Vector3 position)
+    #endregion
+
+    #region Hover
+
+    private void UpdateHover()
     {
-        if (!maintainFlightAltitude)
-            return position;
-
-        if (!TryGetGroundHeight(
-                position,
-                out float groundHeight))
+        if (!enableHover ||
+            hasFlightDestination ||
+            IsDead)
         {
-            float minimumWorldHeight =
-                HomePosition.y -
-                maximumVerticalDistanceFromHome;
+            hoverOffset =
+                Mathf.MoveTowards(
+                    hoverOffset,
+                    0f,
+                    hoverSmoothing *
+                        Time.deltaTime);
 
-            float maximumWorldHeight =
-                HomePosition.y +
-                maximumVerticalDistanceFromHome;
-
-            if (maximumVerticalDistanceFromHome >
-                0f)
-            {
-                position.y =
-                    Mathf.Clamp(
-                        position.y,
-                        minimumWorldHeight,
-                        maximumWorldHeight);
-            }
-
-            return position;
+            return;
         }
 
-        float heightAboveGround =
-            position.y -
-            groundHeight;
+        float targetOffset =
+            Mathf.Sin(
+                Time.time *
+                hoverFrequency *
+                Mathf.PI *
+                2f) *
+            hoverAmplitude;
 
-        float targetHeight =
-            Mathf.Clamp(
-                heightAboveGround,
-                minimumFlightHeight,
-                maximumFlightHeight);
-
-        float targetY =
-            groundHeight +
-            targetHeight;
-
-        position.y =
-            Mathf.MoveTowards(
-                position.y,
-                targetY,
-                altitudeCorrectionSpeed *
-                Time.fixedDeltaTime);
-
-        return position;
+        hoverOffset =
+            Mathf.Lerp(
+                hoverOffset,
+                targetOffset,
+                Mathf.Clamp01(
+                    hoverSmoothing *
+                        Time.deltaTime));
     }
 
-    private Vector3 ResolveFlightDestination(
-        Vector3 destination,
-        bool maintainPreferredAltitude)
-    {
-        if (!IsFiniteVector(
-                destination))
-        {
-            return transform.position;
-        }
+    #endregion
 
-        if (!maintainFlightAltitude)
-            return destination;
-
-        if (TryGetGroundHeight(
-                destination,
-                out float groundHeight))
-        {
-            float desiredHeight =
-                maintainPreferredAltitude
-                    ? preferredFlightHeight
-                    : destination.y -
-                      groundHeight;
-
-            desiredHeight =
-                Mathf.Clamp(
-                    desiredHeight,
-                    minimumFlightHeight,
-                    maximumFlightHeight);
-
-            destination.y =
-                groundHeight +
-                desiredHeight;
-        }
-
-        return destination;
-    }
+    #region Target Position
 
     private Vector3 GetTargetFlightPosition()
     {
         if (Target == null)
-            return transform.position;
+        {
+            return
+                transform.position;
+        }
 
         Vector3 targetPosition =
             Target.position;
 
-        if (maintainTargetAltitudeOffset)
-        {
-            targetPosition.y +=
-                targetAltitudeOffset;
-        }
+        targetPosition.y +=
+            targetHeightOffset;
 
         if (circleTarget &&
             circleRadius > 0f)
@@ -1074,18 +1000,492 @@ public sealed class FlyingEnemyAI : AIController
                 circleOffset;
         }
 
-        return ResolveFlightDestination(
-            targetPosition,
-            maintainPreferredAltitude: false);
+        return
+            ResolveFlightDestination(
+                targetPosition,
+                false);
+    }
+
+    #endregion
+
+    #region Altitude
+
+    private Vector3 ResolveFlightDestination(
+        Vector3 destination,
+        bool usePreferredHeight)
+    {
+        if (!IsFiniteVector(
+                destination))
+        {
+            return
+                transform.position;
+        }
+
+        if (!maintainAltitude)
+        {
+            return destination;
+        }
+
+        if (!TryGetGroundHeight(
+                destination,
+                out float groundHeight))
+        {
+            return ClampToHomeHeight(
+                destination);
+        }
+
+        float desiredHeight =
+            usePreferredHeight
+                ? preferredHeight
+                : destination.y -
+                    groundHeight;
+
+        desiredHeight =
+            Mathf.Clamp(
+                desiredHeight,
+                minimumHeight,
+                maximumHeight);
+
+        destination.y =
+            groundHeight +
+            desiredHeight;
+
+        return destination;
+    }
+
+    private Vector3 ApplyAltitude(
+        Vector3 position)
+    {
+        if (!maintainAltitude)
+        {
+            return
+                ClampToHomeHeight(
+                    position);
+        }
+
+        if (!TryGetGroundHeight(
+                position,
+                out float groundHeight))
+        {
+            return
+                ClampToHomeHeight(
+                    position);
+        }
+
+        float height =
+            position.y -
+            groundHeight;
+
+        float clampedHeight =
+            Mathf.Clamp(
+                height,
+                minimumHeight,
+                maximumHeight);
+
+        float desiredY =
+            groundHeight +
+            clampedHeight;
+
+        position.y =
+            Mathf.MoveTowards(
+                position.y,
+                desiredY,
+                altitudeCorrectionSpeed *
+                    Time.fixedDeltaTime);
+
+        return
+            ClampToHomeHeight(
+                position);
+    }
+
+    private Vector3 ClampToHomeHeight(
+        Vector3 position)
+    {
+        if (maximumVerticalDistance <=
+            0f)
+        {
+            return position;
+        }
+
+        position.y =
+            Mathf.Clamp(
+                position.y,
+                HomePosition.y -
+                    maximumVerticalDistance,
+                HomePosition.y +
+                    maximumVerticalDistance);
+
+        return position;
+    }
+
+    private bool TryGetGroundHeight(
+        Vector3 position,
+        out float height)
+    {
+        height =
+            0f;
+
+        Vector3 origin =
+            position +
+            Vector3.up *
+                groundCheckDistance *
+                0.5f;
+
+        if (!Physics.Raycast(
+                origin,
+                Vector3.down,
+                out RaycastHit hit,
+                groundCheckDistance,
+                groundLayers,
+                QueryTriggerInteraction.Ignore))
+        {
+            return false;
+        }
+
+        if (IsOwnCollider(
+                hit.collider))
+        {
+            return false;
+        }
+
+        height =
+            hit.point.y;
+
+        return
+            float.IsFinite(
+                height);
+    }
+
+    #endregion
+
+    #region Obstacle Avoidance
+
+    private Vector3 ApplyObstacleAvoidance(
+        Vector3 desiredDirection)
+    {
+        if (!avoidObstacles ||
+            desiredDirection.sqrMagnitude <=
+                0.0001f)
+        {
+            return desiredDirection;
+        }
+
+        if (!Physics.SphereCast(
+                GetCurrentPosition(),
+                obstacleRadius,
+                desiredDirection,
+                out RaycastHit hit,
+                obstacleDistance,
+                obstacleLayers,
+                QueryTriggerInteraction.Ignore))
+        {
+            return desiredDirection;
+        }
+
+        if (IsOwnCollider(
+                hit.collider))
+        {
+            return desiredDirection;
+        }
+
+        flightState =
+            FlightState.Avoiding;
+
+        Vector3 avoidance =
+            Vector3.ProjectOnPlane(
+                desiredDirection,
+                hit.normal);
+
+        if (avoidance.sqrMagnitude <=
+            0.0001f)
+        {
+            avoidance =
+                hit.normal +
+                Vector3.up * 0.5f;
+        }
+
+        Vector3 result =
+            desiredDirection +
+            avoidance.normalized *
+                avoidanceStrength;
+
+        return
+            result.sqrMagnitude >
+                0.0001f
+                ? result.normalized
+                : desiredDirection;
+    }
+
+    #endregion
+
+    #region Flight Area
+
+    private bool IsOutsideFlightArea(
+        Vector3 position)
+    {
+        if (!stayNearHome ||
+            !IsFiniteVector(
+                position))
+        {
+            return false;
+        }
+
+        Vector3 offset =
+            position -
+            HomePosition;
+
+        Vector2 horizontal =
+            new(
+                offset.x,
+                offset.z);
+
+        bool outsideHorizontal =
+            maximumHorizontalDistance >
+                0f &&
+            horizontal.sqrMagnitude >
+                maximumHorizontalDistance *
+                maximumHorizontalDistance;
+
+        bool outsideVertical =
+            maximumVerticalDistance >
+                0f &&
+            Mathf.Abs(
+                offset.y) >
+                maximumVerticalDistance;
+
+        return
+            outsideHorizontal ||
+            outsideVertical;
+    }
+
+    #endregion
+
+    #region Recovery
+
+    public bool RecoverFlight()
+    {
+        if (!recoverWhenStuck ||
+            IsDead)
+        {
+            return false;
+        }
+
+        flightState =
+            FlightState.Recovering;
+
+        Vector3 recoveryPosition =
+            lastValidPosition;
+
+        if (!IsFiniteVector(
+                recoveryPosition) ||
+            IsOutsideFlightArea(
+                recoveryPosition))
+        {
+            recoveryPosition =
+                HomePosition +
+                Vector3.up *
+                    recoveryHeight;
+        }
+
+        recoveryPosition =
+            ResolveFlightDestination(
+                recoveryPosition,
+                true);
+
+        if (!IsFiniteVector(
+                recoveryPosition))
+        {
+            return false;
+        }
+
+        currentVelocity =
+            Vector3.zero;
+
+        hasFlightDestination =
+            false;
+
+        ApplyPosition(
+            recoveryPosition);
+
+        lastValidPosition =
+            recoveryPosition;
+
+        previousStuckPosition =
+            recoveryPosition;
+
+        stuckChecks =
+            0;
+
+        flightState =
+            FlightState.Hovering;
+
+        return true;
+    }
+
+    public void NotifyKnockbackEnded()
+    {
+        RecoverFlight();
+    }
+
+    private void UpdateStuckDetection()
+    {
+        if (!recoverWhenStuck ||
+            !hasFlightDestination)
+        {
+            stuckChecks =
+                0;
+
+            previousStuckPosition =
+                transform.position;
+
+            return;
+        }
+
+        stuckTimer -=
+            Time.deltaTime;
+
+        if (stuckTimer > 0f)
+        {
+            return;
+        }
+
+        stuckTimer =
+            stuckCheckInterval;
+
+        Vector3 currentPosition =
+            transform.position;
+
+        if (!IsFiniteVector(
+                currentPosition) ||
+            !IsFiniteVector(
+                previousStuckPosition))
+        {
+            previousStuckPosition =
+                currentPosition;
+
+            stuckChecks =
+                0;
+
+            return;
+        }
+
+        float distance =
+            Vector3.Distance(
+                currentPosition,
+                previousStuckPosition);
+
+        previousStuckPosition =
+            currentPosition;
+
+        if (!float.IsFinite(
+                distance) ||
+            distance >=
+                minimumMovementDistance)
+        {
+            stuckChecks =
+                0;
+
+            return;
+        }
+
+        stuckChecks++;
+
+        if (stuckChecks <
+            stuckChecksBeforeRecovery)
+        {
+            return;
+        }
+
+        stuckChecks =
+            0;
+
+        RecoverFlight();
+    }
+
+    #endregion
+
+    #region Position
+
+    private Vector3 GetCurrentPosition()
+    {
+        if (flightRigidbody != null &&
+            useRigidbodyMovement &&
+            !flightRigidbody.isKinematic)
+        {
+            return
+                flightRigidbody.position;
+        }
+
+        return
+            transform.position;
+    }
+
+    private void ApplyPosition(
+        Vector3 position)
+    {
+        if (!IsFiniteVector(
+                position))
+        {
+            return;
+        }
+
+        if (flightRigidbody != null &&
+            useRigidbodyMovement &&
+            !flightRigidbody.isKinematic)
+        {
+            flightRigidbody.MovePosition(
+                position);
+
+            return;
+        }
+
+        transform.position =
+            position;
+    }
+
+    #endregion
+
+    #region Rotation
+
+    protected override void FaceTarget()
+    {
+        if (Target == null ||
+            !IsFiniteVector(
+                Target.position))
+        {
+            return;
+        }
+
+        Vector3 direction =
+            Target.position -
+            transform.position;
+
+        RotateTowardsDirection(
+            direction,
+            Time.deltaTime);
     }
 
     private void RotateTowardVelocity()
     {
-        Vector3 direction =
-            currentVelocity;
+        if (currentVelocity.sqrMagnitude <=
+            0.0001f)
+        {
+            return;
+        }
 
-        if (direction.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
+        RotateTowardsDirection(
+            currentVelocity,
+            Time.fixedDeltaTime);
+    }
+
+    private void RotateTowardsDirection(
+        Vector3 direction,
+        float deltaTime)
+    {
+        if (!IsFiniteVector(
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
         {
             return;
         }
@@ -1100,7 +1500,7 @@ public sealed class FlyingEnemyAI : AIController
                 transform.rotation,
                 targetRotation,
                 rotationSpeed *
-                Time.fixedDeltaTime);
+                    deltaTime);
 
         if (flightRigidbody != null &&
             useRigidbodyMovement &&
@@ -1108,45 +1508,98 @@ public sealed class FlyingEnemyAI : AIController
         {
             flightRigidbody.MoveRotation(
                 rotation);
-        }
-        else
-        {
-            transform.rotation =
-                rotation;
-        }
-    }
 
-    private void FaceFlightTarget()
-    {
-        if (Target == null)
-            return;
-
-        Vector3 direction =
-            Target.position -
-            transform.position;
-
-        if (direction.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
-        {
             return;
         }
-
-        Quaternion targetRotation =
-            Quaternion.LookRotation(
-                direction.normalized,
-                Vector3.up);
 
         transform.rotation =
-            Quaternion.RotateTowards(
-                transform.rotation,
-                targetRotation,
-                rotationSpeed *
-                Time.deltaTime);
+            rotation;
     }
+
+    #endregion
+
+    #region Flight State
+
+    private void UpdateDirectionalFlightState()
+    {
+        if (flightState ==
+            FlightState.Avoiding)
+        {
+            return;
+        }
+
+        if (!hasFlightDestination)
+        {
+            flightState =
+                FlightState.Hovering;
+
+            return;
+        }
+
+        if (currentVelocity.y >
+            0.1f)
+        {
+            flightState =
+                FlightState.Ascending;
+
+            return;
+        }
+
+        if (currentVelocity.y <
+            -0.1f)
+        {
+            flightState =
+                FlightState.Descending;
+
+            return;
+        }
+
+        switch (CurrentState)
+        {
+            case AIState.Patrol:
+                flightState =
+                    FlightState.Patrolling;
+                break;
+
+            case AIState.Chase:
+                flightState =
+                    FlightState.Chasing;
+                break;
+
+            case AIState.Attack:
+                flightState =
+                    FlightState.Attacking;
+                break;
+
+            case AIState.Returning:
+                flightState =
+                    FlightState.Returning;
+                break;
+
+            case AIState.Stunned:
+                flightState =
+                    FlightState.Stunned;
+                break;
+
+            case AIState.Dead:
+                flightState =
+                    FlightState.Dead;
+                break;
+
+            default:
+                flightState =
+                    FlightState.Hovering;
+                break;
+        }
+    }
+
+    #endregion
+
+    #region Helpers
 
     private bool HasReachedFlightPosition(
         Vector3 destination,
-        float threshold)
+        float distance)
     {
         if (!IsFiniteVector(
                 destination))
@@ -1154,758 +1607,27 @@ public sealed class FlyingEnemyAI : AIController
             return false;
         }
 
-        float distance =
-            Vector3.Distance(
-                transform.position,
-                destination);
+        float squaredDistance =
+            (
+                transform.position -
+                destination
+            ).sqrMagnitude;
 
         return
             float.IsFinite(
-                distance) &&
-            distance <=
-                threshold;
-    }
-
-    private void StopFlightMovement()
-    {
-        movementRequested =
-            false;
-
-        desiredVelocity =
-            Vector3.zero;
-
-        currentVelocity =
-            Vector3.MoveTowards(
-                currentVelocity,
-                Vector3.zero,
-                flightDeceleration *
-                Time.fixedDeltaTime);
-    }
-
-    #endregion
-
-    #region Hover
-
-    private void UpdateHover()
-    {
-        if (!enableHover ||
-            movementRequested ||
-            IsDead)
-        {
-            hoverOffset =
-                Mathf.MoveTowards(
-                    hoverOffset,
-                    0f,
-                    hoverSmoothing *
-                    Time.deltaTime);
-
-            return;
-        }
-
-        float targetOffset =
-            Mathf.Sin(
-                Time.time *
-                hoverFrequency *
-                Mathf.PI *
-                2f) *
-            hoverAmplitude;
-
-        hoverOffset =
-            Mathf.Lerp(
-                hoverOffset,
-                targetOffset,
-                hoverSmoothing *
-                Time.deltaTime);
-    }
-
-    #endregion
-
-    #region Obstacle Avoidance
-
-    private Vector3 CalculateObstacleAvoidance(
-        Vector3 desiredDirection)
-    {
-        if (!avoidObstacles)
-        {
-            avoidanceTimer =
-                0f;
-
-            return Vector3.zero;
-        }
-
-        Vector3 origin =
-            transform.position;
-
-        int hitCount =
-            Physics.SphereCastNonAlloc(
-                origin,
-                obstacleProbeRadius,
-                desiredDirection,
-                obstacleHits,
-                obstacleProbeDistance,
-                obstacleLayers,
-                QueryTriggerInteraction.Ignore);
-
-        Vector3 combinedNormal =
-            Vector3.zero;
-
-        int validHitCount =
-            0;
-
-        for (int index = 0;
-             index < hitCount;
-             index++)
-        {
-            RaycastHit hit =
-                obstacleHits[index];
-
-            if (hit.collider == null ||
-                IsOwnCollider(
-                    hit.collider))
-            {
-                continue;
-            }
-
-            combinedNormal +=
-                hit.normal;
-
-            validHitCount++;
-        }
-
-        if (validHitCount > 0)
-        {
-            combinedNormal /=
-                validHitCount;
-
-            avoidanceTimer =
-                avoidanceDuration;
-
-            ChangeFlightState(
-                FlightMovementState.AvoidingObstacle);
-
-            ObstacleDetected?.Invoke(
-                this);
-
-            return combinedNormal.normalized;
-        }
-
-        if (avoidanceTimer > 0f)
-        {
-            return avoidanceDirection;
-        }
-
-        return Vector3.zero;
-    }
-
-    #endregion
-
-    #region Flight Area
-
-    private void ValidateFlightArea()
-    {
-        if (!constrainToFlightArea ||
-            !IsOutsideFlightArea(
-                transform.position))
-        {
-            return;
-        }
-
-        ChangeFlightState(
-            FlightMovementState.ReturningToFlightArea);
-
-        FlightAreaExited?.Invoke(
-            this);
-
-        ReturnHome();
-    }
-
-    private bool IsOutsideFlightArea(
-        Vector3 position)
-    {
-        if (!constrainToFlightArea ||
-            !IsFiniteVector(
-                position))
-        {
-            return false;
-        }
-
-        Vector3 offset =
-            position -
-            HomePosition;
-
-        Vector2 horizontalOffset =
-            new(
-                offset.x,
-                offset.z);
-
-        bool outsideHorizontal =
-            maximumHorizontalDistanceFromHome >
-                0f &&
-            horizontalOffset.sqrMagnitude >
-                maximumHorizontalDistanceFromHome *
-                maximumHorizontalDistanceFromHome;
-
-        bool outsideVertical =
-            maximumVerticalDistanceFromHome >
-                0f &&
-            Mathf.Abs(
-                offset.y) >
-                maximumVerticalDistanceFromHome;
-
-        return
-            outsideHorizontal ||
-            outsideVertical;
-    }
-
-    #endregion
-
-    #region Recovery
-
-    private void UpdateFlightTimers()
-    {
-        if (avoidanceTimer > 0f)
-        {
-            avoidanceTimer =
-                Mathf.Max(
-                    0f,
-                    avoidanceTimer -
-                    Time.deltaTime);
-
-            if (avoidanceTimer <= 0f &&
-                flightMovementState ==
-                    FlightMovementState.AvoidingObstacle)
-            {
-                ChangeFlightState(
-                    FlightMovementState.Stable);
-            }
-        }
-
-        if (recoveryTimer > 0f)
-        {
-            recoveryTimer =
-                Mathf.Max(
-                    0f,
-                    recoveryTimer -
-                    Time.deltaTime);
-        }
-
-        if (!knockbackRecoveryPending)
-            return;
-
-        knockbackRecoveryTimer =
-            Mathf.Max(
-                0f,
-                knockbackRecoveryTimer -
-                Time.deltaTime);
-
-        if (knockbackRecoveryTimer > 0f)
-            return;
-
-        knockbackRecoveryPending =
-            false;
-
-        TryRecoverFlight(
-            forceRecovery: true);
-    }
-
-    private bool TryRecoverFlight(
-        bool forceRecovery)
-    {
-        if (!recoverAutomatically ||
-            IsDead)
-        {
-            return false;
-        }
-
-        if (!forceRecovery &&
-            recoveryTimer > 0f)
-        {
-            return false;
-        }
-
-        if (recoveryAttempts >=
-            maximumRecoveryAttempts)
-        {
-            ApplyFlightPosition(
-                HomePosition);
-
-            StopFlightMovement();
-
-            recoveryAttempts =
-                0;
-
-            lastValidFlightPosition =
-                HomePosition;
-
-            ChangeFlightState(
-                FlightMovementState.Stable);
-
-            return true;
-        }
-
-        recoveryTimer =
-            recoveryInterval;
-
-        recoveryAttempts++;
-
-        ChangeFlightState(
-            FlightMovementState.Recovering);
-
-        Vector3 recoveryPosition =
-            lastValidFlightPosition;
-
-        if (!IsFiniteVector(
-                recoveryPosition) ||
-            IsOutsideFlightArea(
-                recoveryPosition))
-        {
-            recoveryPosition =
-                HomePosition;
-        }
-
-        recoveryPosition =
-            ResolveFlightDestination(
-                recoveryPosition,
-                maintainPreferredAltitude: true);
-
-        if (!IsFiniteVector(
-                recoveryPosition))
-        {
-            return false;
-        }
-
-        ApplyFlightPosition(
-            recoveryPosition);
-
-        StopFlightMovement();
-
-        recoveryAttempts =
-            0;
-
-        consecutiveStuckChecks =
-            0;
-
-        previousCheckedPosition =
-            recoveryPosition;
-
-        lastValidFlightPosition =
-            recoveryPosition;
-
-        ChangeFlightState(
-            FlightMovementState.Stable);
-
-        FlightRecovered?.Invoke(
-            this,
-            recoveryPosition);
-
-        LogFlightState(
-            "Flight movement recovered.");
-
-        return true;
-    }
-
-    #endregion
-
-    #region Stuck Detection
-
-    private void UpdateStuckDetection()
-    {
-        if (!detectStuckMovement ||
-            !IsMovementState())
-        {
-            previousCheckedPosition =
-                transform.position;
-
-            consecutiveStuckChecks =
-                0;
-
-            return;
-        }
-
-        stuckCheckTimer -=
-            Time.deltaTime;
-
-        if (stuckCheckTimer > 0f)
-            return;
-
-        stuckCheckTimer =
-            stuckCheckInterval;
-
-        Vector3 currentPosition =
-            transform.position;
-
-        if (!IsFiniteVector(
-                currentPosition) ||
-            !IsFiniteVector(
-                previousCheckedPosition))
-        {
-            previousCheckedPosition =
-                currentPosition;
-
-            consecutiveStuckChecks =
-                0;
-
-            return;
-        }
-
-        float movedDistance =
-            Vector3.Distance(
-                currentPosition,
-                previousCheckedPosition);
-
-        previousCheckedPosition =
-            currentPosition;
-
-        if (!float.IsFinite(
-                movedDistance) ||
-            !movementRequested ||
-            movedDistance >=
-                minimumMovementDistance)
-        {
-            consecutiveStuckChecks =
-                0;
-
-            return;
-        }
-
-        consecutiveStuckChecks++;
-
-        if (consecutiveStuckChecks <
-            maximumStuckChecks)
-        {
-            return;
-        }
-
-        consecutiveStuckChecks =
-            0;
-
-        MovementStuck?.Invoke(
-            this);
-
-        LogFlightState(
-            "Flying enemy appears to be stuck.");
-
-        TryRecoverFlight(
-            forceRecovery: true);
-    }
-
-    private bool IsMovementState()
-    {
-        return
-            CurrentState ==
-                AIState.Patrol ||
-            CurrentState ==
-                AIState.Chase ||
-            CurrentState ==
-                AIState.Returning;
-    }
-
-    #endregion
-
-    #region Runtime Safety
-
-    protected override bool RunRuntimeSafetyChecks()
-    {
-        if (!base.RunRuntimeSafetyChecks())
-            return false;
-
-        if (!ValidateFlightReferences())
-        {
-            ResolveFlightReferences();
-            ConfigureFlightComponents();
-
-            if (!ValidateFlightReferences())
-            {
-                EnterFlightSafetyShutdown(
-                    "Flight Rigidbody could not be restored.");
-
-                return false;
-            }
-        }
-
-        if (!ValidateFlightTransform())
-        {
-            if (!TryRecoverFlight(
-                    forceRecovery: true))
-            {
-                EnterFlightSafetyShutdown(
-                    "Flight Transform contains invalid values.");
-
-                return false;
-            }
-        }
-
-        if (!ValidateFlightVelocity())
-        {
-            currentVelocity =
-                Vector3.ClampMagnitude(
-                    IsFiniteVector(
-                        currentVelocity)
-                        ? currentVelocity
-                        : Vector3.zero,
-                    maximumSafeFlightSpeed);
-
-            desiredVelocity =
-                Vector3.ClampMagnitude(
-                    IsFiniteVector(
-                        desiredVelocity)
-                        ? desiredVelocity
-                        : Vector3.zero,
-                    maximumSafeFlightSpeed);
-        }
-
-        if (restoreFlightComponents)
-        {
-            RestoreFlightComponents();
-        }
-
-        return true;
-    }
-
-    private bool ValidateFlightReferences()
-    {
-        if (!useRigidbodyMovement)
-            return true;
-
-        return
-            flightRigidbody != null &&
-            flightRigidbody.gameObject.activeInHierarchy;
-    }
-
-    private bool ValidateFlightTransform()
-    {
-        Vector3 scale =
-            transform.lossyScale;
-
-        return
-            IsFiniteVector(
-                transform.position) &&
-            IsFiniteQuaternion(
-                transform.rotation) &&
-            IsFiniteVector(
-                scale) &&
-            Mathf.Abs(
-                scale.x) >=
-                minimumValidScale &&
-            Mathf.Abs(
-                scale.y) >=
-                minimumValidScale &&
-            Mathf.Abs(
-                scale.z) >=
-                minimumValidScale;
-    }
-
-    private bool ValidateFlightVelocity()
-    {
-        return
-            IsFiniteVector(
-                currentVelocity) &&
-            IsFiniteVector(
-                desiredVelocity) &&
-            currentVelocity.sqrMagnitude <=
-                maximumSafeFlightSpeed *
-                maximumSafeFlightSpeed &&
-            desiredVelocity.sqrMagnitude <=
-                maximumSafeFlightSpeed *
-                maximumSafeFlightSpeed;
-    }
-
-    private void RestoreFlightComponents()
-    {
-        if (flightRigidbody != null)
-        {
-            flightRigidbody.useGravity =
-                !disableGravity;
-
-            flightRigidbody.isKinematic =
-                !useRigidbodyMovement;
-
-            flightRigidbody.WakeUp();
-        }
-
-        if (Agent != null)
-        {
-            Agent.updatePosition =
-                false;
-
-            Agent.updateRotation =
-                false;
-        }
-    }
-
-    private void EnterFlightSafetyShutdown(
-        string reason)
-    {
-        initializedFlight =
-            false;
-
-        StopFlightMovement();
-
-        ChangeFlightState(
-            FlightMovementState.Disabled);
-
-        Debug.LogError(
-            $"{nameof(FlyingEnemyAI)} entered safety shutdown on '{name}': {reason}",
-            this);
-
-        enabled =
-            false;
-    }
-
-    #endregion
-
-    #region Flight State
-
-    private void UpdateFlightStateForDirection(
-        Vector3 velocity)
-    {
-        if (flightMovementState ==
-            FlightMovementState.AvoidingObstacle)
-        {
-            return;
-        }
-
-        if (velocity.y >
-            0.1f)
-        {
-            ChangeFlightState(
-                FlightMovementState.Ascending);
-        }
-        else if (velocity.y <
-                 -0.1f)
-        {
-            ChangeFlightState(
-                FlightMovementState.Descending);
-        }
-        else
-        {
-            ChangeFlightState(
-                FlightMovementState.Stable);
-        }
-    }
-
-    private void ChangeFlightState(
-        FlightMovementState newState)
-    {
-        if (!Enum.IsDefined(
-                typeof(FlightMovementState),
-                newState))
-        {
-            return;
-        }
-
-        if (flightMovementState ==
-            newState)
-        {
-            return;
-        }
-
-        flightMovementState =
-            newState;
-
-        FlightStateChanged?.Invoke(
-            this,
-            flightMovementState);
-
-        LogFlightState(
-            $"Flight state changed to {flightMovementState}.");
-    }
-
-    #endregion
-
-    #region Helpers
-
-    private Vector3 GetCurrentPosition()
-    {
-        if (flightRigidbody != null &&
-            useRigidbodyMovement &&
-            !flightRigidbody.isKinematic)
-        {
-            return flightRigidbody.position;
-        }
-
-        return transform.position;
-    }
-
-    private void ApplyFlightPosition(
-        Vector3 position)
-    {
-        if (flightRigidbody != null &&
-            useRigidbodyMovement &&
-            !flightRigidbody.isKinematic)
-        {
-            flightRigidbody.MovePosition(
-                position);
-        }
-        else
-        {
-            transform.position =
-                position;
-        }
-    }
-
-    private bool TryGetGroundHeight(
-        Vector3 position,
-        out float groundHeight)
-    {
-        groundHeight =
-            0f;
-
-        Vector3 origin =
-            position +
-            Vector3.up *
-            groundProbeDistance *
-            0.5f;
-
-        int hitCount =
-            Physics.RaycastNonAlloc(
-                origin,
-                Vector3.down,
-                obstacleHits,
-                groundProbeDistance,
-                groundLayers,
-                QueryTriggerInteraction.Ignore);
-
-        float closestDistance =
-            float.PositiveInfinity;
-
-        bool foundGround =
-            false;
-
-        for (int index = 0;
-             index < hitCount;
-             index++)
-        {
-            RaycastHit hit =
-                obstacleHits[index];
-
-            if (hit.collider == null ||
-                IsOwnCollider(
-                    hit.collider) ||
-                hit.distance >=
-                    closestDistance)
-            {
-                continue;
-            }
-
-            closestDistance =
-                hit.distance;
-
-            groundHeight =
-                hit.point.y;
-
-            foundGround =
-                true;
-        }
-
-        return foundGround;
+                squaredDistance) &&
+            squaredDistance <=
+                distance *
+                distance;
     }
 
     private bool IsOwnCollider(
         Collider candidate)
     {
         if (candidate == null)
+        {
             return false;
+        }
 
         Transform candidateTransform =
             candidate.transform;
@@ -1917,29 +1639,62 @@ public sealed class FlyingEnemyAI : AIController
                 transform);
     }
 
-    private Vector3 GetFlightForward()
-    {
-        Vector3 forward =
-            transform.forward;
+    #endregion
 
-        if (forward.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
+    #region Gizmos
+
+    protected override void OnDrawGizmosSelected()
+    {
+        base.OnDrawGizmosSelected();
+
+        if (!drawFlightDebug)
         {
-            return Vector3.forward;
+            return;
         }
 
-        return forward.normalized;
-    }
+        Vector3 position =
+            transform.position;
 
-    private void LogFlightState(
-        string message)
-    {
-        if (!logFlightSafety)
-            return;
+        Gizmos.DrawWireSphere(
+            position,
+            obstacleRadius);
 
-        Debug.Log(
-            $"{nameof(FlyingEnemyAI)} on '{name}': {message}",
-            this);
+        Gizmos.DrawLine(
+            position,
+            position +
+                transform.forward *
+                    obstacleDistance);
+
+        Gizmos.DrawLine(
+            position,
+            position +
+                Vector3.down *
+                    groundCheckDistance);
+
+        if (stayNearHome &&
+            maximumHorizontalDistance > 0f)
+        {
+            Vector3 center =
+                Application.isPlaying
+                    ? HomePosition
+                    : position;
+
+            Gizmos.DrawWireSphere(
+                center,
+                maximumHorizontalDistance);
+        }
+
+        if (Application.isPlaying &&
+            hasFlightDestination)
+        {
+            Gizmos.DrawLine(
+                position,
+                desiredDestination);
+
+            Gizmos.DrawWireSphere(
+                desiredDestination,
+                arrivalDistance);
+        }
     }
 
     #endregion

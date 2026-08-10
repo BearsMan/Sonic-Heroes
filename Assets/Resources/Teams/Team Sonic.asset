@@ -12,19 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ef92c9281d63d941ac867ab8e5df336, type: 3}
   m_Name: Team Sonic
   m_EditorClassIdentifier: 
-  playableTeam: 0
-  speedCharacterPrefab: {fileID: 6092845166368814282, guid: 17a3ebb6c45e8734ba9cd54cc1edca85, type: 3}
-  flyingCharacterPrefab: {fileID: 6994810384107432601, guid: c24763ea0b02d0447b3cb9d2c6e9bbd8, type: 3}
-  powerCharacterPrefab: {fileID: 8801897155344615322, guid: 7aef050c3a7de444fbea14b8f68d2fbc, type: 3}
-  superCharacterPrefab: {fileID: 1702013014726208151, guid: bed9355b86e571b499e1b7825bfcc5af, type: 3}
-  speedCharacterDefinition: {fileID: 11400000, guid: 85beb481ba4088342a569b0043904e78, type: 2}
-  flyingCharacterDefinition: {fileID: 11400000, guid: 17328bd2b2e7a2d4a8408659a638b6c9, type: 2}
-  powerCharacterDefinition: {fileID: 11400000, guid: 5f5fa3f9393dfbc4ebdb73a6ff68a6ef, type: 2}
-  superCharacterDefinition: {fileID: 11400000, guid: 225ae88f0d713a54f92eafac46c36909, type: 2}
-  speedCharacterData: {fileID: 11400000, guid: ebad3f886425e2d4f9c554bf118828d9, type: 2}
-  flyingCharacterData: {fileID: 11400000, guid: 9da8e5264bff7e74eb917837703d51e7, type: 2}
-  powerCharacterData: {fileID: 11400000, guid: d72cf732c19c1684fb7a3b33f85d71a2, type: 2}
-  superCharacterData: {fileID: 11400000, guid: 96eb217851c70b241a9487b93a9e8ac3, type: 2}
-  teamIcon: {fileID: -2567825650161966522, guid: 79b62094f70e6df439f242adca055767, type: 3}
-  accentColor: {r: 0, g: 0, b: 0, a: 0}
-  teamBlast: {fileID: 32900000, guid: 36bfb872191887749b5b61cf15c4a630, type: 3}
+  SpeedCharacter: {fileID: 6092845166368814282, guid: 17a3ebb6c45e8734ba9cd54cc1edca85, type: 3}
+  FlyingCharacter: {fileID: 6994810384107432601, guid: c24763ea0b02d0447b3cb9d2c6e9bbd8, type: 3}
+  PowerCharacter: {fileID: 8801897155344615322, guid: 7aef050c3a7de444fbea14b8f68d2fbc, type: 3}
+  SuperCharacter: {fileID: 1702013014726208151, guid: bed9355b86e571b499e1b7825bfcc5af, type: 3}
+  speedCharacter: {fileID: 11400000, guid: ebad3f886425e2d4f9c554bf118828d9, type: 2}
+  flyingCharacter: {fileID: 11400000, guid: 9da8e5264bff7e74eb917837703d51e7, type: 2}
+  powerCharacter: {fileID: 11400000, guid: d72cf732c19c1684fb7a3b33f85d71a2, type: 2}
+  superCharacter: {fileID: 11400000, guid: 96eb217851c70b241a9487b93a9e8ac3, type: 2}
+  teamBlast: {fileID: 32900000, guid: f2fd3a3cb796b8f49967207057a74992, type: 3}

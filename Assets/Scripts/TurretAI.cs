@@ -1,8 +1,7 @@
 using System;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-public sealed class TurretAI : AIController
+public class TurretAI : AIController
 {
     #region Types
 
@@ -25,165 +24,195 @@ public sealed class TurretAI : AIController
 
     #endregion
 
-    #region Constants
+    #region Aiming
 
-    private const float MinimumDirectionSqrMagnitude =
-        0.0001f;
+    [Header("Aiming")]
 
-    private const float MinimumAngleLimit =
-        0.1f;
+    [SerializeField]
+    private Transform rotatingBase;
 
-    private const int LineOfSightHitCapacity =
-        16;
+    [SerializeField]
+    private Transform aimingBarrel;
+
+    [SerializeField]
+    private Transform projectileSpawnPoint;
+
+    [SerializeField, Min(0f)]
+    private float horizontalTurnSpeed = 180f;
+
+    [SerializeField, Min(0f)]
+    private float verticalTurnSpeed = 120f;
+
+    [SerializeField, Range(0f, 180f)]
+    private float maximumHorizontalAngle = 180f;
+
+    [SerializeField, Range(0f, 89f)]
+    private float maximumUpAngle = 65f;
+
+    [SerializeField, Range(0f, 89f)]
+    private float maximumDownAngle = 10f;
+
+    [SerializeField, Min(0.1f)]
+    private float aimTolerance = 3f;
+
+    [SerializeField]
+    private bool returnToRestRotation = true;
+
+    [SerializeField, Min(0f)]
+    private float returnRotationSpeed = 120f;
 
     #endregion
 
-    #region Inspector
-
-    [Header("Turret References")]
-    [SerializeField] private Transform rotatingBase;
-    [SerializeField] private Transform aimingBarrel;
-    [SerializeField] private Transform projectileSpawnPoint;
-
-    [Header("Aiming")]
-    [SerializeField, Min(0f)] private float horizontalTurnSpeed = 180f;
-    [SerializeField, Min(0f)] private float verticalTurnSpeed = 120f;
-    [SerializeField, Range(0f, 180f)] private float maximumHorizontalAngle = 180f;
-    [SerializeField, Range(0f, 89f)] private float minimumVerticalAngle = 10f;
-    [SerializeField, Range(0f, 89f)] private float maximumVerticalAngle = 65f;
-    [SerializeField, Min(MinimumAngleLimit)] private float aimTolerance = 3f;
-    [SerializeField] private bool returnToRestRotation = true;
-    [SerializeField, Min(0f)] private float returnRotationSpeed = 120f;
+    #region Target Leading
 
     [Header("Target Leading")]
-    [SerializeField] private bool leadTarget = true;
-    [SerializeField, Min(0f)] private float projectileSpeed = 30f;
-    [SerializeField, Min(0f)] private float maximumLeadTime = 2f;
+
+    [SerializeField]
+    private bool leadTarget = true;
+
+    [SerializeField, Min(0f)]
+    private float projectileSpeed = 30f;
+
+    [SerializeField, Min(0f)]
+    private float maximumLeadTime = 2f;
+
+    #endregion
+
+    #region Line Of Sight
 
     [Header("Line Of Sight")]
-    [SerializeField] private bool requireLineOfSight = true;
-    [SerializeField] private LayerMask lineOfSightBlockingLayers = ~0;
+
+    [SerializeField]
+    private bool requireLineOfSight = true;
+
+    [SerializeField]
+    private LayerMask lineOfSightLayers = ~0;
+
+    #endregion
+
+    #region Firing
 
     [Header("Firing")]
-    [SerializeField] private FireMode fireMode = FireMode.Single;
-    [SerializeField] private GameObject projectilePrefab;
-    [SerializeField, Min(0f)] private float fireCooldown = 1f;
-    [SerializeField, Min(0f)] private float firingWindup = 0.25f;
-    [SerializeField, Min(1)] private int burstCount = 3;
-    [SerializeField, Min(0.01f)] private float burstInterval = 0.12f;
-    [SerializeField] private bool inheritTurretVelocity;
+
+    [SerializeField]
+    private FireMode fireMode =
+        FireMode.Single;
+
+    [SerializeField]
+    private GameObject projectilePrefab;
+
+    [SerializeField, Min(0f)]
+    private float fireCooldown = 1f;
+
+    [SerializeField, Min(0f)]
+    private float firingWindup = 0.25f;
+
+    [SerializeField, Min(1)]
+    private int burstCount = 3;
+
+    [SerializeField, Min(0.01f)]
+    private float burstInterval = 0.12f;
+
+    [SerializeField]
+    private bool inheritTurretVelocity;
+
+    #endregion
+
+    #region Projectile
 
     [Header("Projectile")]
-    [SerializeField, Min(0f)] private float projectileLifetime = 10f;
-    [SerializeField, Min(0f)] private float projectileSpawnOffset = 0.05f;
+
+    [SerializeField, Min(0f)]
+    private float projectileLifetime = 10f;
+
+    [SerializeField, Min(0f)]
+    private float projectileSpawnOffset = 0.05f;
+
+    #endregion
+
+    #region Presentation
 
     [Header("Presentation")]
-    [SerializeField] private ParticleSystem muzzleFlash;
-    [SerializeField] private AudioSource turretAudioSource;
-    [SerializeField] private AudioClip aimSound;
-    [SerializeField] private AudioClip fireSound;
-    [SerializeField] private AudioClip cooldownSound;
 
-    [Header("Runtime Safety")]
-    [SerializeField] private bool restoreDisabledComponents = true;
-    [SerializeField, Min(0.1f)] private float safetyCheckInterval = 0.5f;
-    [SerializeField, Min(0.01f)] private float minimumValidScale = 0.01f;
+    [SerializeField]
+    private ParticleSystem muzzleFlash;
+
+    [SerializeField]
+    private AudioSource turretAudioSource;
+
+    [SerializeField]
+    private AudioClip aimSound;
+
+    [SerializeField]
+    private AudioClip fireSound;
+
+    [SerializeField]
+    private AudioClip cooldownSound;
+
+    #endregion
+
+    #region Debug
 
     [Header("Debug")]
+
     [SerializeField]
     private TurretState turretState =
         TurretState.Searching;
 
-    [SerializeField] private bool logTurretState;
+    [SerializeField]
+    private bool drawAimDebug = true;
 
     #endregion
 
     #region Runtime State
 
-    private readonly RaycastHit[] lineOfSightHits =
-        new RaycastHit[LineOfSightHitCapacity];
+    private Quaternion baseRestRotation;
+    private Quaternion barrelRestRotation;
 
-    private Quaternion baseRestLocalRotation;
-    private Quaternion barrelRestLocalRotation;
-
-    private Vector3 lastTargetPosition;
+    private Vector3 previousTargetPosition;
     private Vector3 estimatedTargetVelocity;
 
     private float fireCooldownTimer;
     private float firingWindupTimer;
     private float burstTimer;
-    private float safetyTimer;
 
     private int remainingBurstShots;
 
     private bool targetPositionInitialized;
     private bool aimSoundPlayed;
-    private bool initializedTurret;
-    private bool shuttingDownTurret;
+    private bool turretInitialized;
 
     #endregion
 
     #region Events
 
-    public event Action<TurretAI> AimStarted;
-    public event Action<TurretAI, Vector3> Aimed;
-    public event Action<TurretAI, GameObject> ProjectileFired;
-    public event Action<TurretAI> BurstCompleted;
-    public event Action<TurretAI, TurretState> TurretStateChanged;
+    public event Action<TurretAI>
+        AimStarted;
+
+    public event Action<TurretAI, Vector3>
+        Aimed;
+
+    public event Action<TurretAI, GameObject>
+        ProjectileFired;
+
+    public event Action<TurretAI>
+        BurstCompleted;
+
+    public event Action<TurretAI, TurretState>
+        TurretStateChanged;
 
     #endregion
 
-    #region Public API
+    #region Properties
 
     public TurretState CurrentTurretState =>
         turretState;
 
     public bool IsTurretInitialized =>
-        initializedTurret;
+        turretInitialized;
 
     public bool IsAimed =>
         HasAimLock();
-
-    public bool FireImmediately()
-    {
-        if (!CanFire())
-            return false;
-
-        BeginFiringSequence(
-            bypassWindup: true);
-
-        return true;
-    }
-
-    public void ResetTurret()
-    {
-        fireCooldownTimer =
-            0f;
-
-        firingWindupTimer =
-            0f;
-
-        burstTimer =
-            0f;
-
-        remainingBurstShots =
-            0;
-
-        estimatedTargetVelocity =
-            Vector3.zero;
-
-        targetPositionInitialized =
-            false;
-
-        aimSoundPlayed =
-            false;
-
-        RestoreRestRotations(
-            instant: true);
-
-        ChangeTurretState(
-            TurretState.Searching);
-    }
 
     #endregion
 
@@ -195,23 +224,20 @@ public sealed class TurretAI : AIController
 
         ResolveTurretReferences();
         CacheRestRotations();
-        ConfigureTurretComponents();
-        InitializeTurretRuntime();
+        ConfigureTurret();
+        InitializeTurret();
     }
 
     protected override void OnEnable()
     {
         base.OnEnable();
 
-        if (shuttingDownTurret)
-            return;
-
         ResolveTurretReferences();
-        ConfigureTurretComponents();
+        ConfigureTurret();
 
-        if (!initializedTurret)
+        if (!turretInitialized)
         {
-            InitializeTurretRuntime();
+            InitializeTurret();
         }
 
         if (turretState ==
@@ -227,6 +253,7 @@ public sealed class TurretAI : AIController
         base.Update();
 
         if (!IsInitialized ||
+            !turretInitialized ||
             IsDead ||
             CurrentState ==
                 AIState.Disabled)
@@ -234,24 +261,15 @@ public sealed class TurretAI : AIController
             return;
         }
 
-        UpdateTurretTimers();
+        UpdateTimers();
         UpdateTargetVelocity();
-        UpdateTurretBehaviour();
-
-        safetyTimer -=
-            Time.deltaTime;
-
-        if (safetyTimer <= 0f)
-        {
-            safetyTimer =
-                safetyCheckInterval;
-
-            RunTurretSafetyChecks();
-        }
+        UpdateTurretState();
     }
 
     protected override void OnDisable()
     {
+        CancelFiring();
+
         ChangeTurretState(
             TurretState.Disabled);
 
@@ -260,20 +278,20 @@ public sealed class TurretAI : AIController
 
     protected override void OnDestroy()
     {
-        shuttingDownTurret =
-            true;
+        AimStarted =
+            null;
 
-        AimStarted = null;
-        Aimed = null;
-        ProjectileFired = null;
-        BurstCompleted = null;
-        TurretStateChanged = null;
+        Aimed =
+            null;
 
-        rotatingBase = null;
-        aimingBarrel = null;
-        projectileSpawnPoint = null;
-        projectilePrefab = null;
-        turretAudioSource = null;
+        ProjectileFired =
+            null;
+
+        BurstCompleted =
+            null;
+
+        TurretStateChanged =
+            null;
 
         base.OnDestroy();
     }
@@ -298,21 +316,21 @@ public sealed class TurretAI : AIController
                 0f,
                 180f);
 
-        minimumVerticalAngle =
+        maximumUpAngle =
             Mathf.Clamp(
-                minimumVerticalAngle,
+                maximumUpAngle,
                 0f,
                 89f);
 
-        maximumVerticalAngle =
+        maximumDownAngle =
             Mathf.Clamp(
-                maximumVerticalAngle,
-                minimumVerticalAngle,
+                maximumDownAngle,
+                0f,
                 89f);
 
         aimTolerance =
             Mathf.Max(
-                MinimumAngleLimit,
+                0.1f,
                 aimTolerance);
 
         returnRotationSpeed =
@@ -359,46 +377,6 @@ public sealed class TurretAI : AIController
             Mathf.Max(
                 0f,
                 projectileSpawnOffset);
-
-        safetyCheckInterval =
-            Mathf.Max(
-                0.1f,
-                safetyCheckInterval);
-
-        minimumValidScale =
-            Mathf.Max(
-                0.01f,
-                minimumValidScale);
-
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
-        {
-            ResolveTurretReferences();
-            ConfigureTurretComponents();
-        }
-#endif
-    }
-
-    protected override void OnDrawGizmosSelected()
-    {
-        base.OnDrawGizmosSelected();
-
-        Transform spawn =
-            projectileSpawnPoint != null
-                ? projectileSpawnPoint
-                : transform;
-
-        Gizmos.DrawRay(
-            spawn.position,
-            spawn.forward *
-            3f);
-
-        if (Target != null)
-        {
-            Gizmos.DrawLine(
-                spawn.position,
-                GetPredictedTargetPosition());
-        }
     }
 
     #endregion
@@ -411,14 +389,17 @@ public sealed class TurretAI : AIController
             base.Initialize();
 
         if (!initialized)
+        {
             return false;
+        }
 
         ResolveTurretReferences();
         CacheRestRotations();
-        ConfigureTurretComponents();
-        InitializeTurretRuntime();
+        ConfigureTurret();
+        InitializeTurret();
 
-        return initializedTurret;
+        return
+            turretInitialized;
     }
 
     private void ResolveTurretReferences()
@@ -456,29 +437,35 @@ public sealed class TurretAI : AIController
     {
         if (rotatingBase != null)
         {
-            baseRestLocalRotation =
+            baseRestRotation =
                 rotatingBase.localRotation;
         }
 
         if (aimingBarrel != null)
         {
-            barrelRestLocalRotation =
+            barrelRestRotation =
                 aimingBarrel.localRotation;
         }
     }
 
-    private void ConfigureTurretComponents()
+    private void ConfigureTurret()
     {
         if (Agent != null)
         {
-            Agent.isStopped =
-                true;
-
             Agent.updatePosition =
                 false;
 
             Agent.updateRotation =
                 false;
+
+            if (Agent.enabled &&
+                Agent.isOnNavMesh)
+            {
+                Agent.isStopped =
+                    true;
+
+                Agent.ResetPath();
+            }
         }
 
         if (turretAudioSource != null)
@@ -488,7 +475,7 @@ public sealed class TurretAI : AIController
         }
     }
 
-    private void InitializeTurretRuntime()
+    private void InitializeTurret()
     {
         fireCooldownTimer =
             0f;
@@ -499,13 +486,10 @@ public sealed class TurretAI : AIController
         burstTimer =
             0f;
 
-        safetyTimer =
-            safetyCheckInterval;
-
         remainingBurstShots =
             0;
 
-        lastTargetPosition =
+        previousTargetPosition =
             Vector3.zero;
 
         estimatedTargetVelocity =
@@ -517,16 +501,20 @@ public sealed class TurretAI : AIController
         aimSoundPlayed =
             false;
 
-        ChangeTurretState(
-            TurretState.Searching);
+        turretInitialized =
+            rotatingBase != null &&
+            aimingBarrel != null &&
+            projectileSpawnPoint != null;
 
-        initializedTurret =
-            ValidateTurretConfiguration();
+        ChangeTurretState(
+            turretInitialized
+                ? TurretState.Searching
+                : TurretState.Disabled);
     }
 
     #endregion
 
-    #region AI State Overrides
+    #region AI Overrides
 
     protected override void UpdateGrounding()
     {
@@ -540,11 +528,11 @@ public sealed class TurretAI : AIController
         {
             SetState(
                 AIState.Chase);
+
+            return;
         }
-        else
-        {
-            UpdateReturnToRest();
-        }
+
+        UpdateReturnToRest();
     }
 
     protected override void UpdatePatrolState()
@@ -556,17 +544,19 @@ public sealed class TurretAI : AIController
     {
         if (!IsTargetUsable())
         {
-            HandleTargetUnavailable();
+            HandleTargetLost();
+
             return;
         }
 
         if (requireLineOfSight &&
-            !HasLineOfSight())
+            !HasTurretLineOfSight())
         {
             ChangeTurretState(
                 TurretState.Searching);
 
             UpdateReturnToRest();
+
             return;
         }
 
@@ -598,8 +588,7 @@ public sealed class TurretAI : AIController
 
         if (CanFire())
         {
-            BeginFiringSequence(
-                bypassWindup: false);
+            BeginFiring();
         }
     }
 
@@ -613,7 +602,9 @@ public sealed class TurretAI : AIController
         UpdateReturnToRest();
 
         if (!HasReturnedToRest())
+        {
             return;
+        }
 
         SetState(
             AIState.Idle);
@@ -655,34 +646,49 @@ public sealed class TurretAI : AIController
 
     #endregion
 
-    #region Turret Behaviour
+    #region Turret State
 
-    private void UpdateTurretBehaviour()
+    private void UpdateTurretState()
     {
-        if (!initializedTurret ||
-            CurrentState ==
-                AIState.Stunned)
+        if (turretState ==
+            TurretState.Firing)
         {
+            UpdateFiring();
+
             return;
         }
 
         if (turretState ==
-            TurretState.Firing)
+                TurretState.CoolingDown &&
+            fireCooldownTimer <= 0f)
         {
-            UpdateFiringSequence();
-        }
-        else if (turretState ==
-                 TurretState.CoolingDown)
-        {
-            if (fireCooldownTimer <= 0f)
-            {
-                ChangeTurretState(
-                    IsTargetUsable()
-                        ? TurretState.Tracking
-                        : TurretState.Searching);
-            }
+            ChangeTurretState(
+                IsTargetUsable()
+                    ? TurretState.Tracking
+                    : TurretState.Searching);
         }
     }
+
+    private void ChangeTurretState(
+        TurretState newState)
+    {
+        if (turretState ==
+            newState)
+        {
+            return;
+        }
+
+        turretState =
+            newState;
+
+        TurretStateChanged?.Invoke(
+            this,
+            turretState);
+    }
+
+    #endregion
+
+    #region Aiming
 
     private void AimAtTarget()
     {
@@ -695,6 +701,12 @@ public sealed class TurretAI : AIController
 
         Vector3 targetPosition =
             GetPredictedTargetPosition();
+
+        if (!IsFiniteVector(
+                targetPosition))
+        {
+            return;
+        }
 
         AimStarted?.Invoke(
             this);
@@ -709,22 +721,24 @@ public sealed class TurretAI : AIController
     private void RotateBaseToward(
         Vector3 targetPosition)
     {
-        Vector3 worldDirection =
+        Vector3 direction =
             targetPosition -
             rotatingBase.position;
 
-        worldDirection.y =
+        direction.y =
             0f;
 
-        if (worldDirection.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
+        if (!IsFiniteVector(
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
         {
             return;
         }
 
         Quaternion desiredWorldRotation =
             Quaternion.LookRotation(
-                worldDirection.normalized,
+                direction.normalized,
                 Vector3.up);
 
         Quaternion relativeRotation =
@@ -732,29 +746,29 @@ public sealed class TurretAI : AIController
                 transform.rotation) *
             desiredWorldRotation;
 
-        float targetYaw =
+        float yaw =
             NormalizeAngle(
                 relativeRotation.eulerAngles.y);
 
-        targetYaw =
+        yaw =
             Mathf.Clamp(
-                targetYaw,
+                yaw,
                 -maximumHorizontalAngle,
                 maximumHorizontalAngle);
 
-        Quaternion clampedLocalRotation =
-            baseRestLocalRotation *
+        Quaternion targetRotation =
+            baseRestRotation *
             Quaternion.Euler(
                 0f,
-                targetYaw,
+                yaw,
                 0f);
 
         rotatingBase.localRotation =
             Quaternion.RotateTowards(
                 rotatingBase.localRotation,
-                clampedLocalRotation,
+                targetRotation,
                 horizontalTurnSpeed *
-                Time.deltaTime);
+                    Time.deltaTime);
     }
 
     private void RotateBarrelToward(
@@ -764,45 +778,55 @@ public sealed class TurretAI : AIController
             targetPosition -
             aimingBarrel.position;
 
-        if (direction.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
+        if (!IsFiniteVector(
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
         {
             return;
         }
 
         Vector3 localDirection =
-            rotatingBase.InverseTransformDirection(
-                direction.normalized);
+            rotatingBase
+                .InverseTransformDirection(
+                    direction.normalized);
 
-        float targetPitch =
+        float horizontalMagnitude =
+            new Vector2(
+                localDirection.x,
+                localDirection.z)
+            .magnitude;
+
+        float pitch =
             -Mathf.Atan2(
                 localDirection.y,
-                new Vector2(
-                    localDirection.x,
-                    localDirection.z)
-                .magnitude) *
+                horizontalMagnitude) *
             Mathf.Rad2Deg;
 
-        targetPitch =
+        pitch =
             Mathf.Clamp(
-                targetPitch,
-                -maximumVerticalAngle,
-                minimumVerticalAngle);
+                pitch,
+                -maximumUpAngle,
+                maximumDownAngle);
 
-        Quaternion desiredLocalRotation =
-            barrelRestLocalRotation *
+        Quaternion targetRotation =
+            barrelRestRotation *
             Quaternion.Euler(
-                targetPitch,
+                pitch,
                 0f,
                 0f);
 
         aimingBarrel.localRotation =
             Quaternion.RotateTowards(
                 aimingBarrel.localRotation,
-                desiredLocalRotation,
+                targetRotation,
                 verticalTurnSpeed *
-                Time.deltaTime);
+                    Time.deltaTime);
     }
+
+    #endregion
+
+    #region Rest Rotation
 
     private void UpdateReturnToRest()
     {
@@ -810,7 +834,9 @@ public sealed class TurretAI : AIController
             false;
 
         if (!returnToRestRotation)
+        {
             return;
+        }
 
         ChangeTurretState(
             TurretState.Returning);
@@ -820,9 +846,9 @@ public sealed class TurretAI : AIController
             rotatingBase.localRotation =
                 Quaternion.RotateTowards(
                     rotatingBase.localRotation,
-                    baseRestLocalRotation,
+                    baseRestRotation,
                     returnRotationSpeed *
-                    Time.deltaTime);
+                        Time.deltaTime);
         }
 
         if (aimingBarrel != null)
@@ -830,38 +856,29 @@ public sealed class TurretAI : AIController
             aimingBarrel.localRotation =
                 Quaternion.RotateTowards(
                     aimingBarrel.localRotation,
-                    barrelRestLocalRotation,
+                    barrelRestRotation,
                     returnRotationSpeed *
-                    Time.deltaTime);
+                        Time.deltaTime);
         }
     }
 
-    private void RestoreRestRotations(
-        bool instant)
+    private bool HasReturnedToRest()
     {
-        if (rotatingBase != null)
+        if (rotatingBase == null ||
+            aimingBarrel == null)
         {
-            rotatingBase.localRotation =
-                instant
-                    ? baseRestLocalRotation
-                    : Quaternion.RotateTowards(
-                        rotatingBase.localRotation,
-                        baseRestLocalRotation,
-                        returnRotationSpeed *
-                        Time.deltaTime);
+            return false;
         }
 
-        if (aimingBarrel != null)
-        {
-            aimingBarrel.localRotation =
-                instant
-                    ? barrelRestLocalRotation
-                    : Quaternion.RotateTowards(
-                        aimingBarrel.localRotation,
-                        barrelRestLocalRotation,
-                        returnRotationSpeed *
-                        Time.deltaTime);
-        }
+        return
+            Quaternion.Angle(
+                rotatingBase.localRotation,
+                baseRestRotation) <=
+                aimTolerance &&
+            Quaternion.Angle(
+                aimingBarrel.localRotation,
+                barrelRestRotation) <=
+                aimTolerance;
     }
 
     #endregion
@@ -881,13 +898,13 @@ public sealed class TurretAI : AIController
             return;
         }
 
-        Vector3 currentPosition =
+        Vector3 position =
             Target.position;
 
         if (!targetPositionInitialized)
         {
-            lastTargetPosition =
-                currentPosition;
+            previousTargetPosition =
+                position;
 
             targetPositionInitialized =
                 true;
@@ -900,27 +917,41 @@ public sealed class TurretAI : AIController
                 Time.deltaTime,
                 0.0001f);
 
-        estimatedTargetVelocity =
-            (currentPosition -
-             lastTargetPosition) /
+        Vector3 velocity =
+            (
+                position -
+                previousTargetPosition
+            ) /
             deltaTime;
 
-        lastTargetPosition =
-            currentPosition;
+        if (IsFiniteVector(
+                velocity))
+        {
+            estimatedTargetVelocity =
+                velocity;
+        }
+
+        previousTargetPosition =
+            position;
     }
 
     private Vector3 GetPredictedTargetPosition()
     {
         if (!IsTargetUsable())
-            return transform.position;
+        {
+            return
+                transform.position;
+        }
 
         Vector3 targetPosition =
             Target.position;
 
         if (!leadTarget ||
-            projectileSpeed <= 0f)
+            projectileSpeed <= 0f ||
+            projectileSpawnPoint == null)
         {
-            return targetPosition;
+            return
+                targetPosition;
         }
 
         float distance =
@@ -931,25 +962,26 @@ public sealed class TurretAI : AIController
         if (!float.IsFinite(
                 distance))
         {
-            return targetPosition;
+            return
+                targetPosition;
         }
 
         float leadTime =
             Mathf.Clamp(
                 distance /
-                projectileSpeed,
+                    projectileSpeed,
                 0f,
                 maximumLeadTime);
 
-        Vector3 predictedPosition =
+        Vector3 prediction =
             targetPosition +
             estimatedTargetVelocity *
-            leadTime;
+                leadTime;
 
         return
             IsFiniteVector(
-                predictedPosition)
-                ? predictedPosition
+                prediction)
+                ? prediction
                 : targetPosition;
     }
 
@@ -957,10 +989,23 @@ public sealed class TurretAI : AIController
 
     #region Firing
 
+    public bool FireImmediately()
+    {
+        if (!CanFire())
+        {
+            return false;
+        }
+
+        BeginFiring(
+            true);
+
+        return true;
+    }
+
     private bool CanFire()
     {
         return
-            initializedTurret &&
+            turretInitialized &&
             projectilePrefab != null &&
             projectileSpawnPoint != null &&
             IsTargetUsable() &&
@@ -968,12 +1013,14 @@ public sealed class TurretAI : AIController
             turretState !=
                 TurretState.Firing &&
             HasAimLock() &&
-            (!requireLineOfSight ||
-             HasLineOfSight());
+            (
+                !requireLineOfSight ||
+                HasTurretLineOfSight()
+            );
     }
 
-    private void BeginFiringSequence(
-        bool bypassWindup)
+    private void BeginFiring(
+        bool bypassWindup = false)
     {
         ChangeTurretState(
             TurretState.Firing);
@@ -993,13 +1040,16 @@ public sealed class TurretAI : AIController
             0f;
     }
 
-    private void UpdateFiringSequence()
+    private void UpdateFiring()
     {
         if (!IsTargetUsable())
         {
-            CancelFiringSequence();
+            CancelFiring();
+
             return;
         }
+
+        AimAtTarget();
 
         if (firingWindupTimer > 0f)
         {
@@ -1007,9 +1057,7 @@ public sealed class TurretAI : AIController
                 Mathf.Max(
                     0f,
                     firingWindupTimer -
-                    Time.deltaTime);
-
-            AimAtTarget();
+                        Time.deltaTime);
 
             return;
         }
@@ -1018,10 +1066,12 @@ public sealed class TurretAI : AIController
             Mathf.Max(
                 0f,
                 burstTimer -
-                Time.deltaTime);
+                    Time.deltaTime);
 
         if (burstTimer > 0f)
+        {
             return;
+        }
 
         FireProjectile();
 
@@ -1059,61 +1109,75 @@ public sealed class TurretAI : AIController
         Vector3 spawnPosition =
             projectileSpawnPoint.position +
             projectileSpawnPoint.forward *
-            projectileSpawnOffset;
+                projectileSpawnOffset;
 
-        Vector3 fireDirection =
+        Vector3 direction =
             GetPredictedTargetPosition() -
             spawnPosition;
 
         if (!IsFiniteVector(
-                fireDirection) ||
-            fireDirection.sqrMagnitude <=
-                MinimumDirectionSqrMagnitude)
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
         {
-            fireDirection =
+            direction =
                 projectileSpawnPoint.forward;
         }
 
-        fireDirection.Normalize();
+        if (!IsFiniteVector(
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
+        {
+            return;
+        }
 
-        Quaternion spawnRotation =
+        direction.Normalize();
+
+        Quaternion rotation =
             Quaternion.LookRotation(
-                fireDirection,
+                direction,
                 Vector3.up);
 
         GameObject projectile =
             Instantiate(
                 projectilePrefab,
                 spawnPosition,
-                spawnRotation);
+                rotation);
 
-        Rigidbody projectileRigidbody =
+        Rigidbody body =
             projectile.GetComponent<Rigidbody>();
 
-        projectileRigidbody ??=
+        body ??=
             projectile.GetComponentInChildren<Rigidbody>(
                 includeInactive: true);
 
-        if (projectileRigidbody != null)
+        if (body != null)
         {
             Vector3 velocity =
-                projectile.transform.forward *
-                projectileSpeed;
+                direction *
+                    projectileSpeed;
 
             if (inheritTurretVelocity)
             {
-                Rigidbody ownerRigidbody =
+                Rigidbody turretBody =
                     GetComponent<Rigidbody>();
 
-                if (ownerRigidbody != null)
+                if (turretBody != null &&
+                    IsFiniteVector(
+                        turretBody.linearVelocity))
                 {
                     velocity +=
-                        ownerRigidbody.linearVelocity;
+                        turretBody.linearVelocity;
                 }
             }
 
-            projectileRigidbody.linearVelocity =
-                velocity;
+            if (IsFiniteVector(
+                    velocity))
+            {
+                body.linearVelocity =
+                    velocity;
+            }
         }
 
         if (projectileLifetime > 0f)
@@ -1123,7 +1187,10 @@ public sealed class TurretAI : AIController
                 projectileLifetime);
         }
 
-        muzzleFlash?.Play();
+        if (muzzleFlash != null)
+        {
+            muzzleFlash.Play();
+        }
 
         PlaySound(
             fireSound);
@@ -1133,7 +1200,7 @@ public sealed class TurretAI : AIController
             projectile);
     }
 
-    private void CancelFiringSequence()
+    private void CancelFiring()
     {
         firingWindupTimer =
             0f;
@@ -1144,15 +1211,59 @@ public sealed class TurretAI : AIController
         remainingBurstShots =
             0;
 
-        ChangeTurretState(
-            TurretState.Searching);
+        if (turretState !=
+            TurretState.Disabled)
+        {
+            ChangeTurretState(
+                TurretState.Searching);
+        }
+    }
+
+    #endregion
+
+    #region Aim Lock
+
+    private bool HasAimLock()
+    {
+        if (!IsTargetUsable() ||
+            projectileSpawnPoint == null)
+        {
+            return false;
+        }
+
+        Vector3 direction =
+            GetPredictedTargetPosition() -
+            projectileSpawnPoint.position;
+
+        if (!IsFiniteVector(
+                direction))
+        {
+            return false;
+        }
+
+        if (direction.sqrMagnitude <=
+            0.0001f)
+        {
+            return true;
+        }
+
+        float angle =
+            Vector3.Angle(
+                projectileSpawnPoint.forward,
+                direction.normalized);
+
+        return
+            float.IsFinite(
+                angle) &&
+            angle <=
+                aimTolerance;
     }
 
     #endregion
 
     #region Line Of Sight
 
-    private bool HasLineOfSight()
+    private bool HasTurretLineOfSight()
     {
         if (!IsTargetUsable() ||
             projectileSpawnPoint == null)
@@ -1175,8 +1286,7 @@ public sealed class TurretAI : AIController
 
         if (!float.IsFinite(
                 distance) ||
-            distance <=
-                0f)
+            distance <= 0.001f)
         {
             return false;
         }
@@ -1184,225 +1294,113 @@ public sealed class TurretAI : AIController
         direction /=
             distance;
 
-        int hitCount =
-            Physics.RaycastNonAlloc(
+        if (!Physics.Raycast(
                 origin,
                 direction,
-                lineOfSightHits,
+                out RaycastHit hit,
                 distance,
-                lineOfSightBlockingLayers,
-                QueryTriggerInteraction.Ignore);
-
-        float closestDistance =
-            float.PositiveInfinity;
-
-        Transform closestTransform =
-            null;
-
-        for (int index = 0;
-             index < hitCount;
-             index++)
+                lineOfSightLayers,
+                QueryTriggerInteraction.Ignore))
         {
-            RaycastHit hit =
-                lineOfSightHits[index];
-
-            if (hit.collider == null ||
-                IsOwnCollider(
-                    hit.collider) ||
-                hit.distance >=
-                    closestDistance)
-            {
-                continue;
-            }
-
-            closestDistance =
-                hit.distance;
-
-            closestTransform =
-                hit.transform;
+            return true;
         }
 
-        if (closestTransform == null)
+        if (hit.collider == null)
+        {
             return true;
+        }
+
+        if (IsOwnCollider(
+                hit.collider))
+        {
+            return true;
+        }
+
+        Transform hitTransform =
+            hit.transform;
 
         return
-            closestTransform ==
+            hitTransform ==
                 Target ||
-            closestTransform.IsChildOf(
-                Target);
+            hitTransform.IsChildOf(
+                Target) ||
+            Target.IsChildOf(
+                hitTransform);
     }
 
     #endregion
 
-    #region Runtime Safety
+    #region Target
 
-    protected override bool RunRuntimeSafetyChecks()
-    {
-        if (!base.RunRuntimeSafetyChecks())
-            return false;
-
-        return RunTurretSafetyChecks();
-    }
-
-    private bool RunTurretSafetyChecks()
-    {
-        if (!ValidateTurretReferences())
-        {
-            ResolveTurretReferences();
-            ConfigureTurretComponents();
-
-            if (!ValidateTurretReferences())
-            {
-                EnterTurretSafetyShutdown(
-                    "Required turret references could not be restored.");
-
-                return false;
-            }
-        }
-
-        if (!ValidateTransform(
-                transform) ||
-            !ValidateTransform(
-                rotatingBase) ||
-            !ValidateTransform(
-                aimingBarrel))
-        {
-            EnterTurretSafetyShutdown(
-                "A turret Transform contains invalid values.");
-
-            return false;
-        }
-
-        if (restoreDisabledComponents &&
-            turretAudioSource != null &&
-            !turretAudioSource.enabled)
-        {
-            turretAudioSource.enabled =
-                true;
-        }
-
-        return true;
-    }
-
-    private bool ValidateTurretReferences()
+    private bool IsTargetUsable()
     {
         return
-            rotatingBase != null &&
-            aimingBarrel != null &&
-            projectileSpawnPoint != null;
+            Target != null &&
+            Target.gameObject.activeInHierarchy &&
+            IsFiniteVector(
+                Target.position);
     }
 
-    private bool ValidateTransform(
-        Transform targetTransform)
+    private void HandleTargetLost()
     {
-        if (targetTransform == null)
-            return false;
-
-        Vector3 scale =
-            targetTransform.lossyScale;
-
-        return
-            IsFiniteVector(
-                targetTransform.position) &&
-            IsFiniteQuaternion(
-                targetTransform.rotation) &&
-            IsFiniteVector(
-                scale) &&
-            Mathf.Abs(
-                scale.x) >=
-                minimumValidScale &&
-            Mathf.Abs(
-                scale.y) >=
-                minimumValidScale &&
-            Mathf.Abs(
-                scale.z) >=
-                minimumValidScale;
-    }
-
-    private void EnterTurretSafetyShutdown(
-        string reason)
-    {
-        initializedTurret =
+        aimSoundPlayed =
             false;
 
-        CancelFiringSequence();
+        ClearTarget();
+        CancelFiring();
+
+        SetState(
+            AIState.Returning);
+    }
+
+    #endregion
+
+    #region Reset
+
+    public void ResetTurret()
+    {
+        fireCooldownTimer =
+            0f;
+
+        firingWindupTimer =
+            0f;
+
+        burstTimer =
+            0f;
+
+        remainingBurstShots =
+            0;
+
+        estimatedTargetVelocity =
+            Vector3.zero;
+
+        targetPositionInitialized =
+            false;
+
+        aimSoundPlayed =
+            false;
+
+        if (rotatingBase != null)
+        {
+            rotatingBase.localRotation =
+                baseRestRotation;
+        }
+
+        if (aimingBarrel != null)
+        {
+            aimingBarrel.localRotation =
+                barrelRestRotation;
+        }
 
         ChangeTurretState(
-            TurretState.Disabled);
-
-        Debug.LogError(
-            $"{nameof(TurretAI)} entered safety shutdown on '{name}': {reason}",
-            this);
-
-        enabled =
-            false;
-    }
-
-    #endregion
-
-    #region Validation
-
-    private bool ValidateTurretConfiguration()
-    {
-        if (!ValidateTurretReferences())
-        {
-            Debug.LogError(
-                $"{nameof(TurretAI)} on '{name}' is missing required aiming references.",
-                this);
-
-            return false;
-        }
-
-        if (projectilePrefab == null)
-        {
-            Debug.LogWarning(
-                $"{nameof(TurretAI)} on '{name}' has no projectile prefab assigned.",
-                this);
-        }
-
-        return true;
-    }
-
-    #endregion
-
-    #region State
-
-    private void ChangeTurretState(
-        TurretState newState)
-    {
-        if (!Enum.IsDefined(
-                typeof(TurretState),
-                newState))
-        {
-            return;
-        }
-
-        if (turretState ==
-            newState)
-        {
-            return;
-        }
-
-        turretState =
-            newState;
-
-        TurretStateChanged?.Invoke(
-            this,
-            turretState);
-
-        if (logTurretState)
-        {
-            Debug.Log(
-                $"{nameof(TurretAI)} on '{name}' changed to {turretState}.",
-                this);
-        }
+            TurretState.Searching);
     }
 
     #endregion
 
     #region Timers
 
-    private void UpdateTurretTimers()
+    private void UpdateTimers()
     {
         if (fireCooldownTimer > 0f)
         {
@@ -1410,110 +1408,13 @@ public sealed class TurretAI : AIController
                 Mathf.Max(
                     0f,
                     fireCooldownTimer -
-                    Time.deltaTime);
+                        Time.deltaTime);
         }
     }
 
     #endregion
 
-    #region Helpers
-
-    private bool IsTargetUsable()
-    {
-        return
-            Target != null &&
-            Target.gameObject.activeInHierarchy;
-    }
-
-    private bool HasAimLock()
-    {
-        if (!IsTargetUsable() ||
-            projectileSpawnPoint == null)
-        {
-            return false;
-        }
-
-        Vector3 direction =
-            GetPredictedTargetPosition() -
-            projectileSpawnPoint.position;
-
-        if (direction.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
-        {
-            return true;
-        }
-
-        float angle =
-            Vector3.Angle(
-                projectileSpawnPoint.forward,
-                direction.normalized);
-
-        return
-            float.IsFinite(
-                angle) &&
-            angle <=
-                aimTolerance;
-    }
-
-    private bool HasReturnedToRest()
-    {
-        if (rotatingBase == null ||
-            aimingBarrel == null)
-        {
-            return false;
-        }
-
-        return
-            Quaternion.Angle(
-                rotatingBase.localRotation,
-                baseRestLocalRotation) <=
-                aimTolerance &&
-            Quaternion.Angle(
-                aimingBarrel.localRotation,
-                barrelRestLocalRotation) <=
-                aimTolerance;
-    }
-
-    private void HandleTargetUnavailable()
-    {
-        aimSoundPlayed =
-            false;
-
-        ClearTarget();
-        CancelFiringSequence();
-
-        SetState(
-            AIState.Returning);
-    }
-
-    protected override void PlaySound(
-        AudioClip clip)
-    {
-        if (turretAudioSource == null ||
-            clip == null)
-        {
-            return;
-        }
-
-        turretAudioSource.PlayOneShot(
-            clip);
-    }
-
-    private bool IsOwnCollider(
-        Collider candidate)
-    {
-        if (candidate == null)
-            return false;
-
-        Transform candidateTransform =
-            candidate.transform;
-
-        return
-            candidateTransform ==
-                transform ||
-            candidateTransform.IsChildOf(
-                transform);
-    }
+    #region References
 
     private Transform FindChildByName(
         string targetName)
@@ -1529,10 +1430,14 @@ public sealed class TurretAI : AIController
                 includeInactive: true);
 
         foreach (Transform child
-                 in children)
+            in children)
         {
-            if (child != null &&
-                string.Equals(
+            if (child == null)
+            {
+                continue;
+            }
+
+            if (string.Equals(
                     child.name,
                     targetName,
                     StringComparison.OrdinalIgnoreCase))
@@ -1542,6 +1447,45 @@ public sealed class TurretAI : AIController
         }
 
         return null;
+    }
+
+    #endregion
+
+    #region Audio
+
+    protected override void PlaySound(
+        AudioClip clip)
+    {
+        if (turretAudioSource == null ||
+            clip == null)
+        {
+            return;
+        }
+
+        turretAudioSource.PlayOneShot(
+            clip);
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private bool IsOwnCollider(
+        Collider candidate)
+    {
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        Transform candidateTransform =
+            candidate.transform;
+
+        return
+            candidateTransform ==
+                transform ||
+            candidateTransform.IsChildOf(
+                transform);
     }
 
     private static float NormalizeAngle(
@@ -1561,5 +1505,39 @@ public sealed class TurretAI : AIController
 
         return angle;
     }
+
+    #endregion
+
+    #region Gizmos
+
+    protected override void OnDrawGizmosSelected()
+    {
+        base.OnDrawGizmosSelected();
+
+        if (!drawAimDebug)
+        {
+            return;
+        }
+
+        Transform spawn =
+            projectileSpawnPoint != null
+                ? projectileSpawnPoint
+                : transform;
+
+        Gizmos.DrawRay(
+            spawn.position,
+            spawn.forward *
+                3f);
+
+        if (Target != null &&
+            IsFiniteVector(
+                Target.position))
+        {
+            Gizmos.DrawLine(
+                spawn.position,
+                Target.position);
+        }
+    }
+
     #endregion
 }

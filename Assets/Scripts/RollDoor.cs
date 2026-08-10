@@ -24,13 +24,9 @@ public class RollDoor : MonoBehaviour
 
     private IEnumerator LaunchPlayer(UltimatePlayerMovement player)
     {
-        player.DisableMovement();
+        player.SurrenderControl(Vector3.zero, 2.5f);
 
-        yield return new WaitForSeconds(1f);
-
-        player.EnableMovement();
-
-        player.LaunchFromSpring(
-            direction.forward * 30f);
+        yield return new WaitForSeconds(1);
+        player.Launch(direction.forward, 30);
     }
 }

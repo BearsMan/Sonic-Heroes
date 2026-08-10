@@ -32,7 +32,8 @@ public class RocketAccel : MonoBehaviour
     {
         if (speedCharacter != null && speedCharacter.TryGetComponent<UltimatePlayerMovement>(out var spUp))
         {
-            
+            if (spUp.leftFollower != null) spUp.leftFollower.SetActive(false);
+            if (spUp.rightFollower != null) spUp.rightFollower.SetActive(false);
         }
 
 

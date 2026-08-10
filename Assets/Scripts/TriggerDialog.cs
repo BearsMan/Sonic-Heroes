@@ -1,132 +1,50 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
-[RequireComponent(typeof(AudioSource))]
 public class TriggerDialog : MonoBehaviour
 {
-    [Header("Dialog")]
-    [SerializeField] private List<AudioClip> dialogs = new();
-    [SerializeField] private AudioSource omochaoTriggerDisable;
-    [SerializeField] private bool isPaused = false;
-
-    private bool dialogRead;
-    private Coroutine dialogCoroutine;
-    private UltimatePlayerMovement playerMovement;
-
-    private void Awake()
+    public List<AudioClip> dialogs = new List<AudioClip>();
+    private bool dialogread;
+    public AudioSource omochaoTriggerDisable;
+    public bool pause = false;
+    // Start is called before the first frame update
+    void Start()
     {
-        playerMovement = FindAnyObjectByType<UltimatePlayerMovement>();
 
-        if (omochaoTriggerDisable == null)
-        {
-            omochaoTriggerDisable = GetComponent<AudioSource>();
-        }
     }
 
+    // Update is called once per frame
+    void Update()
+    {
+
+    }
     private void OnTriggerEnter(Collider other)
     {
-        if (dialogRead ||
-            dialogCoroutine != null ||
-            !other.CompareTag("Player"))
+        if (dialogread == false && other.CompareTag("Player"))
         {
-            return;
-        }
+            dialogread = true;
 
-        dialogRead = true;
-        dialogCoroutine = StartCoroutine(ReadDialog());
+            StartCoroutine(ReadDialog());
+        }
     }
-
-    private IEnumerator ReadDialog()
+    public IEnumerator ReadDialog()
     {
-        if (playerMovement == null)
+        var up = Object.FindAnyObjectByType<UltimatePlayerMovement>();
+        if (up != null) up.tutorialPlaying = true;
+        int counter = 0;
+
+        while (counter < dialogs.Count)
         {
-            Debug.LogError(
-                $"{name}: UltimatePlayerMovement not found.",
-                this);
-
-            dialogRead = false;
-            dialogCoroutine = null;
-            yield break;
-        }
-
-        if (omochaoTriggerDisable == null)
-        {
-            Debug.LogError(
-                $"{name}: AudioSource missing.",
-                this);
-
-            dialogRead = false;
-            dialogCoroutine = null;
-            yield break;
-        }
-
-        if (dialogs.Count == 0)
-        {
-            Debug.LogWarning(
-                $"{name}: No dialog clips assigned.",
-                this);
-
-            dialogRead = false;
-            dialogCoroutine = null;
-            yield break;
-        }
-
-        playerMovement.DisableMovement();
-
-        try
-        {
-            foreach (AudioClip clip in dialogs)
+            omochaoTriggerDisable.clip = dialogs[counter];
+            omochaoTriggerDisable.Play();
+            while (omochaoTriggerDisable.isPlaying || pause)
             {
-                if (clip == null)
-                {
-                    continue;
-                }
-
-                omochaoTriggerDisable.clip = clip;
-                omochaoTriggerDisable.Play();
-
-                while (omochaoTriggerDisable.isPlaying || isPaused)
-                {
-                    yield return null;
-                }
+                yield return new WaitForSeconds(Time.deltaTime);
             }
+            counter += 1;
         }
-        finally
-        {
-            if (omochaoTriggerDisable != null)
-            {
-                omochaoTriggerDisable.clip = null;
-            }
-
-            dialogCoroutine = null;
-            playerMovement?.EnableMovement();
-        }
-    }
-
-    public void PauseDialog()
-    {
-        isPaused = true;
-    }
-
-    public void ResumeDialog()
-    {
-        isPaused = false;
-    }
-    private void OnDisable()
-    {
-        if (dialogCoroutine != null)
-        {
-            StopCoroutine(dialogCoroutine);
-            dialogCoroutine = null;
-        }
-
-        if (omochaoTriggerDisable != null)
-        {
-            omochaoTriggerDisable.Stop();
-            omochaoTriggerDisable.clip = null;
-        }
-        playerMovement?.EnableMovement();
+        var up2 = Object.FindAnyObjectByType<UltimatePlayerMovement>();
+        if (up2 != null) up2.tutorialPlaying = false;
     }
 }

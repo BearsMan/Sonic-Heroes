@@ -2,156 +2,191 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-[RequireComponent(typeof(Rigidbody))]
-public sealed class FireDunk : MonoBehaviour
+public class FireDunk : MonoBehaviour
 {
-    #region Animator Hashes
-
     private static readonly int FireDunkHash =
         Animator.StringToHash("Fire Dunk");
 
-    #endregion
-
-    #region Inspector
-
-    [Header("References")]
-    [SerializeField] private TeamActionController actionController;
-    [SerializeField] private CharacterSwitch characterSwitch;
-    [SerializeField] private UltimatePlayerMovement movement;
-    [SerializeField] private Rigidbody playerRigidbody;
-    [SerializeField] private Animator fireDunkAnimator;
-    [SerializeField] private AudioSource fireDunkAudioSource;
+    #region Input
 
     [Header("Input")]
-    [SerializeField] private KeyCode fireDunkKey = KeyCode.B;
-    [SerializeField] private bool readPlayerInput = true;
+
+    [SerializeField]
+    private KeyCode fireDunkKey = KeyCode.B;
+
+    [SerializeField]
+    private bool readPlayerInput = true;
+
+    #endregion
+
+    #region Projectile Movement
 
     [Header("Projectile Movement")]
-    [SerializeField, Min(0.1f)] private float projectileSpeed = 35f;
-    [SerializeField, Min(0f)] private float downwardAmount = 0.75f;
-    [SerializeField, Min(0.1f)] private float maximumTravelTime = 1.5f;
-    [SerializeField, Min(0f)] private float launchSpacing = 0.2f;
-    [SerializeField, Min(0f)] private float returnDelay = 0.15f;
-    [SerializeField] private float launchHeightOffset = 0.5f;
-    [SerializeField] private float launchSideOffset = 0.75f;
+
+    [SerializeField, Min(0.1f)]
+    private float projectileSpeed = 35f;
+
+    [SerializeField, Min(0f)]
+    private float downwardAmount = 0.75f;
+
+    [SerializeField, Min(0.1f)]
+    private float maximumTravelTime = 1.5f;
+
+    [SerializeField, Min(0f)]
+    private float launchSpacing = 0.15f;
+
+    [SerializeField, Min(0f)]
+    private float returnDelay = 0.2f;
+
+    [SerializeField]
+    private float launchHeight = 0.75f;
+
+    [SerializeField]
+    private float launchSideDistance = 0.75f;
+
+    #endregion
+
+    #region Impact
 
     [Header("Impact")]
-    [SerializeField, Min(0.1f)] private float projectileRadius = 0.5f;
-    [SerializeField, Min(0.1f)] private float explosionRadius = 3f;
-    [SerializeField, Min(0f)] private float damage = 25f;
-    [SerializeField] private LayerMask hitLayers = ~0;
-    [SerializeField] private LayerMask damageLayers = ~0;
+
+    [SerializeField, Min(0.05f)]
+    private float projectileRadius = 0.5f;
+
+    [SerializeField, Min(0.1f)]
+    private float explosionRadius = 3f;
+
+    [SerializeField, Min(1)]
+    private int damage = 25;
+
+    [SerializeField, Min(0f)]
+    private float knockbackForce = 12f;
+
+    [SerializeField]
+    private LayerMask hitLayers = ~0;
+
+    [SerializeField]
+    private LayerMask enemyLayers = ~0;
+
+    #endregion
+
+    #region References
+
+    [Header("References")]
+
+    [SerializeField]
+    private CharacterSwitch characterSwitch;
+
+    [SerializeField]
+    private Animator animator;
+
+    [SerializeField]
+    private AudioSource audioSource;
+
+    #endregion
+
+    #region Effects
 
     [Header("Effects")]
-    [SerializeField] private GameObject speedProjectileEffect;
-    [SerializeField] private GameObject flyProjectileEffect;
-    [SerializeField] private GameObject impactEffect;
-    [SerializeField, Min(0f)] private float impactEffectLifetime = 3f;
+
+    [SerializeField]
+    private GameObject speedFireEffect;
+
+    [SerializeField]
+    private GameObject flyFireEffect;
+
+    [SerializeField]
+    private GameObject impactEffect;
+
+    [SerializeField, Min(0f)]
+    private float effectLifetime = 3f;
+
+    #endregion
+
+    #region Audio
 
     [Header("Audio")]
-    [SerializeField] private AudioClip launchSound;
-    [SerializeField] private AudioClip impactSound;
-    [SerializeField] private AudioClip finishSound;
+
+    [SerializeField]
+    private AudioClip launchSound;
+
+    [SerializeField]
+    private AudioClip impactSound;
+
+    [SerializeField]
+    private AudioClip finishSound;
+
+    #endregion
+
+    #region Debug
 
     [Header("Debug")]
-    [SerializeField] private bool drawImpactRadius = true;
-    [SerializeField] private bool logStateChanges;
+
+    [SerializeField]
+    private bool drawTrajectory = true;
 
     #endregion
 
     #region Runtime State
 
-    private readonly List<ProjectileState> activeProjectiles = new();
-    private readonly HashSet<GameObject> damagedObjects = new();
+    private readonly List<FireProjectile> projectiles =
+        new();
+
+    private readonly HashSet<Health> damagedTargets =
+        new();
 
     private Coroutine fireDunkRoutine;
 
-    private bool isPerformingFireDunk;
-    private bool isInitialized;
-    private bool isShuttingDown;
-
-    private bool previousUseGravity;
-    private bool previousIsKinematic;
-    private Vector3 previousLinearVelocity;
-    private Vector3 previousAngularVelocity;
+    private bool isPerforming;
 
     #endregion
 
     #region Public API
 
-    public bool IsPerformingFireDunk => isPerformingFireDunk;
-    public bool IsInitialized => isInitialized;
-
-    public bool InitializeFireDunk()
-    {
-        if (isInitialized)
-            return true;
-
-        ResolveAllReferences();
-
-        if (!ValidateConfiguration())
-        {
-            AttemptAutomaticRepair();
-
-            if (!ValidateConfiguration())
-            {
-                Debug.LogError(
-                    $"FireDunk failed to initialize on '{name}'.",
-                    this);
-
-                isInitialized = false;
-                return false;
-            }
-        }
-
-        ResetRuntimeState();
-        SetProjectileEffectsActive(false);
-
-        isInitialized = true;
-        return true;
-    }
+    public bool IsPerforming =>
+        isPerforming;
 
     public bool TryStartFireDunk()
     {
-        if (!isInitialized &&
-            !InitializeFireDunk())
+        if (!CanUseFireDunk())
         {
             return false;
         }
 
-        ResolveDynamicReferences();
+        isPerforming =
+            true;
 
-        if (!CanStartFireDunk())
-            return false;
+        fireDunkRoutine =
+            StartCoroutine(
+                FireDunkRoutine());
 
-        bool accepted =
-            actionController.TryBeginAction(
-                TeamActionController.TeamAction.FireDunk,
-                TeamActionController.TeamFormation.Power,
-                mustBeGrounded: false,
-                mustBeAirborne: true,
-                surrenderMovementControl: true);
-
-        if (!accepted)
-            return false;
-
-        BeginFireDunk();
         return true;
     }
 
     public void CancelFireDunk()
     {
-        if (isPerformingFireDunk)
+        if (!isPerforming)
         {
-            FinishFireDunk();
+            return;
         }
+
+        if (fireDunkRoutine != null)
+        {
+            StopCoroutine(
+                fireDunkRoutine);
+
+            fireDunkRoutine =
+                null;
+        }
+
+        FinishFireDunk();
     }
 
     public void SetInputEnabled(
         bool enabled)
     {
-        readPlayerInput = enabled;
+        readPlayerInput =
+            enabled;
     }
 
     #endregion
@@ -160,44 +195,19 @@ public sealed class FireDunk : MonoBehaviour
 
     private void Awake()
     {
-        ResolveAllReferences();
-        SetProjectileEffectsActive(false);
-    }
-
-    private IEnumerator Start()
-    {
-        yield return null;
-
-        if (!InitializeFireDunk())
-        {
-            yield return null;
-            InitializeFireDunk();
-        }
-    }
-
-    private void OnEnable()
-    {
-        if (isShuttingDown)
-            return;
-
-        ResolveAllReferences();
-
-        if (isInitialized)
-        {
-            SetProjectileEffectsActive(false);
-        }
+        ResolveReferences();
     }
 
     private void Update()
     {
-        if (!isInitialized ||
-            !readPlayerInput ||
-            isPerformingFireDunk)
+        if (!readPlayerInput ||
+            isPerforming)
         {
             return;
         }
 
-        if (Input.GetKeyDown(fireDunkKey))
+        if (Input.GetKeyDown(
+                fireDunkKey))
         {
             TryStartFireDunk();
         }
@@ -205,13 +215,7 @@ public sealed class FireDunk : MonoBehaviour
 
     private void OnDisable()
     {
-        CleanupRuntimeState();
-    }
-
-    private void OnDestroy()
-    {
-        isShuttingDown = true;
-        CleanupDestroyedState();
+        CancelFireDunk();
     }
 
     private void OnValidate()
@@ -243,7 +247,7 @@ public sealed class FireDunk : MonoBehaviour
 
         projectileRadius =
             Mathf.Max(
-                0.1f,
+                0.05f,
                 projectileRadius);
 
         explosionRadius =
@@ -253,391 +257,68 @@ public sealed class FireDunk : MonoBehaviour
 
         damage =
             Mathf.Max(
-                0f,
+                1,
                 damage);
 
-        impactEffectLifetime =
+        knockbackForce =
             Mathf.Max(
                 0f,
-                impactEffectLifetime);
+                knockbackForce);
 
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
-        {
-            ResolveAllReferences();
-        }
-#endif
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        if (!drawImpactRadius)
-            return;
-
-        Vector3 direction =
-            GetLaunchDirection(0f);
-
-        Vector3 previewPoint =
-            transform.position +
-            direction *
-            projectileSpeed *
-            maximumTravelTime;
-
-        Gizmos.DrawLine(
-            transform.position,
-            previewPoint);
-
-        Gizmos.DrawWireSphere(
-            previewPoint,
-            explosionRadius);
+        effectLifetime =
+            Mathf.Max(
+                0f,
+                effectLifetime);
     }
 
     #endregion
 
-    #region Reference Resolution
+    #region Activation
 
-    private void ResolveAllReferences()
+    private bool CanUseFireDunk()
     {
-        ResolveStaticReferences();
-        ResolveDynamicReferences();
-        ConfigurePhysicsReference();
-    }
-
-    private void ResolveStaticReferences()
-    {
-        actionController ??=
-            GetComponent<TeamActionController>();
-
-        actionController ??=
-    GetComponentInChildren<TeamActionController>(
-        includeInactive: true);
-
-        actionController ??=
-            GetComponentInParent<TeamActionController>();
-
-        actionController ??=
-            GetComponentInChildren<TeamActionController>(
-                includeInactive: true);
-
-        actionController ??=
-            FindAnyObjectByType<TeamActionController>(
-                FindObjectsInactive.Include);
-
-        characterSwitch ??=
-            GetComponent<CharacterSwitch>();
-
-        characterSwitch ??=
-            GetComponentInParent<CharacterSwitch>();
-
-        characterSwitch ??=
-            GetComponentInChildren<CharacterSwitch>(
-                includeInactive: true);
-
-        characterSwitch ??=
-            FindAnyObjectByType<CharacterSwitch>(
-                FindObjectsInactive.Include);
-
-        playerRigidbody =
-    GetComponent<Rigidbody>();
-
-        if (playerRigidbody == null)
+        if (isPerforming)
         {
-            playerRigidbody =
-                gameObject.AddComponent<Rigidbody>();
-        }
-
-        if (fireDunkAudioSource == null)
-        {
-            fireDunkAudioSource =
-                GetComponent<AudioSource>();
-        }
-
-        if (fireDunkAudioSource == null)
-        {
-            fireDunkAudioSource =
-                gameObject.AddComponent<AudioSource>();
-        }
-
-        if (fireDunkAudioSource != null)
-        {
-            fireDunkAudioSource.playOnAwake = false;
-            fireDunkAudioSource.loop = false;
-        }
-    }
-
-    private void ResolveDynamicReferences()
-    {
-        movement =
-            ResolveLeaderMovement();
-
-        Transform powerCharacter =
-            ResolvePowerCharacter();
-
-        if (powerCharacter != null)
-        {
-            fireDunkAnimator =
-                powerCharacter.GetComponentInChildren<Animator>(
-                    includeInactive: true);
-        }
-
-        if (fireDunkAnimator == null)
-        {
-            fireDunkAnimator =
-                GetComponentInChildren<Animator>(
-                    includeInactive: true);
-        }
-
-        if (fireDunkAnimator == null &&
-            movement != null)
-        {
-            fireDunkAnimator =
-                movement.GetComponentInChildren<Animator>(
-                    includeInactive: true);
-        }
-    }
-
-    private UltimatePlayerMovement ResolveLeaderMovement()
-    {
-        if (movement != null &&
-            movement.gameObject.activeInHierarchy)
-        {
-            return movement;
-        }
-
-        UltimatePlayerMovement resolvedMovement =
-            GetComponent<UltimatePlayerMovement>();
-
-        resolvedMovement ??=
-            GetComponentInParent<UltimatePlayerMovement>();
-
-        if (characterSwitch != null)
-        {
-            Transform currentLeader =
-                characterSwitch.CurrentLeader;
-
-            if (currentLeader != null)
-            {
-                resolvedMovement ??=
-                    currentLeader.GetComponent<UltimatePlayerMovement>();
-
-                resolvedMovement ??=
-                    currentLeader.GetComponentInParent<UltimatePlayerMovement>();
-            }
-        }
-
-        resolvedMovement ??=
-            FindAnyObjectByType<UltimatePlayerMovement>(
-                FindObjectsInactive.Include);
-
-        return resolvedMovement;
-    }
-
-    private Transform ResolvePowerCharacter()
-    {
-        if (characterSwitch != null &&
-            characterSwitch.PowerCharacter != null)
-        {
-            return characterSwitch.PowerCharacter;
-        }
-
-        if (actionController != null &&
-            actionController.PowerCharacter != null)
-        {
-            return actionController.PowerCharacter;
-        }
-
-        return null;
-    }
-
-    private void AttemptAutomaticRepair()
-    {
-        ResolveStaticReferences();
-
-        if (playerRigidbody == null)
-        {
-            playerRigidbody =
-                GetComponent<Rigidbody>();
-        }
-
-        if (playerRigidbody == null)
-        {
-            playerRigidbody =
-                gameObject.AddComponent<Rigidbody>();
-        }
-
-        ResolveDynamicReferences();
-        ConfigurePhysicsReference();
-    }
-
-    private void ConfigurePhysicsReference()
-    {
-        if (playerRigidbody == null)
-            return;
-
-        playerRigidbody.interpolation =
-            RigidbodyInterpolation.Interpolate;
-
-        playerRigidbody.collisionDetectionMode =
-            playerRigidbody.isKinematic
-                ? CollisionDetectionMode.ContinuousSpeculative
-                : CollisionDetectionMode.ContinuousDynamic;
-
-        playerRigidbody.constraints |=
-            RigidbodyConstraints.FreezeRotationX |
-            RigidbodyConstraints.FreezeRotationY |
-            RigidbodyConstraints.FreezeRotationZ;
-
-        playerRigidbody.detectCollisions = true;
-    }
-
-    #endregion
-
-    #region Fire Dunk State
-
-    private bool CanStartFireDunk()
-    {
-        return
-            isInitialized &&
-            !isPerformingFireDunk &&
-            actionController != null &&
-            HasAvailableTeammate();
-    }
-
-    private bool HasAvailableTeammate()
-    {
-        if (actionController == null)
             return false;
+        }
+
+        ResolveReferences();
+
+        if (characterSwitch == null)
+        {
+            return false;
+        }
+
+        if (!IsTeamSonic())
+        {
+            return false;
+        }
+
+        if (characterSwitch.currentCharacterType !=
+            CHARACTERTYPES.Power)
+        {
+            return false;
+        }
 
         return
-            actionController.SpeedCharacter != null ||
-            actionController.FlyCharacter != null;
+            characterSwitch.speedCharacter != null ||
+            characterSwitch.flyingCharacter != null;
     }
 
-    private void BeginFireDunk()
+    private bool IsTeamSonic()
     {
-        isPerformingFireDunk = true;
+        TeamSetup teamSetup =
+            Object.FindAnyObjectByType<TeamSetup>();
 
-        CachePhysicsState();
-        StopHostMotion();
-
-        actionController.DisableFollowers();
-
-        PlayAnimation();
-        PlaySound(launchSound);
-
-        fireDunkRoutine =
-            StartCoroutine(
-                FireDunkRoutine());
-
-        LogStateChange(
-            "Fire Dunk started.");
-    }
-
-    private void FinishFireDunk()
-    {
-        if (!isPerformingFireDunk)
-            return;
-
-        isPerformingFireDunk = false;
-
-        if (fireDunkRoutine != null)
+        if (teamSetup == null ||
+            teamSetup.CurrentTeam == null)
         {
-            StopCoroutine(
-                fireDunkRoutine);
-
-            fireDunkRoutine = null;
+            return false;
         }
 
-        RestoreProjectiles();
-        RestorePhysicsState();
-
-        if (actionController != null)
-        {
-            actionController.EnableFollowers();
-
-            if (actionController.CurrentAction ==
-                TeamActionController.TeamAction.FireDunk)
-            {
-                actionController.EndAction(
-                    restoreMovementControl: true);
-            }
-        }
-        else
-        {
-            movement?.EnableMovement();
-        }
-
-        PlaySound(finishSound);
-
-        LogStateChange(
-            "Fire Dunk finished.");
-    }
-
-    private void ResetRuntimeState()
-    {
-        isPerformingFireDunk = false;
-        fireDunkRoutine = null;
-
-        activeProjectiles.Clear();
-        damagedObjects.Clear();
-    }
-
-    private void CachePhysicsState()
-    {
-        if (playerRigidbody == null)
-            return;
-
-        previousUseGravity =
-            playerRigidbody.useGravity;
-
-        previousIsKinematic =
-            playerRigidbody.isKinematic;
-
-        previousLinearVelocity =
-            playerRigidbody.linearVelocity;
-
-        previousAngularVelocity =
-            playerRigidbody.angularVelocity;
-    }
-
-    private void StopHostMotion()
-    {
-        if (playerRigidbody == null)
-            return;
-
-        if (!playerRigidbody.isKinematic)
-        {
-            playerRigidbody.linearVelocity =
-                Vector3.zero;
-
-            playerRigidbody.angularVelocity =
-                Vector3.zero;
-
-            playerRigidbody.useGravity = false;
-        }
-    }
-
-    private void RestorePhysicsState()
-    {
-        if (playerRigidbody == null)
-            return;
-
-        playerRigidbody.isKinematic =
-            previousIsKinematic;
-
-        playerRigidbody.useGravity =
-            previousUseGravity;
-
-        if (!playerRigidbody.isKinematic)
-        {
-            playerRigidbody.linearVelocity =
-                previousLinearVelocity;
-
-            playerRigidbody.angularVelocity =
-                previousAngularVelocity;
-
-            playerRigidbody.WakeUp();
-        }
+        return
+            teamSetup.CurrentTeam.name ==
+            "Team Sonic";
     }
 
     #endregion
@@ -646,139 +327,214 @@ public sealed class FireDunk : MonoBehaviour
 
     private IEnumerator FireDunkRoutine()
     {
-        activeProjectiles.Clear();
+        ResolveReferences();
 
-        AddProjectileIfAvailable(
-            actionController.SpeedCharacter,
-            -launchSideOffset,
-            speedProjectileEffect);
+        PlayAnimation();
 
-        AddProjectileIfAvailable(
-            actionController.FlyCharacter,
-            launchSideOffset,
-            flyProjectileEffect);
+        PlaySound(
+            launchSound);
 
-        if (activeProjectiles.Count == 0)
+        projectiles.Clear();
+
+        CreateProjectile(
+            characterSwitch.speedCharacter,
+            -launchSideDistance,
+            speedFireEffect);
+
+        CreateProjectile(
+            characterSwitch.flyingCharacter,
+            launchSideDistance,
+            flyFireEffect);
+
+        if (projectiles.Count == 0)
         {
             FinishFireDunk();
+
             yield break;
         }
 
         for (int index = 0;
-             index < activeProjectiles.Count;
-             index++)
+            index < projectiles.Count;
+            index++)
         {
-            PositionProjectileForLaunch(
-                activeProjectiles[index]);
+            LaunchProjectile(
+                projectiles[index]);
 
-            if (index < activeProjectiles.Count - 1 &&
+            if (index <
+                    projectiles.Count - 1 &&
                 launchSpacing > 0f)
             {
-                yield return new WaitForSeconds(
-                    launchSpacing);
+                yield return
+                    new WaitForSeconds(
+                        launchSpacing);
             }
         }
 
-        float elapsed = 0f;
-        WaitForFixedUpdate fixedUpdate = new();
+        float elapsed =
+            0f;
 
-        while (elapsed < maximumTravelTime &&
-               HasActiveProjectile())
+        WaitForFixedUpdate fixedUpdate =
+            new();
+
+        while (elapsed <
+                maximumTravelTime &&
+            HasActiveProjectile())
         {
             elapsed +=
                 Time.fixedDeltaTime;
 
-            for (int index = 0;
-                 index < activeProjectiles.Count;
-                 index++)
+            foreach (FireProjectile projectile
+                in projectiles)
             {
-                ProjectileState projectile =
-                    activeProjectiles[index];
-
-                if (!projectile.Finished)
+                if (projectile == null ||
+                    projectile.HasImpacted)
                 {
-                    MoveProjectile(
-                        projectile);
+                    continue;
                 }
+
+                MoveProjectile(
+                    projectile);
             }
 
-            yield return fixedUpdate;
+            yield return
+                fixedUpdate;
         }
 
-        for (int index = 0;
-             index < activeProjectiles.Count;
-             index++)
+        foreach (FireProjectile projectile
+            in projectiles)
         {
-            ProjectileState projectile =
-                activeProjectiles[index];
-
-            if (!projectile.Finished &&
-                projectile.Transform != null)
+            if (projectile == null ||
+                projectile.HasImpacted ||
+                projectile.Character == null)
             {
-                ImpactProjectile(
-                    projectile,
-                    projectile.Transform.position);
+                continue;
             }
+
+            ImpactProjectile(
+                projectile,
+                projectile.Character.position);
         }
 
         if (returnDelay > 0f)
         {
-            yield return new WaitForSeconds(
-                returnDelay);
+            yield return
+                new WaitForSeconds(
+                    returnDelay);
         }
+
+        fireDunkRoutine =
+            null;
 
         FinishFireDunk();
     }
 
     #endregion
 
-    #region Projectile Management
+    #region Projectile Creation
 
-    private void AddProjectileIfAvailable(
+    private void CreateProjectile(
         Transform character,
         float sideOffset,
-        GameObject effect)
+        GameObject fireEffectPrefab)
     {
-        if (character == null ||
-            IsHostObject(character))
+        if (character == null)
         {
             return;
         }
 
-        ProjectileState projectile =
-            CreateProjectile(
-                character,
-                sideOffset,
-                effect);
+        FireProjectile projectile =
+            new()
+            {
+                Character =
+                    character,
 
-        if (projectile != null)
+                OriginalParent =
+                    character.parent,
+
+                OriginalSiblingIndex =
+                    character.GetSiblingIndex(),
+
+                OriginalLocalPosition =
+                    character.localPosition,
+
+                OriginalLocalRotation =
+                    character.localRotation,
+
+                OriginalLocalScale =
+                    character.localScale,
+
+                SideOffset =
+                    sideOffset,
+
+                FireEffectPrefab =
+                    fireEffectPrefab
+            };
+
+        projectile.Follower =
+            character.GetComponentInParent<FollowerNavigation>();
+
+        if (projectile.Follower != null)
         {
-            activeProjectiles.Add(
-                projectile);
+            projectile.FollowerWasEnabled =
+                projectile.Follower.enabled;
         }
+
+        projectiles.Add(
+            projectile);
     }
 
-    private ProjectileState CreateProjectile(
-        Transform character,
-        float sideOffset,
-        GameObject effect)
+    private void LaunchProjectile(
+        FireProjectile projectile)
     {
-        if (character == null)
-            return null;
-
-        return new ProjectileState
+        if (projectile == null ||
+            projectile.Character == null)
         {
-            Transform = character,
-            OriginalParent = character.parent,
-            OriginalSiblingIndex = character.GetSiblingIndex(),
-            OriginalLocalPosition = character.localPosition,
-            OriginalLocalRotation = character.localRotation,
-            OriginalLocalScale = character.localScale,
-            Direction = GetLaunchDirection(sideOffset),
-            SideOffset = sideOffset,
-            Effect = effect,
-            Finished = false
-        };
+            return;
+        }
+
+        if (projectile.Follower != null)
+        {
+            projectile.Follower.enabled =
+                false;
+        }
+
+        projectile.Character.SetParent(
+            null,
+            worldPositionStays: true);
+
+        projectile.Character.position =
+            transform.position +
+            Vector3.up *
+                launchHeight +
+            transform.right *
+                projectile.SideOffset;
+
+        projectile.Direction =
+            GetLaunchDirection(
+                projectile.SideOffset);
+
+        if (projectile.Direction.sqrMagnitude >
+            0.0001f)
+        {
+            projectile.Character.rotation =
+                Quaternion.LookRotation(
+                    projectile.Direction,
+                    Vector3.up);
+        }
+
+        if (projectile.FireEffectPrefab != null)
+        {
+            projectile.FireEffect =
+                Instantiate(
+                    projectile.FireEffectPrefab,
+                    projectile.Character);
+
+            projectile.FireEffect.transform.localPosition =
+                Vector3.zero;
+
+            projectile.FireEffect.transform.localRotation =
+                Quaternion.identity;
+        }
     }
 
     private Vector3 GetLaunchDirection(
@@ -787,82 +543,49 @@ public sealed class FireDunk : MonoBehaviour
         Vector3 direction =
             transform.forward +
             transform.right *
-            sideOffset *
-            0.15f +
+                sideOffset *
+                0.15f +
             Vector3.down *
-            downwardAmount;
+                downwardAmount;
 
-        return direction.sqrMagnitude > 0.0001f
-            ? direction.normalized
-            : Vector3.down;
-    }
-
-    private void PositionProjectileForLaunch(
-        ProjectileState projectile)
-    {
-        if (projectile?.Transform == null)
-            return;
-
-        projectile.Transform.SetParent(
-            null,
-            worldPositionStays: true);
-
-        projectile.Transform.position =
-            transform.position +
-            Vector3.up *
-            launchHeightOffset +
-            transform.right *
-            projectile.SideOffset;
-
-        if (projectile.Direction.sqrMagnitude > 0.0001f)
+        if (!IsFiniteVector(
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
         {
-            projectile.Transform.rotation =
-                Quaternion.LookRotation(
-                    projectile.Direction,
-                    Vector3.up);
+            return Vector3.down;
         }
 
-        ConfigureProjectileEffect(
-            projectile);
+        return
+            direction.normalized;
     }
 
-    private void ConfigureProjectileEffect(
-        ProjectileState projectile)
-    {
-        if (projectile?.Effect == null ||
-            projectile.Transform == null)
-        {
-            return;
-        }
+    #endregion
 
-        projectile.Effect.transform.SetParent(
-            projectile.Transform,
-            worldPositionStays: false);
-
-        projectile.Effect.transform.localPosition =
-            Vector3.zero;
-
-        projectile.Effect.transform.localRotation =
-            Quaternion.identity;
-
-        projectile.Effect.SetActive(true);
-    }
+    #region Projectile Movement
 
     private void MoveProjectile(
-        ProjectileState projectile)
+        FireProjectile projectile)
     {
-        if (projectile?.Transform == null)
+        if (projectile.Character == null)
         {
-            if (projectile != null)
-            {
-                projectile.Finished = true;
-            }
+            projectile.HasImpacted =
+                true;
 
             return;
         }
 
         Vector3 currentPosition =
-            projectile.Transform.position;
+            projectile.Character.position;
+
+        if (!IsFiniteVector(
+                currentPosition))
+        {
+            projectile.HasImpacted =
+                true;
+
+            return;
+        }
 
         float distance =
             projectileSpeed *
@@ -877,17 +600,18 @@ public sealed class FireDunk : MonoBehaviour
                 hitLayers,
                 QueryTriggerInteraction.Ignore))
         {
-            if (IsTeamCollider(hit.collider))
+            if (IsTeamCollider(
+                    hit.collider))
             {
-                projectile.Transform.position =
-                    currentPosition +
-                    projectile.Direction *
-                    distance;
+                MoveProjectileForward(
+                    projectile,
+                    currentPosition,
+                    distance);
 
                 return;
             }
 
-            projectile.Transform.position =
+            projectile.Character.position =
                 hit.point;
 
             ImpactProjectile(
@@ -897,49 +621,43 @@ public sealed class FireDunk : MonoBehaviour
             return;
         }
 
-        projectile.Transform.position =
-            currentPosition +
-            projectile.Direction *
-            distance;
+        MoveProjectileForward(
+            projectile,
+            currentPosition,
+            distance);
     }
 
-    private void ImpactProjectile(
-        ProjectileState projectile,
-        Vector3 impactPosition)
+    private void MoveProjectileForward(
+        FireProjectile projectile,
+        Vector3 currentPosition,
+        float distance)
     {
-        if (projectile == null ||
-            projectile.Finished)
+        Vector3 nextPosition =
+            currentPosition +
+            projectile.Direction *
+                distance;
+
+        if (!IsFiniteVector(
+                nextPosition))
         {
+            projectile.HasImpacted =
+                true;
+
             return;
         }
 
-        projectile.Finished = true;
-
-        DamageArea(
-            impactPosition);
-
-        SpawnImpactEffect(
-            impactPosition);
-
-        if (projectile.Effect != null)
-        {
-            projectile.Effect.SetActive(false);
-        }
-
-        PlaySound(impactSound);
+        projectile.Character.position =
+            nextPosition;
     }
 
     private bool HasActiveProjectile()
     {
-        for (int index = 0;
-             index < activeProjectiles.Count;
-             index++)
+        foreach (FireProjectile projectile
+            in projectiles)
         {
-            ProjectileState projectile =
-                activeProjectiles[index];
-
             if (projectile != null &&
-                !projectile.Finished)
+                !projectile.HasImpacted &&
+                projectile.Character != null)
             {
                 return true;
             }
@@ -948,146 +666,229 @@ public sealed class FireDunk : MonoBehaviour
         return false;
     }
 
-    private void RestoreProjectiles()
-    {
-        for (int index = 0;
-             index < activeProjectiles.Count;
-             index++)
-        {
-            ProjectileState projectile =
-                activeProjectiles[index];
-
-            if (projectile?.Transform == null)
-                continue;
-
-            if (projectile.Effect != null)
-            {
-                projectile.Effect.SetActive(false);
-            }
-
-            if (projectile.OriginalParent != null)
-            {
-                projectile.Transform.SetParent(
-                    projectile.OriginalParent,
-                    worldPositionStays: false);
-
-                int maximumSiblingIndex =
-                    Mathf.Max(
-                        0,
-                        projectile.OriginalParent.childCount - 1);
-
-                projectile.Transform.SetSiblingIndex(
-                    Mathf.Clamp(
-                        projectile.OriginalSiblingIndex,
-                        0,
-                        maximumSiblingIndex));
-
-                projectile.Transform.localPosition =
-                    projectile.OriginalLocalPosition;
-
-                projectile.Transform.localRotation =
-                    projectile.OriginalLocalRotation;
-
-                projectile.Transform.localScale =
-                    projectile.OriginalLocalScale;
-            }
-        }
-
-        activeProjectiles.Clear();
-    }
-
     #endregion
 
-    #region Damage
+    #region Impact
+
+    private void ImpactProjectile(
+        FireProjectile projectile,
+        Vector3 impactPosition)
+    {
+        if (projectile == null ||
+            projectile.HasImpacted ||
+            !IsFiniteVector(
+                impactPosition))
+        {
+            return;
+        }
+
+        projectile.HasImpacted =
+            true;
+
+        DamageArea(
+            impactPosition);
+
+        SpawnImpactEffect(
+            impactPosition);
+
+        PlaySound(
+            impactSound);
+
+        if (projectile.FireEffect != null)
+        {
+            Destroy(
+                projectile.FireEffect);
+
+            projectile.FireEffect =
+                null;
+        }
+    }
 
     private void DamageArea(
         Vector3 impactPosition)
     {
+        damagedTargets.Clear();
+
         Collider[] hits =
             Physics.OverlapSphere(
                 impactPosition,
                 explosionRadius,
-                damageLayers,
-                QueryTriggerInteraction.Collide);
-
-        damagedObjects.Clear();
+                enemyLayers,
+                QueryTriggerInteraction.Ignore);
 
         foreach (Collider hit in hits)
         {
             if (hit == null ||
-                IsTeamCollider(hit))
+                IsTeamCollider(
+                    hit))
             {
                 continue;
             }
 
-            GameObject target =
-                hit.attachedRigidbody != null
-                    ? hit.attachedRigidbody.gameObject
-                    : hit.gameObject;
+            Health health =
+                hit.GetComponent<Health>();
 
-            if (target == null ||
-                !damagedObjects.Add(target))
+            health ??=
+                hit.GetComponentInParent<Health>();
+
+            if (health == null ||
+                health.dead ||
+                !damagedTargets.Add(
+                    health))
             {
                 continue;
             }
 
-            target.SendMessage(
-                "TakeDamage",
-                damage,
-                SendMessageOptions.DontRequireReceiver);
+            health.TakeDamage(
+                damage);
 
-            target.SendMessage(
-                "Break",
-                SendMessageOptions.DontRequireReceiver);
+            ApplyKnockback(
+                hit,
+                impactPosition);
         }
     }
+
+    private void ApplyKnockback(
+        Collider target,
+        Vector3 impactPosition)
+    {
+        if (knockbackForce <= 0f)
+        {
+            return;
+        }
+
+        Rigidbody targetBody =
+            target.attachedRigidbody;
+
+        if (targetBody == null ||
+            targetBody.isKinematic)
+        {
+            return;
+        }
+
+        Vector3 direction =
+            targetBody.worldCenterOfMass -
+            impactPosition;
+
+        direction.y =
+            Mathf.Max(
+                direction.y,
+                0.25f);
+
+        if (!IsFiniteVector(
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
+        {
+            direction =
+                Vector3.up;
+        }
+
+        targetBody.AddForce(
+            direction.normalized *
+                knockbackForce,
+            ForceMode.VelocityChange);
+    }
+
+    #endregion
+
+    #region Restoration
+
+    private void FinishFireDunk()
+    {
+        RestoreTeammates();
+
+        isPerforming =
+            false;
+
+        PlaySound(
+            finishSound);
+    }
+
+    private void RestoreTeammates()
+    {
+        foreach (FireProjectile projectile
+            in projectiles)
+        {
+            if (projectile == null ||
+                projectile.Character == null)
+            {
+                continue;
+            }
+
+            if (projectile.FireEffect != null)
+            {
+                Destroy(
+                    projectile.FireEffect);
+
+                projectile.FireEffect =
+                    null;
+            }
+
+            if (projectile.OriginalParent != null)
+            {
+                projectile.Character.SetParent(
+                    projectile.OriginalParent,
+                    worldPositionStays: false);
+
+                projectile.Character.localPosition =
+                    projectile.OriginalLocalPosition;
+
+                projectile.Character.localRotation =
+                    projectile.OriginalLocalRotation;
+
+                projectile.Character.localScale =
+                    projectile.OriginalLocalScale;
+
+                int siblingIndex =
+                    Mathf.Clamp(
+                        projectile.OriginalSiblingIndex,
+                        0,
+                        Mathf.Max(
+                            0,
+                            projectile.OriginalParent.childCount - 1));
+
+                projectile.Character.SetSiblingIndex(
+                    siblingIndex);
+            }
+
+            if (projectile.Follower != null)
+            {
+                projectile.Follower.enabled =
+                    projectile.FollowerWasEnabled;
+            }
+        }
+
+        projectiles.Clear();
+        damagedTargets.Clear();
+    }
+
+    #endregion
+
+    #region Team Filtering
 
     private bool IsTeamCollider(
         Collider candidate)
     {
-        if (candidate == null)
-            return false;
-
-        return IsTeamTransform(
-            candidate.transform);
-    }
-
-    private bool IsTeamTransform(
-        Transform candidate)
-    {
-        if (candidate == null)
-            return false;
-
-        if (candidate == transform ||
-            candidate.IsChildOf(transform) ||
-            transform.IsChildOf(candidate))
+        if (candidate == null ||
+            characterSwitch == null)
         {
-            return true;
+            return false;
         }
 
-        if (actionController == null)
-            return false;
+        Transform candidateTransform =
+            candidate.transform;
 
         return
             MatchesCharacter(
-                candidate,
-                actionController.SpeedCharacter) ||
+                candidateTransform,
+                characterSwitch.speedCharacter) ||
             MatchesCharacter(
-                candidate,
-                actionController.FlyCharacter) ||
+                candidateTransform,
+                characterSwitch.flyingCharacter) ||
             MatchesCharacter(
-                candidate,
-                actionController.PowerCharacter);
-    }
-
-    private bool IsHostObject(
-        Transform candidate)
-    {
-        return
-            candidate == null ||
-            candidate == transform ||
-            candidate.IsChildOf(transform) ||
-            transform.IsChildOf(candidate);
+                candidateTransform,
+                characterSwitch.powerCharacter);
     }
 
     private static bool MatchesCharacter(
@@ -1102,195 +903,177 @@ public sealed class FireDunk : MonoBehaviour
 
         return
             candidate == character ||
-            candidate.IsChildOf(character) ||
-            character.IsChildOf(candidate);
+            candidate.IsChildOf(
+                character) ||
+            character.IsChildOf(
+                candidate);
     }
 
     #endregion
 
-    #region Effects
+    #region References
 
-    private void SpawnImpactEffect(
-        Vector3 impactPosition)
+    private void ResolveReferences()
     {
-        if (impactEffect == null)
-            return;
+        characterSwitch ??=
+            GetComponentInParent<CharacterSwitch>();
 
-        GameObject spawnedEffect =
-            Instantiate(
-                impactEffect,
-                impactPosition,
-                Quaternion.identity);
+        characterSwitch ??=
+            Object.FindAnyObjectByType<CharacterSwitch>();
 
-        if (impactEffectLifetime > 0f)
+        if (animator == null &&
+            characterSwitch != null &&
+            characterSwitch.powerCharacter != null)
         {
-            Destroy(
-                spawnedEffect,
-                impactEffectLifetime);
-        }
-    }
-
-    private void SetProjectileEffectsActive(
-        bool active)
-    {
-        if (speedProjectileEffect != null)
-        {
-            speedProjectileEffect.SetActive(active);
+            animator =
+                characterSwitch.powerCharacter
+                    .GetComponentInChildren<Animator>(
+                        includeInactive: true);
         }
 
-        if (flyProjectileEffect != null)
-        {
-            flyProjectileEffect.SetActive(active);
-        }
+        audioSource ??=
+            GetComponent<AudioSource>();
+
+        audioSource ??=
+            GetComponentInParent<AudioSource>();
     }
 
     #endregion
 
-    #region Animation And Audio
+    #region Presentation
 
     private void PlayAnimation()
     {
-        ResolveDynamicReferences();
-
-        if (fireDunkAnimator != null)
+        if (animator == null ||
+            !animator.isActiveAndEnabled ||
+            animator.runtimeAnimatorController ==
+                null)
         {
-            fireDunkAnimator.SetTrigger(
+            return;
+        }
+
+        foreach (
+            AnimatorControllerParameter parameter
+            in animator.parameters)
+        {
+            if (parameter.nameHash !=
+                FireDunkHash)
+            {
+                continue;
+            }
+
+            animator.SetTrigger(
                 FireDunkHash);
+
+            return;
         }
     }
 
     private void PlaySound(
         AudioClip clip)
     {
-        if (fireDunkAudioSource == null ||
+        if (audioSource == null ||
             clip == null)
         {
             return;
         }
 
-        fireDunkAudioSource.PlayOneShot(
+        audioSource.PlayOneShot(
             clip);
+    }
+
+    private void SpawnImpactEffect(
+        Vector3 position)
+    {
+        if (impactEffect == null ||
+            !IsFiniteVector(
+                position))
+        {
+            return;
+        }
+
+        GameObject effect =
+            Instantiate(
+                impactEffect,
+                position,
+                Quaternion.identity);
+
+        if (effectLifetime > 0f)
+        {
+            Destroy(
+                effect,
+                effectLifetime);
+        }
     }
 
     #endregion
 
     #region Validation
 
-    private bool ValidateConfiguration()
+    private static bool IsFiniteVector(
+        Vector3 value)
     {
-        bool valid = true;
-
-        if (actionController == null)
-        {
-            Debug.LogError(
-                "FireDunk requires TeamActionController.",
-                this);
-
-            valid = false;
-        }
-
-        if (characterSwitch == null)
-        {
-            Debug.LogWarning(
-                "FireDunk could not find CharacterSwitch. " +
-                "The Power character Animator will use fallback resolution.",
-                this);
-        }
-
-        if (playerRigidbody == null)
-        {
-            Debug.LogError(
-                "FireDunk could not create or resolve its Rigidbody.",
-                this);
-
-            valid = false;
-        }
-
-        if (fireDunkAnimator == null)
-        {
-            Debug.LogWarning(
-                "FireDunk could not find the Power character Animator. The attack will continue without animation.",
-                this);
-        }
-
-        if (fireDunkAudioSource == null)
-        {
-            Debug.LogWarning(
-                "FireDunk could not create or resolve an AudioSource. The attack will continue without audio.",
-                this);
-        }
-
-        return valid;
+        return
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z);
     }
 
     #endregion
 
-    #region Cleanup
+    #region Gizmos
 
-    private void CleanupRuntimeState()
+    private void OnDrawGizmosSelected()
     {
-        if (isPerformingFireDunk)
+        if (!drawTrajectory)
         {
-            FinishFireDunk();
-        }
-        else
-        {
-            RestoreProjectiles();
-            SetProjectileEffectsActive(false);
-        }
-    }
-
-    private void CleanupDestroyedState()
-    {
-        CleanupRuntimeState();
-
-        isInitialized = false;
-
-        actionController = null;
-        characterSwitch = null;
-        movement = null;
-        playerRigidbody = null;
-        fireDunkAnimator = null;
-        fireDunkAudioSource = null;
-
-        speedProjectileEffect = null;
-        flyProjectileEffect = null;
-        impactEffect = null;
-
-        damagedObjects.Clear();
-    }
-
-    #endregion
-
-    #region Debug
-
-    private void LogStateChange(
-        string message)
-    {
-        if (!logStateChanges)
             return;
+        }
 
-        Debug.Log(
-            message,
-            this);
+        Vector3 direction =
+            GetLaunchDirection(
+                0f);
+
+        Vector3 destination =
+            transform.position +
+            direction *
+                projectileSpeed *
+                maximumTravelTime;
+
+        Gizmos.DrawLine(
+            transform.position,
+            destination);
+
+        Gizmos.DrawWireSphere(
+            destination,
+            explosionRadius);
     }
 
     #endregion
 
     #region Internal Types
 
-    private sealed class ProjectileState
+    private class FireProjectile
     {
-        public Transform Transform;
+        public Transform Character;
         public Transform OriginalParent;
-        public int OriginalSiblingIndex;
+
+        public FollowerNavigation Follower;
+
+        public GameObject FireEffectPrefab;
+        public GameObject FireEffect;
+
         public Vector3 OriginalLocalPosition;
         public Quaternion OriginalLocalRotation;
         public Vector3 OriginalLocalScale;
         public Vector3 Direction;
+
         public float SideOffset;
-        public GameObject Effect;
-        public bool Finished;
+
+        public int OriginalSiblingIndex;
+
+        public bool FollowerWasEnabled;
+        public bool HasImpacted;
     }
 
     #endregion

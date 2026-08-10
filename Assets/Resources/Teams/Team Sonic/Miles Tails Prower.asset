@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2bbeb479c1424f4dbec6ad5fbd80b87, type: 3}
   m_Name: Miles Tails Prower
   m_EditorClassIdentifier: 
-  prefab: {fileID: 6994810384107432601, guid: c24763ea0b02d0447b3cb9d2c6e9bbd8, type: 3}
+  prefab: {fileID: 0}
   icon: {fileID: -7598729109619003899, guid: 79b62094f70e6df439f242adca055767, type: 3}
   face: {fileID: -7106509431525651853, guid: 79b62094f70e6df439f242adca055767, type: 3}

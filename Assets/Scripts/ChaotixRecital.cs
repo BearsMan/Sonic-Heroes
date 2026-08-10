@@ -3,78 +3,103 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public sealed class ChaotixRecital : MonoBehaviour
+public class ChaotixRecital : MonoBehaviour
 {
-    #region Constants
-
-    private const int MaxTargetResults = 64;
-    private const float MinimumDirectionMagnitude = 0.001f;
-    private const float MinimumDuration = 0.05f;
-
-    #endregion
-
-    #region Animator Hashes
-
-    private static readonly int ChaotixRecitalHash =
+    private static readonly int RecitalHash =
         Animator.StringToHash("Chaotix Recital");
 
+    #region Team Blast
+
+    [Header("Team Blast")]
+
+    [SerializeField, Min(0.1f)]
+    private float blastRadius = 25f;
+
+    [SerializeField, Min(1)]
+    private int blastDamage = 100;
+
+    [SerializeField, Min(0f)]
+    private float knockbackForce = 15f;
+
+    [SerializeField]
+    private LayerMask enemyLayers = ~0;
+
     #endregion
 
-    #region Inspector
+    #region Timing
+
+    [Header("Timing")]
+
+    [SerializeField, Min(0f)]
+    private float activationDelay = 0.25f;
+
+    [SerializeField, Min(0f)]
+    private float activeDuration = 1f;
+
+    [SerializeField, Min(0f)]
+    private float recoveryDuration = 0.5f;
+
+    #endregion
+
+    #region References
 
     [Header("References")]
-    [SerializeField] private TeamActionController actionController;
-    [SerializeField] private TeamBlast teamBlast;
-    [SerializeField] private Animator animator;
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private Transform blastOrigin;
 
-    [Header("Recital")]
-    [SerializeField, Min(0.1f)] private float blastRadius = 18f;
-    [SerializeField, Min(0f)] private float damage = 100f;
-    [SerializeField, Min(0f)] private float knockbackForce = 18f;
-    [SerializeField, Min(MinimumDuration)] private float activeDuration = 0.9f;
-    [SerializeField, Min(1)] private int pulseCount = 3;
-    [SerializeField, Min(0f)] private float pulseInterval = 0.15f;
-    [SerializeField] private LayerMask enemyLayers = ~0;
+    [SerializeField]
+    private Transform blastOrigin;
 
-    [Header("Rewards")]
-    [SerializeField, Min(0)] private int ringRewardPerEnemy = 10;
-    [SerializeField, Min(0f)] private float gaugeRewardPerEnemy = 15f;
-    [SerializeField, Min(0)] private int maximumRewardedEnemies = 12;
+    [SerializeField]
+    private Animator animator;
+
+    [SerializeField]
+    private AudioSource audioSource;
+
+    #endregion
+
+    #region Effects
 
     [Header("Effects")]
-    [SerializeField] private GameObject activationEffect;
-    [SerializeField] private GameObject pulseEffect;
-    [SerializeField] private GameObject rewardEffect;
-    [SerializeField, Min(0f)] private float effectLifetime = 4f;
+
+    [SerializeField]
+    private GameObject activationEffect;
+
+    [SerializeField]
+    private GameObject blastEffect;
+
+    [SerializeField, Min(0f)]
+    private float effectLifetime = 4f;
+
+    #endregion
+
+    #region Audio
 
     [Header("Audio")]
-    [SerializeField] private AudioClip activationSound;
-    [SerializeField] private AudioClip pulseSound;
-    [SerializeField] private AudioClip rewardSound;
+
+    [SerializeField]
+    private AudioClip activationSound;
+
+    [SerializeField]
+    private AudioClip blastSound;
+
+    #endregion
+
+    #region Debug
 
     [Header("Debug")]
-    [SerializeField] private bool drawBlastRadius = true;
-    [SerializeField] private bool logStateChanges;
+
+    [SerializeField]
+    private bool drawBlastRadius = true;
 
     #endregion
 
     #region Runtime State
 
-    private readonly Collider[] targetResults =
-        new Collider[MaxTargetResults];
-
-    private readonly HashSet<GameObject> affectedTargets =
+    private readonly HashSet<Health> affectedEnemies =
         new();
 
     private Coroutine recitalRoutine;
 
     private bool isActive;
-    private bool isInitialized;
-    private bool isShuttingDown;
-
-    private int defeatedEnemyCount;
 
     #endregion
 
@@ -83,27 +108,42 @@ public sealed class ChaotixRecital : MonoBehaviour
     public bool IsActive =>
         isActive;
 
-    public bool IsInitialized =>
-        isInitialized;
-
-    public int DefeatedEnemyCount =>
-        defeatedEnemyCount;
-
     public bool TryActivate()
     {
         if (!CanActivate())
+        {
             return false;
+        }
 
-        BeginChaotixRecital();
+        isActive =
+            true;
+
+        affectedEnemies.Clear();
+
+        recitalRoutine =
+            StartCoroutine(
+                RecitalRoutine());
+
         return true;
     }
 
     public void Cancel()
     {
         if (!isActive)
+        {
             return;
+        }
 
-        FinishChaotixRecital();
+        if (recitalRoutine != null)
+        {
+            StopCoroutine(
+                recitalRoutine);
+
+            recitalRoutine =
+                null;
+        }
+
+        Finish();
     }
 
     #endregion
@@ -112,36 +152,12 @@ public sealed class ChaotixRecital : MonoBehaviour
 
     private void Awake()
     {
-        CacheComponents();
-        ResolveReferences();
-    }
-
-    private void Start()
-    {
-        if (!InitializeChaotixRecital())
-        {
-            enabled = false;
-        }
-    }
-
-    private void OnEnable()
-    {
-        if (isShuttingDown)
-            return;
-
-        CacheComponents();
         ResolveReferences();
     }
 
     private void OnDisable()
     {
-        CleanupRuntimeState();
-    }
-
-    private void OnDestroy()
-    {
-        isShuttingDown = true;
-        CleanupDestroyedState();
+        Cancel();
     }
 
     private void OnValidate()
@@ -151,45 +167,30 @@ public sealed class ChaotixRecital : MonoBehaviour
                 0.1f,
                 blastRadius);
 
-        damage =
+        blastDamage =
             Mathf.Max(
-                0f,
-                damage);
+                1,
+                blastDamage);
 
         knockbackForce =
             Mathf.Max(
                 0f,
                 knockbackForce);
 
+        activationDelay =
+            Mathf.Max(
+                0f,
+                activationDelay);
+
         activeDuration =
             Mathf.Max(
-                MinimumDuration,
+                0f,
                 activeDuration);
 
-        pulseCount =
-            Mathf.Max(
-                1,
-                pulseCount);
-
-        pulseInterval =
+        recoveryDuration =
             Mathf.Max(
                 0f,
-                pulseInterval);
-
-        ringRewardPerEnemy =
-            Mathf.Max(
-                0,
-                ringRewardPerEnemy);
-
-        gaugeRewardPerEnemy =
-            Mathf.Max(
-                0f,
-                gaugeRewardPerEnemy);
-
-        maximumRewardedEnemies =
-            Mathf.Max(
-                0,
-                maximumRewardedEnemies);
+                recoveryDuration);
 
         effectLifetime =
             Mathf.Max(
@@ -197,88 +198,26 @@ public sealed class ChaotixRecital : MonoBehaviour
                 effectLifetime);
     }
 
-    private void OnDrawGizmosSelected()
-    {
-        if (!drawBlastRadius)
-            return;
-
-        Gizmos.DrawWireSphere(
-            GetBlastPosition(),
-            blastRadius);
-    }
-
     #endregion
 
-    #region Initialization
-
-    public bool InitializeChaotixRecital()
-    {
-        if (isInitialized)
-            return true;
-
-        CacheComponents();
-        ResolveReferences();
-
-        if (!ValidateConfiguration())
-        {
-            Debug.LogError(
-                $"ChaotixRecital failed to initialize on '{name}'.",
-                this);
-
-            isInitialized = false;
-            return false;
-        }
-
-        ResetRuntimeState();
-
-        isInitialized = true;
-        return true;
-    }
-
-    private void CacheComponents()
-    {
-        actionController ??=
-            GetComponentInParent<TeamActionController>();
-
-        teamBlast ??=
-            GetComponentInParent<TeamBlast>();
-
-        audioSource ??=
-            GetComponentInParent<AudioSource>();
-    }
-
-    private void ResolveReferences()
-    {
-        animator ??=
-            GetComponentInChildren<Animator>(
-                includeInactive: true);
-
-        blastOrigin ??=
-            transform;
-    }
-
-    #endregion
-
-    #region Chaotix Recital State
+    #region Activation
 
     private bool CanActivate()
     {
-        return
-            isInitialized &&
-            !isActive &&
-            TeamSetup.Instance != null &&
-            TeamSetup.Instance.PlayableTeam ==
-                PlayableTeam.TeamChaotix &&
-            actionController != null;
+        if (isActive)
+        {
+            return false;
+        }
+
+        return IsTeamChaotix();
     }
 
-    private void BeginChaotixRecital()
+    private IEnumerator RecitalRoutine()
     {
-        isActive = true;
-        defeatedEnemyCount = 0;
-        affectedTargets.Clear();
+        ResolveReferences();
 
         PlayAnimation();
+
         PlaySound(
             activationSound);
 
@@ -286,294 +225,221 @@ public sealed class ChaotixRecital : MonoBehaviour
             activationEffect,
             GetBlastPosition());
 
-        recitalRoutine =
-            StartCoroutine(
-                ChaotixRecitalRoutine());
-
-        LogStateChange(
-            "Chaotix Recital started.");
-    }
-
-    private IEnumerator ChaotixRecitalRoutine()
-    {
-        WaitForSeconds pulseWait =
-            pulseInterval > 0f
-                ? new WaitForSeconds(
-                    pulseInterval)
-                : null;
-
-        for (int pulseIndex = 0;
-             pulseIndex < pulseCount;
-             pulseIndex++)
-        {
-            ApplyRecitalPulse();
-
-            if (pulseIndex <
-                    pulseCount - 1 &&
-                pulseWait != null)
-            {
-                yield return pulseWait;
-            }
-        }
-
-        ApplyRewards();
-
-        float remainingDuration =
-            Mathf.Max(
-                0f,
-                activeDuration -
-                pulseInterval *
-                Mathf.Max(
-                    0,
-                    pulseCount - 1));
-
-        if (remainingDuration > 0f)
+        if (activationDelay > 0f)
         {
             yield return
                 new WaitForSeconds(
-                    remainingDuration);
+                    activationDelay);
         }
 
-        FinishChaotixRecital();
-    }
+        PerformTeamBlast();
 
-    private void FinishChaotixRecital()
-    {
-        if (!isActive)
-            return;
+        PlaySound(
+            blastSound);
 
-        isActive = false;
+        SpawnEffect(
+            blastEffect,
+            GetBlastPosition());
 
-        if (recitalRoutine != null)
+        if (activeDuration > 0f)
         {
-            StopCoroutine(
-                recitalRoutine);
-
-            recitalRoutine = null;
+            yield return
+                new WaitForSeconds(
+                    activeDuration);
         }
 
-        affectedTargets.Clear();
+        if (recoveryDuration > 0f)
+        {
+            yield return
+                new WaitForSeconds(
+                    recoveryDuration);
+        }
 
-        LogStateChange(
-            $"Chaotix Recital finished after defeating {defeatedEnemyCount} enemies.");
+        recitalRoutine =
+            null;
+
+        Finish();
     }
 
-    private void ResetRuntimeState()
+    private void Finish()
     {
-        isActive = false;
-        recitalRoutine = null;
-        defeatedEnemyCount = 0;
-        affectedTargets.Clear();
+        isActive =
+            false;
+
+        affectedEnemies.Clear();
     }
 
     #endregion
 
-    #region Damage
+    #region Team Blast Damage
 
-    private void ApplyRecitalPulse()
+    private void PerformTeamBlast()
     {
-        SpawnEffect(
-            pulseEffect,
-            GetBlastPosition());
+        Vector3 position =
+            GetBlastPosition();
 
-        PlaySound(
-            pulseSound);
-
-        int resultCount =
-            Physics.OverlapSphereNonAlloc(
-                GetBlastPosition(),
-                blastRadius,
-                targetResults,
-                enemyLayers,
-                QueryTriggerInteraction.Collide);
-
-        for (int index = 0;
-             index < resultCount;
-             index++)
+        if (!IsFiniteVector(
+                position))
         {
-            Collider enemy =
-                targetResults[index];
+            return;
+        }
 
-            targetResults[index] = null;
+        affectedEnemies.Clear();
 
+        Collider[] enemies =
+            Physics.OverlapSphere(
+                position,
+                blastRadius,
+                enemyLayers,
+                QueryTriggerInteraction.Ignore);
+
+        foreach (Collider enemy in enemies)
+        {
             if (enemy == null)
-                continue;
-
-            GameObject target =
-                enemy.attachedRigidbody != null
-                    ? enemy.attachedRigidbody.gameObject
-                    : enemy.gameObject;
-
-            if (IsTeamCharacter(target) ||
-                !affectedTargets.Add(target))
             {
                 continue;
             }
 
-            target.SendMessage(
-                "TakeDamage",
-                damage,
-                SendMessageOptions.DontRequireReceiver);
+            Health health =
+                FindEnemyHealth(
+                    enemy);
 
-            target.SendMessage(
-                "Break",
-                SendMessageOptions.DontRequireReceiver);
+            if (health == null ||
+                health.dead ||
+                !affectedEnemies.Add(
+                    health))
+            {
+                continue;
+            }
+
+            health.TakeDamage(
+                blastDamage);
 
             ApplyKnockback(
-                target,
-                enemy.attachedRigidbody);
-
-            defeatedEnemyCount++;
+                enemy,
+                position);
         }
     }
 
-    private void ApplyKnockback(
-        GameObject target,
-        Rigidbody targetRigidbody)
+    private static Health FindEnemyHealth(
+        Collider enemy)
     {
-        if (target == null ||
-            targetRigidbody == null ||
-            knockbackForce <= 0f)
+        Health health =
+            enemy.GetComponent<Health>();
+
+        health ??=
+            enemy.GetComponentInParent<Health>();
+
+        return health;
+    }
+
+    #endregion
+
+    #region Knockback
+
+    private void ApplyKnockback(
+        Collider enemy,
+        Vector3 blastPosition)
+    {
+        if (knockbackForce <= 0f)
+        {
+            return;
+        }
+
+        Rigidbody body =
+            enemy.attachedRigidbody;
+
+        if (body == null ||
+            body.isKinematic)
         {
             return;
         }
 
         Vector3 direction =
-            target.transform.position -
-            GetBlastPosition();
+            body.worldCenterOfMass -
+            blastPosition;
 
         direction.y =
             Mathf.Max(
                 direction.y,
-                0.2f);
+                0.25f);
 
-        if (direction.sqrMagnitude <=
-            MinimumDirectionMagnitude)
+        if (!IsFiniteVector(
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
         {
             direction =
-                transform.forward;
+                Vector3.up;
         }
 
-        targetRigidbody.AddForce(
+        body.AddForce(
             direction.normalized *
-            knockbackForce,
+                knockbackForce,
             ForceMode.VelocityChange);
     }
 
     #endregion
 
-    #region Rewards
+    #region Team Restriction
 
-    private void ApplyRewards()
+    private bool IsTeamChaotix()
     {
-        int rewardedEnemies =
-            maximumRewardedEnemies > 0
-                ? Mathf.Min(
-                    defeatedEnemyCount,
-                    maximumRewardedEnemies)
-                : defeatedEnemyCount;
+        TeamSetup teamSetup =
+            Object.FindAnyObjectByType<TeamSetup>();
 
-        if (rewardedEnemies <= 0)
-            return;
-
-        int ringReward =
-            ringRewardPerEnemy *
-            rewardedEnemies;
-
-        float gaugeReward =
-            gaugeRewardPerEnemy *
-            rewardedEnemies;
-
-        if (ringReward > 0)
-        {
-            GameObject gameInstanceObject =
-                GameObject.Find("GameInstance");
-
-            if (gameInstanceObject != null)
-            {
-                gameInstanceObject.SendMessage(
-                    "AddRings",
-                    ringReward,
-                    SendMessageOptions.DontRequireReceiver);
-            }
-        }
-
-        if (gaugeReward > 0f &&
-            teamBlast != null)
-        {
-            teamBlast.AddGauge(
-                gaugeReward);
-        }
-
-        SpawnEffect(
-            rewardEffect,
-            GetBlastPosition());
-
-        PlaySound(
-            rewardSound);
-
-        LogStateChange(
-            $"Chaotix Recital awarded {ringReward} rings and {gaugeReward} Team Blast gauge.");
-    }
-
-    #endregion
-
-    #region Team Filtering
-
-    private bool IsTeamCharacter(
-        GameObject target)
-    {
-        if (target == null ||
-            actionController == null)
+        if (teamSetup == null ||
+            teamSetup.CurrentTeam == null)
         {
             return false;
         }
 
         return
-            MatchesCharacter(
-                target,
-                actionController.SpeedCharacter) ||
-            MatchesCharacter(
-                target,
-                actionController.FlyCharacter) ||
-            MatchesCharacter(
-                target,
-                actionController.PowerCharacter);
-    }
-
-    private static bool MatchesCharacter(
-        GameObject target,
-        Transform character)
-    {
-        return
-            character != null &&
-            (target == character.gameObject ||
-             target.transform.IsChildOf(character));
+            teamSetup.CurrentTeam.name ==
+            "Team Chaotix";
     }
 
     #endregion
 
-    #region Effects
+    #region References
 
-    private void SpawnEffect(
-        GameObject effectPrefab,
-        Vector3 position)
+    private void ResolveReferences()
     {
-        if (effectPrefab == null)
-            return;
+        blastOrigin ??=
+            transform;
 
-        GameObject spawnedEffect =
-            Instantiate(
-                effectPrefab,
-                position,
-                transform.rotation);
-
-        if (effectLifetime > 0f)
+        if (animator == null)
         {
-            Destroy(
-                spawnedEffect,
-                effectLifetime);
+            animator =
+                GetComponentInChildren<Animator>(
+                    includeInactive: true);
         }
+
+        if (audioSource == null)
+        {
+            audioSource =
+                GetComponent<AudioSource>();
+        }
+
+        if (audioSource == null)
+        {
+            audioSource =
+                GetComponentInParent<AudioSource>();
+        }
+    }
+
+    private Vector3 GetBlastPosition()
+    {
+        if (blastOrigin != null &&
+            IsFiniteVector(
+                blastOrigin.position))
+        {
+            return
+                blastOrigin.position;
+        }
+
+        return
+            transform.position;
     }
 
     #endregion
@@ -582,11 +448,29 @@ public sealed class ChaotixRecital : MonoBehaviour
 
     private void PlayAnimation()
     {
-        if (animator == null)
+        if (animator == null ||
+            !animator.isActiveAndEnabled ||
+            animator.runtimeAnimatorController ==
+                null)
+        {
             return;
+        }
 
-        animator.SetTrigger(
-            ChaotixRecitalHash);
+        foreach (
+            AnimatorControllerParameter parameter
+            in animator.parameters)
+        {
+            if (parameter.nameHash !=
+                RecitalHash)
+            {
+                continue;
+            }
+
+            animator.SetTrigger(
+                RecitalHash);
+
+            return;
+        }
     }
 
     #endregion
@@ -608,117 +492,60 @@ public sealed class ChaotixRecital : MonoBehaviour
 
     #endregion
 
-    #region Utility
+    #region Effects
 
-    private Vector3 GetBlastPosition()
+    private void SpawnEffect(
+        GameObject effect,
+        Vector3 position)
     {
-        return
-            blastOrigin != null
-                ? blastOrigin.position
-                : transform.position;
+        if (effect == null ||
+            !IsFiniteVector(
+                position))
+        {
+            return;
+        }
+
+        GameObject instance =
+            Instantiate(
+                effect,
+                position,
+                transform.rotation);
+
+        if (effectLifetime > 0f)
+        {
+            Destroy(
+                instance,
+                effectLifetime);
+        }
     }
 
     #endregion
 
     #region Validation
 
-    private bool ValidateConfiguration()
+    private static bool IsFiniteVector(
+        Vector3 value)
     {
-        bool valid = true;
-
-        valid &=
-            ValidateReference(
-                actionController,
-                nameof(TeamActionController));
-
-        if (teamBlast == null)
-        {
-            Debug.LogWarning(
-                "ChaotixRecital could not find TeamBlast. Gauge rewards will be skipped.",
-                this);
-        }
-
-        if (animator == null)
-        {
-            Debug.LogWarning(
-                "ChaotixRecital could not find an Animator.",
-                this);
-        }
-
-        if (audioSource == null)
-        {
-            Debug.LogWarning(
-                "ChaotixRecital could not find an AudioSource.",
-                this);
-        }
-
-        if (activationEffect == null)
-        {
-            Debug.LogWarning(
-                "ChaotixRecital has no activation effect.",
-                this);
-        }
-
-        return valid;
-    }
-
-    private bool ValidateReference(
-        Object reference,
-        string displayName)
-    {
-        if (reference != null)
-            return true;
-
-        Debug.LogError(
-            $"ChaotixRecital requires {displayName}.",
-            this);
-
-        return false;
+        return
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z);
     }
 
     #endregion
 
-    #region Cleanup
+    #region Gizmos
 
-    private void CleanupRuntimeState()
+    private void OnDrawGizmosSelected()
     {
-        if (isActive)
+        if (!drawBlastRadius)
         {
-            FinishChaotixRecital();
-        }
-    }
-
-    private void CleanupDestroyedState()
-    {
-        CleanupRuntimeState();
-
-        isInitialized = false;
-
-        actionController = null;
-        teamBlast = null;
-        animator = null;
-        audioSource = null;
-        blastOrigin = null;
-        activationEffect = null;
-        pulseEffect = null;
-        rewardEffect = null;
-
-        affectedTargets.Clear();
-    }
-
-    #endregion
-
-    #region Debug
-
-    private void LogStateChange(
-        string message)
-    {
-        if (!logStateChanges)
             return;
+        }
 
-        Debug.Log(
-            message,
-            this);
+        Gizmos.DrawWireSphere(
+            GetBlastPosition(),
+            blastRadius);
     }
 
     #endregion

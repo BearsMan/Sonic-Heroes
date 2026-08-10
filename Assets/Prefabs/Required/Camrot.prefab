@@ -24,7 +24,6 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7386742262618705442}
-  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
   m_LocalPosition: {x: -0.9268536, y: 2.6500003, z: 17.000189}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -32,6 +31,7 @@ Transform:
   m_Children:
   - {fileID: 7386742264227488442}
   m_Father: {fileID: 0}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!114 &7386742262618705440
 MonoBehaviour:
@@ -45,29 +45,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5336e6948ef7b3e4086218bd29f6502e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  target: {fileID: 0}
-  cameraPivot: {fileID: 7386742262618705441}
-  playerCamera: {fileID: 7386742264227488443}
-  targetHeight: 2
-  followDistance: 8
-  followSmoothness: 18
-  horizontalSensitivity: 5
-  verticalSensitivity: 3
-  minimumPitch: -30
-  maximumPitch: 60
-  invertVerticalInput: 0
-  useCollision: 1
-  collisionMask:
+  sonic: {fileID: 0}
+  cam: {fileID: 7386742264227488442}
+  rayCastingOff: 0
+  offset: {x: 0, y: 5, z: 5}
+  cameraMask:
     serializedVersion: 2
-    m_Bits: 4294967295
-  collisionRadius: 0.25
-  collisionPadding: 0.15
-  collisionSmoothness: 25
-  speedOffset: {x: 0, y: 0, z: 0}
-  flyOffset: {x: 0, y: 0, z: 0}
-  powerOffset: {x: 0, y: 0, z: 0}
-  rotationSmoothness: 15
-  lockCursor: 1
+    m_Bits: 8
 --- !u!1 &7386742264227488325
 GameObject:
   m_ObjectHideFlags: 0
@@ -93,13 +77,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7386742264227488325}
-  serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.01717677, z: 0, w: -0.9998525}
   m_LocalPosition: {x: -0.0013293624, y: 0, z: 0.022623062}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7386742262618705441}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &7386742264227488443
 Camera:
@@ -115,17 +99,9 @@ Camera:
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
-  m_Iso: 200
-  m_ShutterSpeed: 0.005
-  m_Aperture: 16
-  m_FocusDistance: 10
-  m_FocalLength: 50
-  m_BladeCount: 5
-  m_Curvature: {x: 2, y: 11}
-  m_BarrelClipping: 0.25
-  m_Anamorphism: 0
   m_SensorSize: {x: 36, y: 24}
   m_LensShift: {x: 0, y: 0}
+  m_FocalLength: 50
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0

@@ -12,19 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ef92c9281d63d941ac867ab8e5df336, type: 3}
   m_Name: Team Dark
   m_EditorClassIdentifier: 
-  playableTeam: 0
-  speedCharacterPrefab: {fileID: 5929308340540856896, guid: 99327cb1104c91043ba32bad657a0403, type: 3}
-  flyingCharacterPrefab: {fileID: 3716500082743636546, guid: ac4a974ca59ad2941b0b4cd1b5ed5f3d, type: 3}
-  powerCharacterPrefab: {fileID: 4914913381605209836, guid: bf8af70dbc6a72d469434201ad20db72, type: 3}
-  superCharacterPrefab: {fileID: 0}
-  speedCharacterDefinition: {fileID: 11400000, guid: 7f748db5dc3425e45b9c792706a9575b, type: 2}
-  flyingCharacterDefinition: {fileID: 11400000, guid: 8bbd40b6cf258e342869079fb8867418, type: 2}
-  powerCharacterDefinition: {fileID: 11400000, guid: 60dd35fbd79dc3d4f9be5128b4ec0ebb, type: 2}
-  superCharacterDefinition: {fileID: 0}
-  speedCharacterData: {fileID: 11400000, guid: 51e1d92238774444bae7b7b3be1ce733, type: 2}
-  flyingCharacterData: {fileID: 11400000, guid: fb3213f8ebde8e84680bd55e186eb170, type: 2}
-  powerCharacterData: {fileID: 11400000, guid: f2886335688b8974cb02ee366ded6882, type: 2}
-  superCharacterData: {fileID: 0}
-  teamIcon: {fileID: -2805014278692218681, guid: 79b62094f70e6df439f242adca055767, type: 3}
-  accentColor: {r: 0, g: 0, b: 0, a: 0}
-  teamBlast: {fileID: 32900000, guid: 7ff7ad666cb3e3447a809e992531409b, type: 3}
+  SpeedCharacter: {fileID: 5929308340540856896, guid: 99327cb1104c91043ba32bad657a0403, type: 3}
+  FlyingCharacter: {fileID: 3716500082743636546, guid: ac4a974ca59ad2941b0b4cd1b5ed5f3d, type: 3}
+  PowerCharacter: {fileID: 4914913381605209836, guid: bf8af70dbc6a72d469434201ad20db72, type: 3}
+  SuperCharacter: {fileID: 0}
+  speedCharacter: {fileID: 11400000, guid: 51e1d92238774444bae7b7b3be1ce733, type: 2}
+  flyingCharacter: {fileID: 11400000, guid: fb3213f8ebde8e84680bd55e186eb170, type: 2}
+  powerCharacter: {fileID: 11400000, guid: f2886335688b8974cb02ee366ded6882, type: 2}
+  superCharacter: {fileID: 0}
+  teamBlast: {fileID: 32900000, guid: 1ed37b72d4c6f9842a50a230fd3d54f1, type: 3}

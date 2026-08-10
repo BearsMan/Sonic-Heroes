@@ -25,8 +25,8 @@ public class RainbowRing : MonoBehaviour
             GameObject ao = Instantiate(source, transform.position, Quaternion.identity);
             if (ao != null && ao.TryGetComponent<AudioObject>(out var audioObj)) audioObj.Setup(clip, transform);
 
-            player.LaunchFromSpring(
-    transform.forward * 100f);
+            player.Launch(transform.forward, 100);
+            player.SurrenderControl(Vector2.up, 2);
         }
 
     }

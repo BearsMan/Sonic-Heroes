@@ -96,7 +96,7 @@ public abstract class SpeedCharacter : BaseCharacter
     //   enemy within a reasonable distance, including enemies above him.
     //   Used by: Shadow (Team Dark) only.
 
-    // Leaf Swirl: Espio jumps into the air, does a playerRigidbody flip with hands folded, then
+    // Leaf Swirl: Espio jumps into the air, does a body flip with hands folded, then
     //   creates a cyclonic vortex of transparent leaves. Simultaneously invokes his
     //   camouflage ability, turning him invisible.
     //   Effects by enemy type:

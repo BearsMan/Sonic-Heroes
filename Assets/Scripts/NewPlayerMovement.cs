@@ -1,791 +1,302 @@
-using System;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-[RequireComponent(typeof(CharacterController))]
-public sealed class NewPlayerMovement : MonoBehaviour
+public class NewPlayerMovement : MonoBehaviour
 {
-    [Header("Dependencies")]
-    [SerializeField] private CharacterController characterController;
-    [SerializeField] private Transform cameraTransform;
+    // This script handles player movement, jumping, and rotation based on camera orientation.
+    public CharacterController controller;
+    public GameObject teamSetup;
 
-    [Header("Input")]
-    [SerializeField] private bool inputEnabled = true;
-    [SerializeField] private string horizontalAxis = "Horizontal";
-    [SerializeField] private string verticalAxis = "Vertical";
-    [SerializeField] private KeyCode jumpKey = KeyCode.Space;
-
-    [Header("Ground Movement")]
-    [SerializeField, Min(0f)] private float walkSpeed = 5f;
-    [SerializeField, Min(0f)] private float runSpeed = 12f;
-    [SerializeField, Min(0f)] private float acceleration = 30f;
-    [SerializeField, Min(0f)] private float deceleration = 40f;
-    [SerializeField, Min(0f)] private float directionChangeAcceleration = 55f;
-
-    [Header("Super Movement")]
-    [SerializeField, Min(0f)] private float superRunSpeed = 18f;
-    [SerializeField, Min(0f)] private float superAcceleration = 42f;
-
-    [Header("Air Movement")]
-    [SerializeField, Min(0f)] private float airAcceleration = 12f;
-    [SerializeField, Range(0f, 1f)] private float airControl = 0.65f;
-    [SerializeField, Min(0f)] private float maximumFallSpeed = 45f;
-
-    [Header("Jump")]
-    [SerializeField, Min(0f)] private float jumpHeight = 3f;
-    [SerializeField, Min(0f)] private float coyoteTime = 0.12f;
-    [SerializeField, Min(0f)] private float jumpBufferTime = 0.12f;
-
-    [Header("Gravity")]
-    [SerializeField] private float gravity = -30f;
-    [SerializeField] private float groundedVerticalVelocity = -2f;
-
-    [Header("Ground Detection")]
-    [SerializeField] private LayerMask groundMask = ~0;
-    [SerializeField]
-    private Vector3 groundCheckOffset =
-        new(0f, 0.1f, 0f);
-
-    [SerializeField, Min(0.01f)] private float groundCheckRadius = 0.25f;
-
-    [Header("Rotation")]
-    [SerializeField, Min(0f)] private float rotationSpeed = 720f;
-    [SerializeField, Min(0f)] private float minimumRotationSpeed = 0.1f;
-
-    private Vector2 movementInput;
-    private Vector2 forcedInput;
-
-    private Vector3 horizontalVelocity;
-    private float verticalVelocity;
-
-    private Vector3 boostDirection;
-    private float boostSpeed;
-    private float boostTimeRemaining;
-
-    private float forcedInputTimeRemaining;
-    private float coyoteTimeRemaining;
-    private float jumpBufferRemaining;
-
-    private bool isGrounded;
-    private bool wasGrounded;
-    private bool isSuper;
-    private bool isInitialized;
-
-    public event Action Jumped;
-    public event Action Landed;
-    public event Action<bool> GroundedChanged;
-    public event Action<bool> SuperStateChanged;
-
-    public bool IsGrounded => isGrounded;
-
-    public bool IsAirborne => !isGrounded;
-
-    public bool IsSuper => isSuper;
-
-    public bool InputEnabled => inputEnabled;
-
-    public bool IsBoosting => boostTimeRemaining > 0f;
-
-    public bool HasForcedInput => forcedInputTimeRemaining > 0f;
-
-    public Vector3 Velocity =>
-        horizontalVelocity +
-        Vector3.up * verticalVelocity;
-
-    public Vector3 HorizontalVelocity =>
-        horizontalVelocity;
-
-    public float VerticalVelocity =>
-        verticalVelocity;
-
-    public float CurrentSpeed =>
-        horizontalVelocity.magnitude;
-
-    public float CurrentMaximumSpeed =>
-        isSuper
-            ? superRunSpeed
-            : runSpeed;
-
-    public float CurrentAcceleration =>
-        isSuper
-            ? superAcceleration
-            : acceleration;
-
-    private void Awake()
+    // State machine for player actions
+    public enum STATE
     {
-        ResolveReferences();
+        NORMAL,
+        HURT,
+        DASHING,
+        SPECIAL,
+        ATTACK,
+        DEAD,
 
-        isInitialized =
-            ValidateConfiguration();
+    }
+    public bool isSuper = false;
+    private const float maxSpeed = 8f;
+    private const float maxSuperSpeed = 12f;
 
-        if (!isInitialized)
-            enabled = false;
+    public float CurrentMaxSpeed
+    {
+        get
+        {
+            if (isSuper) return maxSuperSpeed;
+            return maxSpeed;
+        }
     }
 
-    private void Update()
+    private const float acceleration = 5f;
+    private const float superAcceleration = 7f;
+    public float CurrentAcceleration
     {
-        float deltaTime =
-            Time.deltaTime;
+        get
+        {
+            if (isSuper) return superAcceleration;
+            return acceleration;
+        }
+    }
 
-        UpdateGroundState();
-        UpdateTimers(deltaTime);
-        ReadInput();
-        UpdateJumpBuffer();
+    private const float jumpHeight = 3f;
+    public float currentJumpHeight = 3f;
 
-        if (IsBoosting)
-            UpdateBoostVelocity();
+    private Vector3 gravity;
+
+    private Vector3 velocity = Vector3.zero;
+    private Vector3 previousPostition;
+    private Vector2 movement = Vector2.zero;
+    public LayerMask groundMask;
+    private bool isJumping;
+    public bool isGrounded;
+    public bool inAir
+    {
+        get
+        {
+            return (!isGrounded || velocity.y > 0);
+        }
+    }
+    private bool jump;
+    public float currentSpeed;
+    public float maxRunSpeed;
+    public float maxWalkSpeed;
+    public GameObject Leftpos;
+    public GameObject Rightpos;
+    public GameObject LeftTeamMember;
+    public GameObject RightTeamMember;
+    public Rigidbody body;
+    public Camera MainCamera;
+
+    // Helper function to gradually reduce a number to zero
+    public float ToZero(float initialNumber, float deltavalue)
+    {
+        if (initialNumber > 0)
+        {
+            initialNumber -= deltavalue;
+            initialNumber = Mathf.Clamp(initialNumber, 0, Mathf.Infinity);
+        }
+        if (initialNumber < 0)
+        {
+            initialNumber += deltavalue;
+            initialNumber = Mathf.Clamp(initialNumber, Mathf.NegativeInfinity, 0);
+        }
+        return initialNumber;
+    }
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        MainCamera = Camera.main;
+        previousPostition = transform.position;
+        gravity = Physics.gravity;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (controllable == true)
+        {
+
+
+            if (surrendered) // If surrended count down timer and restore control when set to 0
+            {
+                surrenderDuration -= Time.deltaTime;
+                if (surrenderDuration <= 0) surrendered = false;
+            }
+            else Inputs();
+            Movement();
+
+        }
+        if (Input.GetKeyDown(KeyCode.Home))
+        {
+            BecomeSuper();
+        }
+    }
+    public void BecomeSuper()
+    {
+        GameInstance.greenEmerald = true;
+        GameInstance.blueEmerald = true;
+        GameInstance.yellowEmerald = true;
+        GameInstance.whiteEmerald = true;
+        GameInstance.lightBlueEmerald = true;
+        GameInstance.purpleEmerald = true;
+        GameInstance.redEmerald = true;
+
+        teamSetup.GetComponent<TeamSetup>().SwapForSuper();
+    }
+    // LateUpdate is called after all Update functions have been called
+    private void LateUpdate()
+    {
+        transform.rotation = Quaternion.LookRotation(Camera.main.transform.forward, Vector3.up);
+
+        RaycastHit groundHit;
+
+        if (Physics.Raycast(transform.position + (transform.up * 0.1f), -transform.up, out groundHit, 0.3f, groundMask) && velocity.y < 0)
+        {
+            Vector3 velocityXZ = velocity;
+            velocityXZ.y = 0;
+            if (velocityXZ.sqrMagnitude > 0.3f)
+                transform.localRotation = Quaternion.LookRotation(velocity, transform.up);
+
+
+            velocity.y = -0.5f;
+
+
+            Vector3 hitAngle = groundHit.normal;
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(Vector3.Cross(hitAngle, -transform.right)), 360 * Time.deltaTime);
+            transform.position = groundHit.point + (transform.up * 0.08f);
+
+        }
         else
-            UpdateHorizontalVelocity(deltaTime);
-
-        UpdateVerticalVelocity(deltaTime);
-        ApplyMovement(deltaTime);
-        RotateTowardsMovement(deltaTime);
-    }
-
-    public void SetInputEnabled(
-        bool enabledState)
-    {
-        inputEnabled =
-            enabledState;
-
-        if (!inputEnabled)
-            movementInput = Vector2.zero;
-    }
-
-    public void SetSuperState(
-        bool enabledState)
-    {
-        if (isSuper == enabledState)
-            return;
-
-        isSuper =
-            enabledState;
-
-        SuperStateChanged?.Invoke(
-            isSuper);
-    }
-
-    public void ToggleSuperState()
-    {
-        SetSuperState(
-            !isSuper);
-    }
-
-    public void ApplyBoost(
-        Vector3 direction,
-        float speed,
-        float duration)
-    {
-        if (direction.sqrMagnitude <=
-            Mathf.Epsilon)
         {
-            Debug.LogWarning(
-                "NewPlayerMovement received a boost with no direction.",
-                this);
+            transform.rotation = Quaternion.LookRotation(Camera.main.transform.forward, Vector3.up);
 
-            return;
-        }
-
-        boostDirection =
-            Vector3.ProjectOnPlane(
-                direction.normalized,
-                Vector3.up).normalized;
-
-        boostSpeed =
-            Mathf.Max(0f, speed);
-
-        boostTimeRemaining =
-            Mathf.Max(0f, duration);
-
-        horizontalVelocity =
-            boostDirection * boostSpeed;
-
-        if (boostDirection.sqrMagnitude >
-            Mathf.Epsilon)
-        {
-            transform.rotation =
-                Quaternion.LookRotation(
-                    boostDirection,
-                    Vector3.up);
         }
     }
-
-    public void Launch(
-        Vector3 launchVelocity)
+    // Handle player inputs for movement and jumping
+    public void Inputs()
     {
-        horizontalVelocity =
-            Vector3.ProjectOnPlane(
-                launchVelocity,
-                Vector3.up);
-
-        verticalVelocity =
-            launchVelocity.y;
-
-        coyoteTimeRemaining = 0f;
-        jumpBufferRemaining = 0f;
-    }
-
-    public void Launch(
-        Vector3 direction,
-        float speed)
-    {
-        if (direction.sqrMagnitude <=
-            Mathf.Epsilon)
+        Vector2 mov = Vector2.zero;
+        mov.x = Input.GetAxis("Horizontal");
+        mov.y = Input.GetAxis("Vertical");
+        if (mov.x == 0)
         {
-            return;
+            movement.x = ToZero(movement.x, Time.deltaTime * acceleration);
+        }
+        else
+        {
+            if ((mov.x > 0 && movement.x > 0) || (mov.x < 0 && movement.x < 0))
+            {
+                movement.x += mov.x * acceleration * Time.deltaTime;
+            }
+            else
+            {
+                movement.x += mov.x * acceleration * Time.deltaTime * 3;
+            }
+
+        }
+        if (mov.y == 0)
+        {
+            movement.y = ToZero(movement.y, Time.deltaTime * acceleration);
+        }
+        else
+        {
+            if ((mov.y > 0 && movement.y > 0) || (mov.y < 0 && movement.y < 0))
+            {
+                movement.y += mov.y * acceleration * Time.deltaTime;
+            }
+            else
+            {
+                movement.y += mov.y * acceleration * Time.deltaTime * 3;
+            }
+
         }
 
-        Launch(
-            direction.normalized *
-            Mathf.Max(0f, speed));
+        // Clamp movement to max speed
+        movement.x = Mathf.Clamp(movement.x, -CurrentMaxSpeed, CurrentMaxSpeed);
+        movement.y = Mathf.Clamp(movement.y, -CurrentMaxSpeed, CurrentMaxSpeed);
+
+        float rot = Input.GetAxis("Mouse X");
+        transform.Rotate(transform.up * rot);
+
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded) isJumping = true;
     }
-
-    public void SuspendControl(
-        Vector2 direction,
-        float duration)
+    // Handle player movement and jumping logic
+    public void Movement()
     {
-        forcedInput =
-            Vector2.ClampMagnitude(
-                direction,
-                1f);
+        isGrounded = Physics.CheckSphere(transform.position + transform.up * 0.45f, 0.6f, groundMask);
 
-        forcedInputTimeRemaining =
-            Mathf.Max(0f, duration);
-    }
 
-    public void CancelForcedMovement()
-    {
-        forcedInput = Vector2.zero;
-        forcedInputTimeRemaining = 0f;
-
-        boostDirection = Vector3.zero;
-        boostSpeed = 0f;
-        boostTimeRemaining = 0f;
-    }
-
-    public void StopImmediately()
-    {
-        horizontalVelocity =
-            Vector3.zero;
-
-        boostDirection =
-            Vector3.zero;
-
-        boostSpeed = 0f;
-        boostTimeRemaining = 0f;
-    }
-
-    public MovementState CaptureState()
-    {
-        return new MovementState
+        Transform cam = Camera.main.transform;
+        Vector3 mov = cam.forward * movement.y + cam.right * movement.x;
+        if (isJumping)
         {
-            Position = transform.position,
-            Rotation = transform.rotation,
-            HorizontalVelocity = horizontalVelocity,
-            VerticalVelocity = verticalVelocity,
-            IsSuper = isSuper,
-            InputEnabled = inputEnabled
-        };
-    }
+            isJumping = false;
 
-    public void RestoreState(
-        MovementState state)
-    {
-        bool controllerWasEnabled =
-            characterController.enabled;
 
-        characterController.enabled =
-            false;
 
-        transform.SetPositionAndRotation(
-            state.Position,
-            state.Rotation);
+            mov += Mathf.Sqrt(currentJumpHeight * -2 * gravity.y) * transform.up;
+            velocity = mov;
 
-        characterController.enabled =
-            controllerWasEnabled;
 
-        horizontalVelocity =
-            state.HorizontalVelocity;
+            LeftTeamMember.GetComponent<FollowerNavigation>().Jump(velocity);
+            RightTeamMember.GetComponent<FollowerNavigation>().Jump(velocity);
 
-        verticalVelocity =
-            state.VerticalVelocity;
 
-        inputEnabled =
-            state.InputEnabled;
-
-        SetSuperState(
-            state.IsSuper);
-
-        CancelForcedMovement();
-        UpdateGroundState();
-    }
-
-    private void ResolveReferences()
-    {
-        if (characterController == null)
-        {
-            characterController =
-                GetComponent<CharacterController>();
         }
-
-        if (cameraTransform == null &&
-            Camera.main != null)
+        if (!isGrounded || velocity.y > 0)
         {
-            cameraTransform =
-                Camera.main.transform;
+            mov = velocity + mov * Time.deltaTime;
+            velocity = mov;
+
+
+        }
+        velocity += gravity * Time.deltaTime;
+
+
+
+
+
+
+
+        controller.Move(mov * Time.deltaTime);
+
+        RotateLeader(mov);
+
+    }
+
+    // Rotate the player to face the direction of movement
+    public void RotateLeader(Vector3 dir)
+    {
+        if (dir != Vector3.zero)
+        {
+            dir = new Vector3(dir.x, 0, dir.z);
+            transform.rotation = Quaternion.LookRotation(dir);
+
         }
     }
-
-    private void ReadInput()
+    // Boost the player's speed and direction temporarily
+    public void Boost(float newSpeed, Vector3 newDirection)
     {
-        if (HasForcedInput)
-        {
-            movementInput =
-                forcedInput;
+        currentSpeed = newSpeed; // Force current speed to launch speed
+        maxRunSpeed = newSpeed; // Allow max speed to become launch speed
+        controller.Move(newDirection * newSpeed);
+        transform.rotation = Quaternion.LookRotation(newDirection); // Force foward rotation to launch direction
+    }
+    // Launch the player in a specified direction and height
+    public void Launch(Vector3 direction, float height)
+    {
+        velocity = Mathf.Sqrt(height * -2 * Physics.gravity.y) * direction;
 
-            return;
-        }
-
-        if (!inputEnabled)
-        {
-            movementInput =
-                Vector2.zero;
-
-            return;
-        }
-
-        movementInput =
-            Vector2.ClampMagnitude(
-                new Vector2(
-                    Input.GetAxisRaw(horizontalAxis),
-                    Input.GetAxisRaw(verticalAxis)),
-                1f);
     }
 
-    private void UpdateJumpBuffer()
+    private float surrenderDuration;
+    private bool surrendered = false;
+    public static bool controllable = true;
+    public bool trickZone;
+    internal bool isSwinging;
+
+    /// <summary>
+    /// Remove player control for specified time
+    /// Force player direction for duration
+    /// Use vector2.up for forward movement
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <param name="duration"></param>
+    public void SurrenderControl(Vector2 direction, float duration)
     {
-        if (inputEnabled &&
-            Input.GetKeyDown(jumpKey))
-        {
-            jumpBufferRemaining =
-                jumpBufferTime;
-        }
+        movement = direction; //Direction of movement
 
-        if (jumpBufferRemaining <= 0f)
-            return;
+        surrenderDuration = duration;
 
-        if (coyoteTimeRemaining <= 0f)
-            return;
-
-        PerformJump();
+        surrendered = true;
     }
 
-    private void PerformJump()
-    {
-        float effectiveGravity =
-            Mathf.Abs(gravity);
 
-        verticalVelocity =
-            Mathf.Sqrt(
-                jumpHeight *
-                2f *
-                effectiveGravity);
-
-        isGrounded = false;
-        coyoteTimeRemaining = 0f;
-        jumpBufferRemaining = 0f;
-
-        Jumped?.Invoke();
-        GroundedChanged?.Invoke(false);
-    }
-
-    private void UpdateHorizontalVelocity(
-        float deltaTime)
-    {
-        Vector3 desiredDirection =
-            GetCameraRelativeDirection(
-                movementInput);
-
-        float desiredSpeed =
-            GetDesiredSpeed(
-                movementInput.magnitude);
-
-        Vector3 desiredVelocity =
-            desiredDirection *
-            desiredSpeed;
-
-        if (!isGrounded)
-        {
-            desiredVelocity *=
-                airControl;
-
-            horizontalVelocity =
-                Vector3.MoveTowards(
-                    horizontalVelocity,
-                    desiredVelocity,
-                    airAcceleration *
-                    deltaTime);
-
-            return;
-        }
-
-        float rate =
-            GetGroundVelocityChangeRate(
-                desiredVelocity);
-
-        horizontalVelocity =
-            Vector3.MoveTowards(
-                horizontalVelocity,
-                desiredVelocity,
-                rate * deltaTime);
-    }
-
-    private float GetGroundVelocityChangeRate(
-        Vector3 desiredVelocity)
-    {
-        if (desiredVelocity.sqrMagnitude <=
-            Mathf.Epsilon)
-        {
-            return deceleration;
-        }
-
-        if (horizontalVelocity.sqrMagnitude <=
-            Mathf.Epsilon)
-        {
-            return CurrentAcceleration;
-        }
-
-        float directionAlignment =
-            Vector3.Dot(
-                horizontalVelocity.normalized,
-                desiredVelocity.normalized);
-
-        return directionAlignment < 0f
-            ? directionChangeAcceleration
-            : CurrentAcceleration;
-    }
-
-    private float GetDesiredSpeed(
-        float inputMagnitude)
-    {
-        if (inputMagnitude <=
-            Mathf.Epsilon)
-        {
-            return 0f;
-        }
-
-        float maximumSpeed =
-            CurrentMaximumSpeed;
-
-        return Mathf.Lerp(
-            walkSpeed,
-            maximumSpeed,
-            inputMagnitude);
-    }
-
-    private Vector3 GetCameraRelativeDirection(
-        Vector2 input)
-    {
-        if (input.sqrMagnitude <=
-            Mathf.Epsilon)
-        {
-            return Vector3.zero;
-        }
-
-        Vector3 forward =
-            cameraTransform != null
-                ? cameraTransform.forward
-                : transform.forward;
-
-        Vector3 right =
-            cameraTransform != null
-                ? cameraTransform.right
-                : transform.right;
-
-        forward =
-            Vector3.ProjectOnPlane(
-                forward,
-                Vector3.up).normalized;
-
-        right =
-            Vector3.ProjectOnPlane(
-                right,
-                Vector3.up).normalized;
-
-        Vector3 direction =
-            forward * input.y +
-            right * input.x;
-
-        return direction.sqrMagnitude >
-               Mathf.Epsilon
-            ? direction.normalized
-            : Vector3.zero;
-    }
-
-    private void UpdateBoostVelocity()
-    {
-        horizontalVelocity =
-            boostDirection *
-            boostSpeed;
-    }
-
-    private void UpdateVerticalVelocity(
-        float deltaTime)
-    {
-        if (isGrounded &&
-            verticalVelocity < 0f)
-        {
-            verticalVelocity =
-                groundedVerticalVelocity;
-
-            return;
-        }
-
-        verticalVelocity +=
-            gravity * deltaTime;
-
-        verticalVelocity =
-            Mathf.Max(
-                verticalVelocity,
-                -maximumFallSpeed);
-    }
-
-    private void ApplyMovement(
-        float deltaTime)
-    {
-        Vector3 totalVelocity =
-            horizontalVelocity +
-            Vector3.up *
-            verticalVelocity;
-
-        characterController.Move(
-            totalVelocity *
-            deltaTime);
-    }
-
-    private void RotateTowardsMovement(
-        float deltaTime)
-    {
-        Vector3 direction =
-            horizontalVelocity;
-
-        direction.y = 0f;
-
-        if (direction.sqrMagnitude <
-            minimumRotationSpeed *
-            minimumRotationSpeed)
-        {
-            return;
-        }
-
-        Quaternion targetRotation =
-            Quaternion.LookRotation(
-                direction.normalized,
-                Vector3.up);
-
-        transform.rotation =
-            Quaternion.RotateTowards(
-                transform.rotation,
-                targetRotation,
-                rotationSpeed *
-                deltaTime);
-    }
-
-    private void UpdateGroundState()
-    {
-        wasGrounded =
-            isGrounded;
-
-        Vector3 checkPosition =
-            transform.TransformPoint(
-                groundCheckOffset);
-
-        bool sphereGrounded =
-            Physics.CheckSphere(
-                checkPosition,
-                groundCheckRadius,
-                groundMask,
-                QueryTriggerInteraction.Ignore);
-
-        isGrounded =
-            characterController.isGrounded ||
-            sphereGrounded;
-
-        if (isGrounded)
-        {
-            coyoteTimeRemaining =
-                coyoteTime;
-        }
-
-        if (isGrounded == wasGrounded)
-            return;
-
-        GroundedChanged?.Invoke(
-            isGrounded);
-
-        if (isGrounded)
-            Landed?.Invoke();
-    }
-
-    private void UpdateTimers(
-        float deltaTime)
-    {
-        coyoteTimeRemaining =
-            Mathf.Max(
-                0f,
-                coyoteTimeRemaining -
-                deltaTime);
-
-        jumpBufferRemaining =
-            Mathf.Max(
-                0f,
-                jumpBufferRemaining -
-                deltaTime);
-
-        forcedInputTimeRemaining =
-            Mathf.Max(
-                0f,
-                forcedInputTimeRemaining -
-                deltaTime);
-
-        boostTimeRemaining =
-            Mathf.Max(
-                0f,
-                boostTimeRemaining -
-                deltaTime);
-
-        if (forcedInputTimeRemaining <= 0f)
-            forcedInput = Vector2.zero;
-
-        if (boostTimeRemaining > 0f)
-            return;
-
-        boostDirection = Vector3.zero;
-        boostSpeed = 0f;
-    }
-
-    private bool ValidateConfiguration()
-    {
-        bool valid = true;
-
-        if (characterController == null)
-        {
-            Debug.LogError(
-                "NewPlayerMovement requires a CharacterController.",
-                this);
-
-            valid = false;
-        }
-
-        if (cameraTransform == null)
-        {
-            Debug.LogWarning(
-                "NewPlayerMovement has no camera assigned. " +
-                "Movement will use the character's orientation.",
-                this);
-        }
-
-        if (string.IsNullOrWhiteSpace(
-                horizontalAxis))
-        {
-            Debug.LogError(
-                "Horizontal input axis is empty.",
-                this);
-
-            valid = false;
-        }
-
-        if (string.IsNullOrWhiteSpace(
-                verticalAxis))
-        {
-            Debug.LogError(
-                "Vertical input axis is empty.",
-                this);
-
-            valid = false;
-        }
-
-        return valid;
-    }
-
-    private void OnValidate()
-    {
-        walkSpeed =
-            Mathf.Max(0f, walkSpeed);
-
-        runSpeed =
-            Mathf.Max(walkSpeed, runSpeed);
-
-        superRunSpeed =
-            Mathf.Max(runSpeed, superRunSpeed);
-
-        acceleration =
-            Mathf.Max(0f, acceleration);
-
-        superAcceleration =
-            Mathf.Max(
-                acceleration,
-                superAcceleration);
-
-        deceleration =
-            Mathf.Max(0f, deceleration);
-
-        directionChangeAcceleration =
-            Mathf.Max(
-                acceleration,
-                directionChangeAcceleration);
-
-        airAcceleration =
-            Mathf.Max(0f, airAcceleration);
-
-        maximumFallSpeed =
-            Mathf.Max(0f, maximumFallSpeed);
-
-        jumpHeight =
-            Mathf.Max(0f, jumpHeight);
-
-        coyoteTime =
-            Mathf.Max(0f, coyoteTime);
-
-        jumpBufferTime =
-            Mathf.Max(0f, jumpBufferTime);
-
-        groundCheckRadius =
-            Mathf.Max(
-                0.01f,
-                groundCheckRadius);
-
-        rotationSpeed =
-            Mathf.Max(0f, rotationSpeed);
-
-        minimumRotationSpeed =
-            Mathf.Max(
-                0f,
-                minimumRotationSpeed);
-
-        if (gravity >= 0f)
-            gravity = -30f;
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Vector3 checkPosition =
-            transform.TransformPoint(
-                groundCheckOffset);
-
-        Gizmos.DrawWireSphere(
-            checkPosition,
-            groundCheckRadius);
-    }
 }
 
-[Serializable]
-public struct MovementState
-{
-    public Vector3 Position;
-    public Quaternion Rotation;
-    public Vector3 HorizontalVelocity;
-    public float VerticalVelocity;
-    public bool IsSuper;
-    public bool InputEnabled;
-}
+
+

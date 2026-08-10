@@ -465,11 +465,6 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
---- !u!4 &220795003 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 7386742262618705441, guid: 02251923624013c41b74db2dccf97af2, type: 3}
-  m_PrefabInstance: {fileID: 2061819894}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &403377735
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2966,14 +2961,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 3447175539607147095, guid: ada32812af2493843a62dabf9d6fc9dd, type: 3}
-      propertyPath: audioSource
-      value: 
-      objectReference: {fileID: 910992828}
-    - target: {fileID: 3447175539607147095, guid: ada32812af2493843a62dabf9d6fc9dd, type: 3}
-      propertyPath: cameraTransform
-      value: 
-      objectReference: {fileID: 220795003}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -1,6 +1,5 @@
 using UnityEngine;
 
-[RequireComponent(typeof(UltimatePlayerMovement))]
 public class PlayerHit : MonoBehaviour
 {
     public AudioClip clip;
@@ -26,10 +25,7 @@ public class PlayerHit : MonoBehaviour
         int rings = GameInstance.RemoveRings();
         if (rings > 0)
         {
-            GetComponent<UltimatePlayerMovement>()
-    .EnterHurtState(
-        Vector3.zero,
-        1.5f);
+            GetComponent<UltimatePlayerMovement>().SurrenderControl(Vector2.zero, 1.5f);
             GameObject ao = Instantiate(source, transform.position, Quaternion.identity);
             ao.GetComponent<AudioObject>().Setup(clip, transform);
             for (int i = 0; i < rings; i++)

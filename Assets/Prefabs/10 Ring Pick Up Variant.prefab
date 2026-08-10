@@ -5,32 +5,23 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
-    serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 2386318747867880311, guid: 96f34b27205cd4f49a343b5dbf28af54, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: c838054b2e13f30449b1397eb2778147, type: 2}
     - target: {fileID: 6113342970511492442, guid: 96f34b27205cd4f49a343b5dbf28af54, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: c838054b2e13f30449b1397eb2778147, type: 2}
-    - target: {fileID: 7564323183143606622, guid: 96f34b27205cd4f49a343b5dbf28af54, type: 3}
-      propertyPath: ringValue
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 7564323183143606622, guid: 96f34b27205cd4f49a343b5dbf28af54, type: 3}
-      propertyPath: itemSprite
-      value: 
-      objectReference: {fileID: 21300000, guid: 27ca48e9f554adb47ac8dfb61881aea9, type: 3}
     - target: {fileID: 7569220076633508775, guid: 96f34b27205cd4f49a343b5dbf28af54, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
+      propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: c838054b2e13f30449b1397eb2778147, type: 2}
     - target: {fileID: 8312177152341271943, guid: 96f34b27205cd4f49a343b5dbf28af54, type: 3}
       propertyPath: m_Name
-      value: 10 Ring Pick Up Variant
+      value: 10 Ring Pick Up
       objectReference: {fileID: 0}
     - target: {fileID: 8651724637519691581, guid: 96f34b27205cd4f49a343b5dbf28af54, type: 3}
       propertyPath: m_RootOrder
@@ -77,7 +68,4 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 96f34b27205cd4f49a343b5dbf28af54, type: 3}

@@ -2,25 +2,20 @@ using UnityEngine;
 
 public class EggPawnAnimator : MonoBehaviour
 {
-    private EggPawn eggPawn;
-
-    private void Awake()
+    // Start is called before the first frame update
+    void Start()
     {
-        eggPawn = GetComponentInParent<EggPawn>();
 
-        if (eggPawn == null)
-        {
-            Debug.LogError("EggPawnAnimator requires an EggPawn component in a parent object.", this);
-        }
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+
     }
 
     public void DamagePlayer()
     {
-        if (eggPawn == null)
-        {
-            return;
-        }
-
-        eggPawn.DamagePlayer();
+        GetComponentInParent<EggPawn>().DamagePlayer();
     }
 }

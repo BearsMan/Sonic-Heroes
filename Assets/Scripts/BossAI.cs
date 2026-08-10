@@ -1,2120 +1,700 @@
-using System;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-public sealed class BossAI : AIController
+public class BossAI : MonoBehaviour
 {
-    #region Types
-
-    public enum BossEncounterState
+    private enum BossState
     {
-        Dormant,
-        Intro,
-        Active,
-        PhaseTransition,
-        Intermission,
-        Staggered,
-        Enraged,
-        FinalPhase,
-        Defeated,
-        Completed,
-        Disabled
+        Idle,
+        Chasing,
+        Attacking,
+        Hurt,
+        Dead
     }
 
-    [Serializable]
-    public sealed class BossPhase
+    private enum BossPhase
     {
-        [SerializeField] private string phaseName = "Phase";
-        [SerializeField, Range(0.01f, 1f)] private float healthThreshold = 1f;
-        [SerializeField, Min(0f)] private float intermissionDuration;
-        [SerializeField] private bool enableSpecialState;
-        [SerializeField] private bool checkpointPhase;
-        [SerializeField] private AudioClip phaseMusic;
-        [SerializeField] private AudioClip phaseVoice;
-        [SerializeField] private ParticleSystem phaseEffect;
-
-        public string PhaseName =>
-            phaseName;
-
-        public float HealthThreshold =>
-            healthThreshold;
-
-        public float IntermissionDuration =>
-            intermissionDuration;
-
-        public bool EnableSpecialState =>
-            enableSpecialState;
-
-        public bool CheckpointPhase =>
-            checkpointPhase;
-
-        public AudioClip PhaseMusic =>
-            phaseMusic;
-
-        public AudioClip PhaseVoice =>
-            phaseVoice;
-
-        public ParticleSystem PhaseEffect =>
-            phaseEffect;
-
-        public void Validate()
-        {
-            if (string.IsNullOrWhiteSpace(
-                    phaseName))
-            {
-                phaseName =
-                    "Phase";
-            }
-
-            healthThreshold =
-                Mathf.Clamp(
-                    healthThreshold,
-                    0.01f,
-                    1f);
-
-            intermissionDuration =
-                Mathf.Max(
-                    0f,
-                    intermissionDuration);
-        }
+        PhaseOne,
+        PhaseTwo,
+        PhaseThree
     }
+
+    #region Animator Hashes
+
+    private static readonly int SpeedHash =
+        Animator.StringToHash("Speed");
+
+    private static readonly int AttackHash =
+        Animator.StringToHash("Attack");
+
+    private static readonly int HurtHash =
+        Animator.StringToHash("Hurt");
+
+    private static readonly int DieHash =
+        Animator.StringToHash("Die");
 
     #endregion
 
-    #region Constants
+    #region Health
 
-    private const int MaximumPhaseCount =
-        12;
+    [Header("Health")]
 
-    private const string ArenaTriggerName =
-        "Arena Trigger";
+    [SerializeField, Min(1f)]
+    private float maxHealth = 100f;
 
     #endregion
 
-    #region Inspector
+    #region Movement
 
-    [Header("Encounter")]
-    [SerializeField] private bool activateOnStart;
-    [SerializeField] private bool requirePlayerInArena = true;
-    [SerializeField] private Collider arenaTrigger;
-    [SerializeField] private Transform arenaCenter;
-    [SerializeField, Min(0f)] private float maximumArenaRadius = 50f;
-    [SerializeField] private bool returnToArenaWhenOutside = true;
+    [Header("Movement")]
 
-    [Header("Introduction")]
-    [SerializeField, Min(0f)] private float introDuration = 2f;
-    [SerializeField] private bool lockMovementDuringIntro = true;
-    [SerializeField] private AudioClip introMusic;
-    [SerializeField] private AudioClip introVoice;
-    [SerializeField] private ParticleSystem introEffect;
+    [SerializeField, Min(0f)]
+    private float moveSpeed = 5f;
 
-    [Header("Phases")]
+    [SerializeField, Min(0f)]
+    private float rotationSpeed = 360f;
+
+    [SerializeField, Min(0f)]
+    private float stoppingDistance = 3f;
+
+    #endregion
+
+    #region Attack
+
+    [Header("Attack")]
+
+    [SerializeField, Min(0.1f)]
+    private float attackRange = 3f;
+
+    [SerializeField, Min(1)]
+    private int attackDamage = 10;
+
+    [SerializeField, Min(0f)]
+    private float attackCooldown = 2f;
+
+    #endregion
+
+    #region Phases
+
+    [Header("Boss Phases")]
+
+    [SerializeField, Range(0f, 1f)]
+    private float phaseTwoHealth = 0.66f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float phaseThreeHealth = 0.33f;
+
+    [SerializeField, Min(1f)]
+    private float phaseTwoSpeedMultiplier = 1.25f;
+
+    [SerializeField, Min(1f)]
+    private float phaseThreeSpeedMultiplier = 1.5f;
+
+    [SerializeField, Min(1f)]
+    private float phaseTwoAttackMultiplier = 1.25f;
+
+    [SerializeField, Min(1f)]
+    private float phaseThreeAttackMultiplier = 1.5f;
+
+    #endregion
+
+    #region References
+
+    [Header("References")]
+
     [SerializeField]
-    private BossPhase[] phases =
-        Array.Empty<BossPhase>();
+    private Transform target;
 
-    [SerializeField, Min(0f)] private float phaseTransitionDuration = 1.5f;
-    [SerializeField] private bool invulnerableDuringPhaseTransition = true;
-    [SerializeField] private AudioClip phaseTransitionSound;
-    [SerializeField] private ParticleSystem phaseTransitionEffect;
+    [SerializeField]
+    private Animator animator;
 
-    [Header("Intermissions")]
-    [SerializeField] private bool lockMovementDuringIntermission = true;
-    [SerializeField] private bool restoreTargetAfterIntermission = true;
-    [SerializeField] private AudioClip intermissionSound;
-    [SerializeField] private ParticleSystem intermissionEffect;
+    #endregion
 
-    [Header("Stagger")]
-    [SerializeField] private bool enableStagger = true;
-    [SerializeField, Min(1)] private int damageRequiredToStagger = 5;
-    [SerializeField, Min(0f)] private float staggerDuration = 2.5f;
-    [SerializeField, Min(0f)] private float staggerResetDelay = 4f;
-    [SerializeField] private AudioClip staggerSound;
-    [SerializeField] private ParticleSystem staggerEffect;
-
-    [Header("Enrage")]
-    [SerializeField] private bool enableEnrage = true;
-    [SerializeField, Range(0f, 1f)] private float enrageHealthThreshold = 0.2f;
-    [SerializeField] private AudioClip enrageSound;
-    [SerializeField] private ParticleSystem enrageEffect;
-
-    [Header("Checkpoints")]
-    [SerializeField] private bool enablePhaseCheckpoints = true;
-    [SerializeField] private bool restoreCheckpointOnReset = true;
-    [SerializeField] private bool restoreHealthToCheckpointThreshold = true;
-
-    [Header("Arena Recovery")]
-    [SerializeField, Min(0f)] private float arenaReturnSpeedMultiplier = 1.75f;
-    [SerializeField, Min(0f)] private float arenaArrivalDistance = 2f;
-    [SerializeField, Min(0.1f)] private float arenaCheckInterval = 0.5f;
-
-    [Header("Victory")]
-    [SerializeField, Min(0f)] private float victoryDelay = 2f;
-    [SerializeField] private bool disableAfterVictory = true;
-    [SerializeField] private AudioClip defeatSound;
-    [SerializeField] private AudioClip victoryMusic;
-    [SerializeField] private ParticleSystem defeatEffect;
-    [SerializeField] private ParticleSystem victoryEffect;
-
-    [Header("Presentation")]
-    [SerializeField] private AudioSource bossAudioSource;
-
-    [Header("Runtime Safety")]
-    [SerializeField] private bool restoreDisabledComponents = true;
-    [SerializeField, Min(0.1f)] private float safetyCheckInterval = 0.5f;
-    [SerializeField, Min(0.01f)] private float minimumValidScale = 0.01f;
+    #region Debug
 
     [Header("Debug")]
-    [SerializeField]
-    private BossEncounterState bossEncounterState =
-        BossEncounterState.Dormant;
 
-    [SerializeField] private bool logBossState;
+    [SerializeField]
+    private bool drawRanges = true;
 
     #endregion
 
     #region Runtime State
 
-    private float introTimer;
-    private float phaseTransitionTimer;
-    private float intermissionTimer;
-    private float staggerTimer;
-    private float staggerResetTimer;
-    private float arenaCheckTimer;
-    private float victoryTimer;
-    private float safetyTimer;
-    private float normalAgentSpeed;
+    private float currentHealth;
+    private float attackTimer;
 
-    private int currentPhaseIndex;
-    private int checkpointPhaseIndex;
-    private int accumulatedStaggerDamage;
+    private BossState currentState;
+    private BossPhase currentPhase;
 
-    private bool playerInsideArena;
-    private bool encounterStarted;
-    private bool enraged;
-    private bool finalPhaseEntered;
-    private bool phaseTransitionPending;
-    private bool victoryPending;
-    private bool initializedBoss;
-    private bool shuttingDownBoss;
-
-    private Transform preservedTarget;
+    private TeamSetup teamSetup;
 
     #endregion
 
-    #region Events
+    #region Properties
 
-    public event Action<BossAI> EncounterStarted;
-    public event Action<BossAI, int, BossPhase> PhaseChanged;
-    public event Action<BossAI, int> CheckpointReached;
-    public event Action<BossAI> StaggerStarted;
-    public event Action<BossAI> StaggerEnded;
-    public event Action<BossAI> Enraged;
-    public event Action<BossAI> FinalPhaseStarted;
-    public event Action<BossAI> BossDefeated;
-    public event Action<BossAI> EncounterCompleted;
-    public event Action<BossAI, BossEncounterState> BossStateChanged;
+    public float CurrentHealth =>
+        currentHealth;
 
-    #endregion
+    public float MaxHealth =>
+        maxHealth;
 
-    #region Public API
-
-    public BossEncounterState CurrentBossState =>
-        bossEncounterState;
-
-    public int CurrentPhaseIndex =>
-        currentPhaseIndex;
-
-    public int CheckpointPhaseIndex =>
-        checkpointPhaseIndex;
-
-    public BossPhase CurrentPhase =>
-        phases != null &&
-        currentPhaseIndex >= 0 &&
-        currentPhaseIndex <
-            phases.Length
-            ? phases[currentPhaseIndex]
-            : null;
-
-    public bool EncounterActive =>
-        encounterStarted &&
-        !IsDead;
-
-    public bool IsEnraged =>
-        enraged;
-
-    public bool IsFinalPhase =>
-        finalPhaseEntered;
-
-    public bool IsTransitioning =>
-        bossEncounterState ==
-            BossEncounterState.PhaseTransition ||
-        bossEncounterState ==
-            BossEncounterState.Intermission;
-
-    public float HealthRatio =>
-        MaximumHealth > 0
-            ? Mathf.Clamp01(
-                (float)CurrentHealth /
-                MaximumHealth)
-            : 0f;
-
-    public bool StartEncounter()
-    {
-        if (!initializedBoss ||
-            encounterStarted ||
-            IsDead)
-        {
-            return false;
-        }
-
-        encounterStarted =
-            true;
-
-        introTimer =
-            introDuration;
-
-        preservedTarget =
-            Target;
-
-        ChangeBossState(
-            introDuration > 0f
-                ? BossEncounterState.Intro
-                : BossEncounterState.Active);
-
-        if (lockMovementDuringIntro)
-        {
-            StopAgent();
-        }
-
-        introEffect?.Play();
-
-        PlayBossSound(
-            introVoice);
-
-        PlayBossMusic(
-            introMusic);
-
-        EncounterStarted?.Invoke(
-            this);
-
-        if (introDuration <= 0f)
-        {
-            CompleteIntro();
-        }
-
-        return true;
-    }
-
-    public void NotifyPlayerEnteredArena()
-    {
-        playerInsideArena =
-            true;
-
-        if (!encounterStarted)
-        {
-            StartEncounter();
-        }
-    }
-
-    public void NotifyPlayerExitedArena()
-    {
-        playerInsideArena =
-            false;
-    }
-
-    public bool ForcePhase(
-        int phaseIndex)
-    {
-        if (requirePlayerInArena &&
-            arenaTrigger == null)
-        {
-            Debug.LogError(
-                $"{nameof(BossAI)} on '{name}' requires a child Collider named '{ArenaTriggerName}'.",
-                this);
-
-            return false;
-        }
-
-        if (phases == null ||
-            phases.Length == 0)
-        {
-            return false;
-        }
-
-        int clampedIndex =
-            Mathf.Clamp(
-                phaseIndex,
-                0,
-                phases.Length - 1);
-
-        if (clampedIndex ==
-            currentPhaseIndex)
-        {
-            return false;
-        }
-
-        BeginPhaseTransition(
-            clampedIndex);
-
-        return true;
-    }
-
-    public bool ForceStagger()
-    {
-        if (!enableStagger ||
-            IsDead ||
-            bossEncounterState ==
-                BossEncounterState.Staggered)
-        {
-            return false;
-        }
-
-        BeginStagger();
-
-        return true;
-    }
-
-    public bool RestoreBossCheckpoint()
-    {
-        if (!enablePhaseCheckpoints ||
-            checkpointPhaseIndex < 0 ||
-            phases == null ||
-            checkpointPhaseIndex >=
-                phases.Length)
-        {
-            return false;
-        }
-
-        if (!ResetAI())
-            return false;
-
-        currentPhaseIndex =
-            checkpointPhaseIndex;
-
-        if (restoreHealthToCheckpointThreshold)
-        {
-            BossPhase checkpointPhase =
-                phases[checkpointPhaseIndex];
-
-            if (checkpointPhase != null)
-            {
-                int targetHealth =
-                    Mathf.Clamp(
-                        Mathf.CeilToInt(
-                            MaximumHealth *
-                            checkpointPhase.HealthThreshold),
-                        1,
-                        MaximumHealth);
-
-                int healthDifference =
-                    CurrentHealth -
-                    targetHealth;
-
-                if (healthDifference > 0)
-                {
-                    TakeDamage(
-                        healthDifference);
-                }
-                else if (healthDifference < 0)
-                {
-                    Heal(
-                        -healthDifference);
-                }
-            }
-        }
-
-        encounterStarted =
-            true;
-
-        enraged =
-            HealthRatio <=
-            enrageHealthThreshold;
-
-        finalPhaseEntered =
-            currentPhaseIndex ==
-            phases.Length - 1;
-
-        phaseTransitionPending =
-            false;
-
-        victoryPending =
-            false;
-
-        accumulatedStaggerDamage =
-            0;
-
-        ChangeBossState(
-            finalPhaseEntered
-                ? BossEncounterState.FinalPhase
-                : enraged
-                    ? BossEncounterState.Enraged
-                    : BossEncounterState.Active);
-
-        SetState(
-            Target != null
-                ? AIState.Chase
-                : AIState.Idle);
-
-        return true;
-    }
-
-    public void ResetBoss()
-    {
-        ResetAI();
-
-        encounterStarted =
-            false;
-
-        enraged =
-            false;
-
-        finalPhaseEntered =
-            false;
-
-        phaseTransitionPending =
-            false;
-
-        victoryPending =
-            false;
-
-        playerInsideArena =
-            false;
-
-        currentPhaseIndex =
-            0;
-
-        if (!restoreCheckpointOnReset)
-        {
-            checkpointPhaseIndex =
-                0;
-        }
-
-        accumulatedStaggerDamage =
-            0;
-
-        introTimer =
-            0f;
-
-        phaseTransitionTimer =
-            0f;
-
-        intermissionTimer =
-            0f;
-
-        staggerTimer =
-            0f;
-
-        staggerResetTimer =
-            0f;
-
-        victoryTimer =
-            0f;
-
-        ChangeBossState(
-            BossEncounterState.Dormant);
-    }
+    public bool IsDead =>
+        currentState == BossState.Dead;
 
     #endregion
 
     #region Unity Lifecycle
 
-    protected override void Awake()
+    private void Awake()
     {
-        base.Awake();
+        currentHealth =
+            maxHealth;
 
-        ResolveBossReferences();
-        ConfigureBossComponents();
-        InitializeBossRuntime();
+        currentState =
+            BossState.Idle;
+
+        currentPhase =
+            BossPhase.PhaseOne;
+
+        animator ??=
+            GetComponentInChildren<Animator>();
     }
 
-    protected override void OnEnable()
+    private void Start()
     {
-        base.OnEnable();
-
-        if (shuttingDownBoss)
-            return;
-
-        ResolveBossReferences();
-        ConfigureBossComponents();
-        SubscribeToBaseEvents();
-
-        if (!initializedBoss)
-        {
-            InitializeBossRuntime();
-        }
+        FindTeamLeader();
     }
 
-    protected override void Update()
+    private void Update()
     {
-        base.Update();
-
-        if (!IsInitialized ||
-            CurrentState ==
-                AIState.Disabled)
+        if (currentState ==
+            BossState.Dead)
         {
             return;
         }
 
-        UpdateBossTimers();
+        UpdateAttackCooldown();
+        UpdatePhase();
 
-        if (IsDead)
+        if (target == null)
         {
-            HandleBossDefeat();
-            UpdateVictorySequence();
-            return;
+            FindTeamLeader();
+
+            if (target == null)
+            {
+                currentState =
+                    BossState.Idle;
+
+                UpdateAnimator();
+
+                return;
+            }
         }
 
-        UpdateEncounterState();
-        CheckPhaseProgression();
-        CheckEnrage();
-        CheckArenaBounds();
-
-        safetyTimer -=
-            Time.deltaTime;
-
-        if (safetyTimer <= 0f)
-        {
-            safetyTimer =
-                safetyCheckInterval;
-
-            RunBossSafetyChecks();
-        }
+        UpdateBehavior();
+        UpdateAnimator();
     }
 
-    protected override void OnDisable()
+    private void OnValidate()
     {
-        UnsubscribeFromBaseEvents();
+        maxHealth =
+            Mathf.Max(
+                1f,
+                maxHealth);
 
-        ChangeBossState(
-            BossEncounterState.Disabled);
-
-        base.OnDisable();
-    }
-
-    protected override void OnDestroy()
-    {
-        shuttingDownBoss =
-            true;
-
-        UnsubscribeFromBaseEvents();
-
-        EncounterStarted = null;
-        PhaseChanged = null;
-        CheckpointReached = null;
-        StaggerStarted = null;
-        StaggerEnded = null;
-        Enraged = null;
-        FinalPhaseStarted = null;
-        BossDefeated = null;
-        EncounterCompleted = null;
-        BossStateChanged = null;
-
-        arenaTrigger = null;
-        arenaCenter = null;
-        bossAudioSource = null;
-        phases = null;
-        preservedTarget = null;
-
-        base.OnDestroy();
-    }
-
-    private void OnTriggerEnter(
-        Collider other)
-    {
-        if (!requirePlayerInArena ||
-            other == null)
-        {
-            return;
-        }
-
-        UltimatePlayerMovement player =
-            other.GetComponent<UltimatePlayerMovement>();
-
-        player ??=
-            other.GetComponentInParent<UltimatePlayerMovement>();
-
-        if (player != null)
-        {
-            NotifyPlayerEnteredArena();
-        }
-    }
-
-    private void OnTriggerExit(
-        Collider other)
-    {
-        if (!requirePlayerInArena ||
-            other == null)
-        {
-            return;
-        }
-
-        UltimatePlayerMovement player =
-            other.GetComponent<UltimatePlayerMovement>();
-
-        player ??=
-            other.GetComponentInParent<UltimatePlayerMovement>();
-
-        if (player != null)
-        {
-            NotifyPlayerExitedArena();
-        }
-    }
-
-    protected override void OnValidate()
-    {
-        base.OnValidate();
-
-        maximumArenaRadius =
+        moveSpeed =
             Mathf.Max(
                 0f,
-                maximumArenaRadius);
+                moveSpeed);
 
-        introDuration =
+        rotationSpeed =
             Mathf.Max(
                 0f,
-                introDuration);
+                rotationSpeed);
 
-        phaseTransitionDuration =
+        stoppingDistance =
             Mathf.Max(
                 0f,
-                phaseTransitionDuration);
+                stoppingDistance);
 
-        damageRequiredToStagger =
+        attackRange =
+            Mathf.Max(
+                0.1f,
+                attackRange);
+
+        attackDamage =
             Mathf.Max(
                 1,
-                damageRequiredToStagger);
+                attackDamage);
 
-        staggerDuration =
+        attackCooldown =
             Mathf.Max(
                 0f,
-                staggerDuration);
+                attackCooldown);
 
-        staggerResetDelay =
-            Mathf.Max(
-                0f,
-                staggerResetDelay);
-
-        enrageHealthThreshold =
+        phaseTwoHealth =
             Mathf.Clamp01(
-                enrageHealthThreshold);
+                phaseTwoHealth);
 
-        arenaReturnSpeedMultiplier =
-            Mathf.Max(
-                0f,
-                arenaReturnSpeedMultiplier);
+        phaseThreeHealth =
+            Mathf.Clamp01(
+                phaseThreeHealth);
 
-        arenaArrivalDistance =
-            Mathf.Max(
-                0f,
-                arenaArrivalDistance);
-
-        arenaCheckInterval =
-            Mathf.Max(
-                0.1f,
-                arenaCheckInterval);
-
-        victoryDelay =
-            Mathf.Max(
-                0f,
-                victoryDelay);
-
-        safetyCheckInterval =
-            Mathf.Max(
-                0.1f,
-                safetyCheckInterval);
-
-        minimumValidScale =
-            Mathf.Max(
-                0.01f,
-                minimumValidScale);
-
-        ValidatePhases();
-
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
+        if (phaseThreeHealth >
+            phaseTwoHealth)
         {
-            ResolveBossReferences();
-            ConfigureBossComponents();
-        }
-#endif
-    }
-
-    protected override void OnDrawGizmosSelected()
-    {
-        base.OnDrawGizmosSelected();
-
-        Transform center =
-            arenaCenter != null
-                ? arenaCenter
-                : transform;
-
-        if (maximumArenaRadius >
-            0f)
-        {
-            Gizmos.DrawWireSphere(
-                center.position,
-                maximumArenaRadius);
+            phaseThreeHealth =
+                phaseTwoHealth;
         }
     }
 
     #endregion
 
-    #region Initialization
+    #region Team Targeting
 
-    protected override bool Initialize()
+    private void FindTeamLeader()
     {
-        bool initialized =
-            base.Initialize();
-
-        if (!initialized)
-            return false;
-
-        ResolveBossReferences();
-        ConfigureBossComponents();
-        InitializeBossRuntime();
-
-        return initializedBoss;
-    }
-
-    private void ResolveBossReferences()
-    {
-        arenaCenter ??=
-            FindChildByName(
-                "Arena Center");
-
-        arenaCenter ??=
-            transform;
-
-        arenaTrigger ??=
-            FindChildColliderByName(
-                ArenaTriggerName);
-
-        bossAudioSource ??=
-            GetComponent<AudioSource>();
-
-        bossAudioSource ??=
-            GetComponentInChildren<AudioSource>(
-                includeInactive: true);
-    }
-
-    private void ConfigureBossComponents()
-    {
-        if (arenaTrigger != null)
+        if (teamSetup == null)
         {
-            arenaTrigger.isTrigger =
-                true;
+            teamSetup =
+                Object.FindAnyObjectByType<TeamSetup>();
         }
 
-        if (bossAudioSource != null)
+        if (teamSetup == null ||
+            teamSetup.player == null)
         {
-            bossAudioSource.playOnAwake =
-                false;
+            target =
+                null;
+
+            return;
         }
-    }
 
-    private void InitializeBossRuntime()
-    {
-        ValidatePhases();
-        SortPhases();
-
-        introTimer =
-            0f;
-
-        phaseTransitionTimer =
-            0f;
-
-        intermissionTimer =
-            0f;
-
-        staggerTimer =
-            0f;
-
-        staggerResetTimer =
-            0f;
-
-        arenaCheckTimer =
-            arenaCheckInterval;
-
-        victoryTimer =
-            0f;
-
-        safetyTimer =
-            safetyCheckInterval;
-
-        normalAgentSpeed =
-            Agent != null
-                ? Agent.speed
-                : 0f;
-
-        currentPhaseIndex =
-            0;
-
-        checkpointPhaseIndex =
-            0;
-
-        accumulatedStaggerDamage =
-            0;
-
-        playerInsideArena =
-            !requirePlayerInArena;
-
-        encounterStarted =
-            false;
-
-        enraged =
-            false;
-
-        finalPhaseEntered =
-            false;
-
-        phaseTransitionPending =
-            false;
-
-        victoryPending =
-            false;
-
-        initializedBoss =
-            ValidateBossConfiguration();
-
-        ChangeBossState(
-            BossEncounterState.Dormant);
-
-        SubscribeToBaseEvents();
-
-        if (activateOnStart &&
-            initializedBoss)
-        {
-            StartEncounter();
-        }
+        target =
+            teamSetup.player;
     }
 
     #endregion
 
-    #region Base Event Integration
+    #region Behavior
 
-    private void SubscribeToBaseEvents()
+    private void UpdateBehavior()
     {
-        UnsubscribeFromBaseEvents();
-
-        Damaged +=
-            HandleBaseDamaged;
-
-        Died +=
-            HandleBaseDied;
-    }
-
-    private void UnsubscribeFromBaseEvents()
-    {
-        Damaged -=
-            HandleBaseDamaged;
-
-        Died -=
-            HandleBaseDied;
-    }
-
-    private void HandleBaseDamaged(
-        AIController controller,
-        int damage)
-    {
-        if (controller != this ||
-            damage <= 0 ||
-            IsDead)
-        {
-            return;
-        }
-
-        if (enableStagger &&
-            bossEncounterState !=
-                BossEncounterState.Staggered &&
-            bossEncounterState !=
-                BossEncounterState.PhaseTransition &&
-            bossEncounterState !=
-                BossEncounterState.Intermission)
-        {
-            accumulatedStaggerDamage +=
-                damage;
-
-            staggerResetTimer =
-                staggerResetDelay;
-
-            if (accumulatedStaggerDamage >=
-                damageRequiredToStagger)
-            {
-                BeginStagger();
-            }
-        }
-
-        CheckPhaseProgression();
-        CheckEnrage();
-    }
-
-    private void HandleBaseDied(
-        AIController controller)
-    {
-        if (controller != this)
-            return;
-
-        HandleBossDefeat();
-    }
-
-    #endregion
-
-    #region Encounter State
-
-    private void UpdateEncounterState()
-    {
-        switch (bossEncounterState)
-        {
-            case BossEncounterState.Dormant:
-                UpdateDormantState();
-                break;
-
-            case BossEncounterState.Intro:
-                UpdateIntroState();
-                break;
-
-            case BossEncounterState.Active:
-                UpdateActiveState();
-                break;
-
-            case BossEncounterState.PhaseTransition:
-                UpdatePhaseTransitionState();
-                break;
-
-            case BossEncounterState.Intermission:
-                UpdateIntermissionState();
-                break;
-
-            case BossEncounterState.Staggered:
-                UpdateStaggerState();
-                break;
-
-            case BossEncounterState.Enraged:
-                UpdateEnragedState();
-                break;
-
-            case BossEncounterState.FinalPhase:
-                UpdateFinalPhaseState();
-                break;
-
-            case BossEncounterState.Defeated:
-            case BossEncounterState.Completed:
-            case BossEncounterState.Disabled:
-                break;
-
-            default:
-                Debug.LogError(
-                    $"Unhandled {nameof(BossEncounterState)} value '{bossEncounterState}'.",
-                    this);
-                break;
-        }
-    }
-
-    private void UpdateDormantState()
-    {
-        StopAgent();
-
-        if (activateOnStart ||
-            playerInsideArena)
-        {
-            StartEncounter();
-        }
-    }
-
-    private void UpdateIntroState()
-    {
-        if (lockMovementDuringIntro)
-        {
-            StopAgent();
-        }
-
-        introTimer =
-            Mathf.Max(
-                0f,
-                introTimer -
-                Time.deltaTime);
-
-        if (introTimer > 0f)
-            return;
-
-        CompleteIntro();
-    }
-
-    private void CompleteIntro()
-    {
-        ChangeBossState(
-            BossEncounterState.Active);
-
-        RestorePreservedTarget();
-
-        SetState(
-            Target != null
-                ? AIState.Chase
-                : AIState.Idle);
-    }
-
-    private void UpdateActiveState()
-    {
-        if (!encounterStarted)
-        {
-            ChangeBossState(
-                BossEncounterState.Dormant);
-        }
-    }
-
-    private void UpdatePhaseTransitionState()
-    {
-        StopAgent();
-
-        phaseTransitionTimer =
-            Mathf.Max(
-                0f,
-                phaseTransitionTimer -
-                Time.deltaTime);
-
-        if (phaseTransitionTimer > 0f)
-            return;
-
-        CompletePhaseTransition();
-    }
-
-    private void UpdateIntermissionState()
-    {
-        if (lockMovementDuringIntermission)
-        {
-            StopAgent();
-        }
-
-        intermissionTimer =
-            Mathf.Max(
-                0f,
-                intermissionTimer -
-                Time.deltaTime);
-
-        if (intermissionTimer > 0f)
-            return;
-
-        CompleteIntermission();
-    }
-
-    private void UpdateStaggerState()
-    {
-        StopAgent();
-
-        staggerTimer =
-            Mathf.Max(
-                0f,
-                staggerTimer -
-                Time.deltaTime);
-
-        if (staggerTimer > 0f)
-            return;
-
-        EndStagger();
-    }
-
-    private void UpdateEnragedState()
-    {
-        if (!enraged)
-        {
-            ChangeBossState(
-                BossEncounterState.Active);
-        }
-    }
-
-    private void UpdateFinalPhaseState()
-    {
-        if (!finalPhaseEntered)
-        {
-            ChangeBossState(
-                enraged
-                    ? BossEncounterState.Enraged
-                    : BossEncounterState.Active);
-        }
-    }
-
-    #endregion
-
-    #region AI State Overrides
-
-    protected override bool CanReceiveDamage()
-    {
-        if (!base.CanReceiveDamage())
-            return false;
-
-        if (invulnerableDuringPhaseTransition &&
-            (bossEncounterState ==
-                 BossEncounterState.PhaseTransition ||
-             bossEncounterState ==
-                 BossEncounterState.Intermission))
-        {
-            return false;
-        }
-
-        return
-            bossEncounterState !=
-                BossEncounterState.Intro &&
-            bossEncounterState !=
-                BossEncounterState.Defeated &&
-            bossEncounterState !=
-                BossEncounterState.Completed &&
-            bossEncounterState !=
-                BossEncounterState.Disabled;
-    }
-
-    protected override void UpdateIdleState()
-    {
-        if (!encounterStarted ||
-            IsControlLocked())
-        {
-            StopAgent();
-            return;
-        }
-
-        base.UpdateIdleState();
-    }
-
-    protected override void UpdatePatrolState()
-    {
-        if (!encounterStarted ||
-            IsControlLocked())
-        {
-            StopAgent();
-            return;
-        }
-
-        base.UpdatePatrolState();
-    }
-
-    protected override void UpdateChaseState()
-    {
-        if (!encounterStarted ||
-            IsControlLocked())
-        {
-            StopAgent();
-            return;
-        }
-
-        if (returnToArenaWhenOutside &&
-            IsOutsideArena())
-        {
-            ReturnToArena();
-            return;
-        }
-
-        base.UpdateChaseState();
-    }
-
-    protected override void UpdateAttackState()
-    {
-        if (!encounterStarted ||
-            IsControlLocked())
-        {
-            StopAgent();
-            return;
-        }
-
-        base.UpdateAttackState();
-    }
-
-    protected override void UpdateSpecialState()
-    {
-        if (IsControlLocked())
-        {
-            StopAgent();
-            return;
-        }
-
-        BossPhase phase =
-            CurrentPhase;
-
-        if (phase == null ||
-            !phase.EnableSpecialState)
-        {
-            SetState(
-                Target != null
-                    ? AIState.Chase
-                    : AIState.Idle);
-
-            return;
-        }
-
-        base.UpdateSpecialState();
-    }
-
-    protected override void UpdateReturningState()
-    {
-        if (returnToArenaWhenOutside &&
-            IsOutsideArena())
-        {
-            ReturnToArena();
-            return;
-        }
-
-        base.UpdateReturningState();
-    }
-
-    #endregion
-
-    #region Phase Management
-
-    private void CheckPhaseProgression()
-    {
-        if (!encounterStarted ||
-            IsDead ||
-            phases == null ||
-            phases.Length == 0 ||
-            phaseTransitionPending ||
-            victoryPending)
-        {
-            return;
-        }
-
-        float healthRatio =
-            HealthRatio;
-
-        int targetPhaseIndex =
-            currentPhaseIndex;
-
-        for (int index = 0;
-             index < phases.Length;
-             index++)
-        {
-            BossPhase phase =
-                phases[index];
-
-            if (phase == null)
-                continue;
-
-            if (healthRatio <=
-                phase.HealthThreshold)
-            {
-                targetPhaseIndex =
-                    Mathf.Max(
-                        targetPhaseIndex,
-                        index);
-            }
-        }
-
-        if (targetPhaseIndex >
-            currentPhaseIndex)
-        {
-            BeginPhaseTransition(
-                targetPhaseIndex);
-        }
-    }
-
-    private void BeginPhaseTransition(
-        int newPhaseIndex)
-    {
-        if (phases == null ||
-            phases.Length == 0)
-        {
-            return;
-        }
-
-        int clampedIndex =
-            Mathf.Clamp(
-                newPhaseIndex,
-                0,
-                phases.Length - 1);
-
-        phaseTransitionPending =
-            true;
-
-        currentPhaseIndex =
-            clampedIndex;
-
-        phaseTransitionTimer =
-            phaseTransitionDuration;
-
-        preservedTarget =
-            Target;
-
-        ChangeBossState(
-            BossEncounterState.PhaseTransition);
-
-        StopAgent();
-
-        phaseTransitionEffect?.Play();
-
-        PlayBossSound(
-            phaseTransitionSound);
-
-        BossPhase phase =
-            CurrentPhase;
-
-        phase?.PhaseEffect?.Play();
-
-        PlayBossSound(
-            phase?.PhaseVoice);
-
-        if (phase?.PhaseMusic != null)
-        {
-            PlayBossMusic(
-                phase.PhaseMusic);
-        }
-
-        if (enablePhaseCheckpoints &&
-            phase != null &&
-            phase.CheckpointPhase)
-        {
-            checkpointPhaseIndex =
-                currentPhaseIndex;
-
-            CheckpointReached?.Invoke(
-                this,
-                checkpointPhaseIndex);
-        }
-
-        PhaseChanged?.Invoke(
-            this,
-            currentPhaseIndex,
-            phase);
-
-        if (currentPhaseIndex ==
-            phases.Length - 1 &&
-            !finalPhaseEntered)
-        {
-            finalPhaseEntered =
-                true;
-
-            FinalPhaseStarted?.Invoke(
-                this);
-        }
-
-        if (phaseTransitionDuration <=
-            0f)
-        {
-            CompletePhaseTransition();
-        }
-    }
-
-    private void CompletePhaseTransition()
-    {
-        phaseTransitionPending =
-            false;
-
-        BossPhase phase =
-            CurrentPhase;
-
-        if (phase != null &&
-            phase.IntermissionDuration >
-                0f)
-        {
-            BeginIntermission(
-                phase.IntermissionDuration);
-
-            return;
-        }
-
-        ResumeAfterPhaseChange();
-    }
-
-    private void BeginIntermission(
-        float duration)
-    {
-        intermissionTimer =
-            Mathf.Max(
-                0f,
-                duration);
-
-        ChangeBossState(
-            BossEncounterState.Intermission);
-
-        intermissionEffect?.Play();
-
-        PlayBossSound(
-            intermissionSound);
-
-        if (intermissionTimer <= 0f)
-        {
-            CompleteIntermission();
-        }
-    }
-
-    private void CompleteIntermission()
-    {
-        if (restoreTargetAfterIntermission)
-        {
-            RestorePreservedTarget();
-        }
-
-        ResumeAfterPhaseChange();
-    }
-
-    private void ResumeAfterPhaseChange()
-    {
-        ChangeBossState(
-            finalPhaseEntered
-                ? BossEncounterState.FinalPhase
-                : enraged
-                    ? BossEncounterState.Enraged
-                    : BossEncounterState.Active);
-
-        RestorePreservedTarget();
-
-        SetState(
-            Target != null
-                ? AIState.Chase
-                : AIState.Idle);
-    }
-
-    #endregion
-
-    #region Stagger
-
-    private void BeginStagger()
-    {
-        accumulatedStaggerDamage =
-            0;
-
-        staggerResetTimer =
+        Vector3 difference =
+            target.position -
+            transform.position;
+
+        difference.y =
             0f;
 
-        staggerTimer =
-            staggerDuration;
-
-        preservedTarget =
-            Target;
-
-        ChangeBossState(
-            BossEncounterState.Staggered);
-
-        StopAgent();
-
-        staggerEffect?.Play();
-
-        PlayBossSound(
-            staggerSound);
-
-        StaggerStarted?.Invoke(
-            this);
-
-        if (staggerDuration <=
-            0f)
-        {
-            EndStagger();
-        }
-    }
-
-    private void EndStagger()
-    {
-        staggerTimer =
-            0f;
-
-        ChangeBossState(
-            finalPhaseEntered
-                ? BossEncounterState.FinalPhase
-                : enraged
-                    ? BossEncounterState.Enraged
-                    : BossEncounterState.Active);
-
-        RestorePreservedTarget();
-
-        SetState(
-            Target != null
-                ? AIState.Chase
-                : AIState.Idle);
-
-        StaggerEnded?.Invoke(
-            this);
-    }
-
-    #endregion
-
-    #region Enrage
-
-    private void CheckEnrage()
-    {
-        if (!enableEnrage ||
-            enraged ||
-            IsDead ||
-            HealthRatio >
-                enrageHealthThreshold)
-        {
-            return;
-        }
-
-        enraged =
-            true;
-
-        ChangeBossState(
-            finalPhaseEntered
-                ? BossEncounterState.FinalPhase
-                : BossEncounterState.Enraged);
-
-        enrageEffect?.Play();
-
-        PlayBossSound(
-            enrageSound);
-
-        Enraged?.Invoke(
-            this);
-    }
-
-    #endregion
-
-    #region Arena
-
-    private void CheckArenaBounds()
-    {
-        if (!encounterStarted ||
-            !returnToArenaWhenOutside)
-        {
-            return;
-        }
-
-        arenaCheckTimer =
-            Mathf.Max(
-                0f,
-                arenaCheckTimer -
-                Time.deltaTime);
-
-        if (arenaCheckTimer > 0f)
-            return;
-
-        arenaCheckTimer =
-            arenaCheckInterval;
-
-        if (IsOutsideArena())
-        {
-            ReturnToArena();
-        }
-    }
-
-    private bool IsOutsideArena()
-    {
-        if (maximumArenaRadius <=
-            0f)
-        {
-            return false;
-        }
-
-        Vector3 center =
-            arenaCenter != null
-                ? arenaCenter.position
-                : HomePosition;
-
-        float sqrDistance =
-            (transform.position -
-             center)
-            .sqrMagnitude;
-
-        return
-            float.IsFinite(
-                sqrDistance) &&
-            sqrDistance >
-                maximumArenaRadius *
-                maximumArenaRadius;
-    }
-
-    private void ReturnToArena()
-    {
-        Vector3 center =
-            arenaCenter != null
-                ? arenaCenter.position
-                : HomePosition;
-
-        if (Agent != null &&
-            Agent.enabled)
-        {
-            Agent.speed =
-                normalAgentSpeed *
-                arenaReturnSpeedMultiplier;
-        }
-
-        MoveAgentTo(
-            center);
-
-        if (!HasReachedArenaCenter(
-                center))
-        {
-            return;
-        }
-
-        StopAgent();
-        RestoreNormalAgentSpeed();
-
-        SetState(
-            Target != null
-                ? AIState.Chase
-                : AIState.Idle);
-    }
-
-    private void RestoreNormalAgentSpeed()
-    {
-        if (Agent != null &&
-            Agent.enabled)
-        {
-            Agent.speed =
-                normalAgentSpeed;
-        }
-    }
-
-    private bool HasReachedArenaCenter(
-        Vector3 center)
-    {
         float distance =
-            Vector3.Distance(
-                transform.position,
-                center);
+            difference.magnitude;
 
-        return
-            float.IsFinite(
-                distance) &&
-            distance <=
-                arenaArrivalDistance;
+        if (!float.IsFinite(distance))
+        {
+            currentState =
+                BossState.Idle;
+
+            return;
+        }
+
+        RotateTowardsTarget(
+            difference);
+
+        if (distance <=
+            attackRange)
+        {
+            currentState =
+                BossState.Attacking;
+
+            TryAttack();
+
+            return;
+        }
+
+        if (distance <=
+            stoppingDistance)
+        {
+            currentState =
+                BossState.Idle;
+
+            return;
+        }
+
+        MoveTowardsTarget(
+            difference);
     }
 
     #endregion
 
-    #region Timers
+    #region Movement
 
-    private void UpdateBossTimers()
+    private void MoveTowardsTarget(
+        Vector3 direction)
     {
-        if (staggerResetTimer > 0f)
+        if (direction.sqrMagnitude <=
+            0.0001f)
         {
-            staggerResetTimer =
-                Mathf.Max(
-                    0f,
-                    staggerResetTimer -
-                    Time.deltaTime);
+            currentState =
+                BossState.Idle;
 
-            if (staggerResetTimer <= 0f)
+            return;
+        }
+
+        direction.Normalize();
+
+        currentState =
+            BossState.Chasing;
+
+        float speed =
+            GetCurrentMoveSpeed();
+
+        Vector3 movement =
+            direction *
+            speed *
+            Time.deltaTime;
+
+        if (!IsFiniteVector(
+                movement))
+        {
+            return;
+        }
+
+        transform.position +=
+            movement;
+    }
+
+    private void RotateTowardsTarget(
+        Vector3 direction)
+    {
+        if (direction.sqrMagnitude <=
+            0.0001f)
+        {
+            return;
+        }
+
+        direction.Normalize();
+
+        Quaternion targetRotation =
+            Quaternion.LookRotation(
+                direction,
+                Vector3.up);
+
+        transform.rotation =
+            Quaternion.RotateTowards(
+                transform.rotation,
+                targetRotation,
+                rotationSpeed *
+                Time.deltaTime);
+    }
+
+    private float GetCurrentMoveSpeed()
+    {
+        return currentPhase switch
+        {
+            BossPhase.PhaseTwo =>
+                moveSpeed *
+                phaseTwoSpeedMultiplier,
+
+            BossPhase.PhaseThree =>
+                moveSpeed *
+                phaseThreeSpeedMultiplier,
+
+            _ =>
+                moveSpeed
+        };
+    }
+
+    #endregion
+
+    #region Attack
+
+    private void TryAttack()
+    {
+        if (attackTimer > 0f ||
+            target == null)
+        {
+            return;
+        }
+
+        Health targetHealth =
+            FindTargetHealth();
+
+        if (targetHealth == null ||
+            targetHealth.dead)
+        {
+            return;
+        }
+
+        int damage =
+            GetCurrentAttackDamage();
+
+        targetHealth.TakeDamage(
+            damage);
+
+        attackTimer =
+            attackCooldown;
+
+        TriggerAnimator(
+            AttackHash);
+    }
+
+    private Health FindTargetHealth()
+    {
+        if (target == null)
+        {
+            return null;
+        }
+
+        Health health =
+            target.GetComponent<Health>();
+
+        health ??=
+            target.GetComponentInChildren<Health>();
+
+        health ??=
+            target.GetComponentInParent<Health>();
+
+        return health;
+    }
+
+    private int GetCurrentAttackDamage()
+    {
+        float multiplier =
+            currentPhase switch
             {
-                accumulatedStaggerDamage =
-                    0;
-            }
-        }
+                BossPhase.PhaseTwo =>
+                    phaseTwoAttackMultiplier,
+
+                BossPhase.PhaseThree =>
+                    phaseThreeAttackMultiplier,
+
+                _ =>
+                    1f
+            };
+
+        return Mathf.Max(
+            1,
+            Mathf.RoundToInt(
+                attackDamage *
+                multiplier));
     }
 
-    #endregion
-
-    #region Defeat And Victory
-
-    private void HandleBossDefeat()
+    private void UpdateAttackCooldown()
     {
-        if (bossEncounterState ==
-                BossEncounterState.Defeated ||
-            bossEncounterState ==
-                BossEncounterState.Completed)
+        if (attackTimer <= 0f)
         {
             return;
         }
 
-        encounterStarted =
-            false;
-
-        phaseTransitionPending =
-            false;
-
-        StopAgent();
-        RestoreNormalAgentSpeed();
-
-        ChangeBossState(
-            BossEncounterState.Defeated);
-
-        defeatEffect?.Play();
-
-        PlayBossSound(
-            defeatSound);
-
-        PlayBossMusic(
-            victoryMusic);
-
-        BossDefeated?.Invoke(
-            this);
-
-        victoryPending =
-            true;
-
-        victoryTimer =
-            victoryDelay;
-
-        if (victoryDelay <=
-            0f)
-        {
-            CompleteVictory();
-        }
-    }
-
-    private void UpdateVictorySequence()
-    {
-        if (!victoryPending)
-            return;
-
-        victoryTimer =
+        attackTimer =
             Mathf.Max(
                 0f,
-                victoryTimer -
+                attackTimer -
                 Time.deltaTime);
-
-        if (victoryTimer > 0f)
-            return;
-
-        CompleteVictory();
-    }
-
-    private void CompleteVictory()
-    {
-        if (!victoryPending &&
-            bossEncounterState ==
-                BossEncounterState.Completed)
-        {
-            return;
-        }
-
-        victoryPending =
-            false;
-
-        victoryEffect?.Play();
-
-        ChangeBossState(
-            BossEncounterState.Completed);
-
-        EncounterCompleted?.Invoke(
-            this);
-
-        if (disableAfterVictory)
-        {
-            enabled =
-                false;
-        }
     }
 
     #endregion
 
-    #region Runtime Safety
+    #region Damage
 
-    protected override bool RunRuntimeSafetyChecks()
+    public void TakeDamage(
+        float damage)
     {
-        if (!base.RunRuntimeSafetyChecks())
-            return false;
+        if (currentState ==
+                BossState.Dead ||
+            damage <= 0f ||
+            !float.IsFinite(damage))
+        {
+            return;
+        }
 
-        return RunBossSafetyChecks();
+        currentHealth =
+            Mathf.Max(
+                0f,
+                currentHealth -
+                damage);
+
+        if (currentHealth <= 0f)
+        {
+            Die();
+
+            return;
+        }
+
+        currentState =
+            BossState.Hurt;
+
+        TriggerAnimator(
+            HurtHash);
     }
 
-    private bool RunBossSafetyChecks()
+    private void Die()
     {
-        if (!ValidateBossReferences())
+        if (currentState ==
+            BossState.Dead)
         {
-            ResolveBossReferences();
-            ConfigureBossComponents();
+            return;
+        }
 
-            if (!ValidateBossReferences())
+        currentState =
+            BossState.Dead;
+
+        TriggerAnimator(
+            DieHash);
+
+        Destroy(
+            gameObject,
+            1f);
+    }
+
+    #endregion
+
+    #region Boss Phases
+
+    private void UpdatePhase()
+    {
+        if (maxHealth <= 0f)
+        {
+            return;
+        }
+
+        float healthPercent =
+            currentHealth /
+            maxHealth;
+
+        BossPhase newPhase;
+
+        if (healthPercent <=
+            phaseThreeHealth)
+        {
+            newPhase =
+                BossPhase.PhaseThree;
+        }
+        else if (healthPercent <=
+                 phaseTwoHealth)
+        {
+            newPhase =
+                BossPhase.PhaseTwo;
+        }
+        else
+        {
+            newPhase =
+                BossPhase.PhaseOne;
+        }
+
+        if (newPhase ==
+            currentPhase)
+        {
+            return;
+        }
+
+        currentPhase =
+            newPhase;
+    }
+
+    #endregion
+
+    #region Animation
+
+    private void UpdateAnimator()
+    {
+        if (!HasValidAnimator())
+        {
+            return;
+        }
+
+        if (HasParameter(
+                SpeedHash))
+        {
+            float speed =
+                currentState ==
+                BossState.Chasing
+                    ? GetCurrentMoveSpeed()
+                    : 0f;
+
+            animator.SetFloat(
+                SpeedHash,
+                speed);
+        }
+    }
+
+    private void TriggerAnimator(
+        int parameterHash)
+    {
+        if (!HasValidAnimator() ||
+            !HasParameter(
+                parameterHash))
+        {
+            return;
+        }
+
+        animator.SetTrigger(
+            parameterHash);
+    }
+
+    private bool HasValidAnimator()
+    {
+        return
+            animator != null &&
+            animator.isActiveAndEnabled &&
+            animator.runtimeAnimatorController !=
+                null;
+    }
+
+    private bool HasParameter(
+        int parameterHash)
+    {
+        if (!HasValidAnimator())
+        {
+            return false;
+        }
+
+        foreach (
+            AnimatorControllerParameter parameter
+            in animator.parameters)
+        {
+            if (parameter.nameHash ==
+                parameterHash)
             {
-                EnterBossSafetyShutdown(
-                    "Required boss references could not be restored.");
-
-                return false;
+                return true;
             }
         }
 
-        if (!ValidateTransformState())
-        {
-            EnterBossSafetyShutdown(
-                "Boss Transform contains invalid values.");
-
-            return false;
-        }
-
-        if (restoreDisabledComponents &&
-            bossAudioSource != null &&
-            !bossAudioSource.enabled)
-        {
-            bossAudioSource.enabled =
-                true;
-        }
-
-        return true;
-    }
-
-    private bool ValidateBossReferences()
-    {
-        return
-            arenaCenter != null;
-    }
-
-    private bool ValidateTransformState()
-    {
-        Vector3 scale =
-            transform.lossyScale;
-
-        return
-            IsFiniteVector(
-                transform.position) &&
-            IsFiniteQuaternion(
-                transform.rotation) &&
-            IsFiniteVector(
-                scale) &&
-            Mathf.Abs(
-                scale.x) >=
-                minimumValidScale &&
-            Mathf.Abs(
-                scale.y) >=
-                minimumValidScale &&
-            Mathf.Abs(
-                scale.z) >=
-                minimumValidScale;
-    }
-
-    private void EnterBossSafetyShutdown(
-        string reason)
-    {
-        initializedBoss =
-            false;
-
-        encounterStarted =
-            false;
-
-        victoryPending =
-            false;
-
-        StopAgent();
-        RestoreNormalAgentSpeed();
-
-        ChangeBossState(
-            BossEncounterState.Disabled);
-
-        Debug.LogError(
-            $"{nameof(BossAI)} entered safety shutdown on '{name}': {reason}",
-            this);
-
-        enabled =
-            false;
+        return false;
     }
 
     #endregion
 
     #region Validation
 
-    private bool ValidateBossConfiguration()
-    {
-        if (arenaCenter == null)
-        {
-            Debug.LogError(
-                $"{nameof(BossAI)} on '{name}' requires an arena center.",
-                this);
-
-            return false;
-        }
-
-        if (phases == null ||
-            phases.Length == 0)
-        {
-            Debug.LogWarning(
-                $"{nameof(BossAI)} on '{name}' has no configured phases.",
-                this);
-        }
-
-        return true;
-    }
-
-    private void ValidatePhases()
-    {
-        if (phases == null)
-        {
-            phases =
-                Array.Empty<BossPhase>();
-
-            return;
-        }
-
-        if (phases.Length >
-            MaximumPhaseCount)
-        {
-            Array.Resize(
-                ref phases,
-                MaximumPhaseCount);
-        }
-
-        foreach (BossPhase phase
-                 in phases)
-        {
-            phase?.Validate();
-        }
-    }
-
-    private void SortPhases()
-    {
-        if (phases == null ||
-            phases.Length <= 1)
-        {
-            return;
-        }
-
-        Array.Sort(
-            phases,
-            (left, right) =>
-            {
-                if (left == null &&
-                    right == null)
-                {
-                    return 0;
-                }
-
-                if (left == null)
-                    return 1;
-
-                if (right == null)
-                    return -1;
-
-                return right.HealthThreshold.CompareTo(
-                    left.HealthThreshold);
-            });
-    }
-
-    #endregion
-
-    #region State
-
-    private void ChangeBossState(
-        BossEncounterState newState)
-    {
-        if (!Enum.IsDefined(
-                typeof(BossEncounterState),
-                newState))
-        {
-            return;
-        }
-
-        if (bossEncounterState ==
-            newState)
-        {
-            return;
-        }
-
-        bossEncounterState =
-            newState;
-
-        BossStateChanged?.Invoke(
-            this,
-            bossEncounterState);
-
-        if (logBossState)
-        {
-            Debug.Log(
-                $"{nameof(BossAI)} on '{name}' changed to {bossEncounterState}.",
-                this);
-        }
-    }
-
-    private bool IsControlLocked()
+    private static bool IsFiniteVector(
+        Vector3 value)
     {
         return
-            bossEncounterState ==
-                BossEncounterState.Intro ||
-            bossEncounterState ==
-                BossEncounterState.PhaseTransition ||
-            bossEncounterState ==
-                BossEncounterState.Intermission ||
-            bossEncounterState ==
-                BossEncounterState.Staggered ||
-            bossEncounterState ==
-                BossEncounterState.Defeated ||
-            bossEncounterState ==
-                BossEncounterState.Completed ||
-            bossEncounterState ==
-                BossEncounterState.Disabled;
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z);
     }
 
     #endregion
 
-    #region Helpers
+    #region Gizmos
 
-    private Transform FindChildByName(
-        string targetName)
+    private void OnDrawGizmosSelected()
     {
-        if (string.IsNullOrWhiteSpace(
-                targetName))
-        {
-            return null;
-        }
-
-        Transform[] children =
-            GetComponentsInChildren<Transform>(
-                includeInactive: true);
-
-        foreach (Transform child
-                 in children)
-        {
-            if (child != null &&
-                string.Equals(
-                    child.name,
-                    targetName,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return child;
-            }
-        }
-
-        return null;
-    }
-
-    private Collider FindChildColliderByName(
-        string targetName)
-    {
-        Transform child =
-            FindChildByName(
-                targetName);
-
-        if (child == null)
-            return null;
-
-        Collider resolvedCollider =
-            child.GetComponent<Collider>();
-
-        resolvedCollider ??=
-            child.GetComponentInChildren<Collider>(
-                includeInactive: true);
-
-        return resolvedCollider;
-    }
-
-    private void RestorePreservedTarget()
-    {
-        if (Target != null ||
-            preservedTarget == null ||
-            !preservedTarget.gameObject.activeInHierarchy)
+        if (!drawRanges)
         {
             return;
         }
 
-        SetTarget(
-            preservedTarget);
+        Gizmos.DrawWireSphere(
+            transform.position,
+            stoppingDistance);
+
+        Gizmos.DrawWireSphere(
+            transform.position,
+            attackRange);
     }
 
-    private void PlayBossSound(
-        AudioClip clip)
-    {
-        if (bossAudioSource == null ||
-            clip == null)
-        {
-            return;
-        }
-
-        bossAudioSource.PlayOneShot(
-            clip);
-    }
-
-    private void PlayBossMusic(
-        AudioClip clip)
-    {
-        if (bossAudioSource == null ||
-            clip == null)
-        {
-            return;
-        }
-
-        bossAudioSource.clip =
-            clip;
-
-        bossAudioSource.loop =
-            true;
-
-        bossAudioSource.Play();
-    }
     #endregion
 }

@@ -2,75 +2,106 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-public sealed class ChaosInferno : MonoBehaviour
+public class ChaosInferno : MonoBehaviour
 {
-    #region Constants
-
-    private const int MaxTargetResults = 64;
-    private const float MinimumDirectionMagnitude = 0.001f;
-    private const float MinimumDuration = 0.05f;
-
-    #endregion
-
-    #region Animator Hashes
-
     private static readonly int ChaosInfernoHash =
         Animator.StringToHash("Chaos Inferno");
 
+    #region Team Blast
+
+    [Header("Team Blast")]
+
+    [SerializeField, Min(0.1f)]
+    private float blastRadius = 20f;
+
+    [SerializeField, Min(1)]
+    private int damage = 100;
+
+    [SerializeField, Min(0f)]
+    private float knockbackForce = 16f;
+
+    [SerializeField, Min(1)]
+    private int pulseCount = 2;
+
+    [SerializeField, Min(0f)]
+    private float pulseInterval = 0.2f;
+
+    [SerializeField]
+    private LayerMask enemyLayers = ~0;
+
     #endregion
 
-    #region Inspector
+    #region Timing
+
+    [Header("Timing")]
+
+    [SerializeField, Min(0f)]
+    private float activationDelay = 0.1f;
+
+    [SerializeField, Min(0f)]
+    private float recoveryDuration = 0.5f;
+
+    #endregion
+
+    #region References
 
     [Header("References")]
-    [SerializeField] private TeamActionController actionController;
-    [SerializeField] private Animator animator;
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private Transform blastOrigin;
 
-    [Header("Chaos Inferno")]
-    [SerializeField, Min(0.1f)] private float blastRadius = 20f;
-    [SerializeField, Min(0f)] private float damage = 110f;
-    [SerializeField, Min(0f)] private float knockbackForce = 16f;
-    [SerializeField, Min(MinimumDuration)] private float activeDuration = 1f;
-    [SerializeField, Min(1)] private int pulseCount = 2;
-    [SerializeField, Min(0f)] private float pulseInterval = 0.2f;
-    [SerializeField] private LayerMask enemyLayers = ~0;
+    [SerializeField]
+    private Transform blastOrigin;
 
-    [Header("Chaos Control")]
-    [SerializeField, Min(0f)] private float controlDuration = 5f;
-    [SerializeField, Range(0f, 1f)] private float enemyTimeScale = 0f;
-    [SerializeField] private bool destroyControlledEnemies;
+    [SerializeField]
+    private Animator animator;
+
+    [SerializeField]
+    private AudioSource audioSource;
+
+    #endregion
+
+    #region Effects
 
     [Header("Effects")]
-    [SerializeField] private GameObject activationEffect;
-    [SerializeField] private GameObject pulseEffect;
-    [SerializeField] private GameObject controlEffect;
-    [SerializeField, Min(0f)] private float effectLifetime = 4f;
+
+    [SerializeField]
+    private GameObject activationEffect;
+
+    [SerializeField]
+    private GameObject pulseEffect;
+
+    [SerializeField, Min(0f)]
+    private float effectLifetime = 3f;
+
+    #endregion
+
+    #region Audio
 
     [Header("Audio")]
-    [SerializeField] private AudioClip activationSound;
-    [SerializeField] private AudioClip pulseSound;
+
+    [SerializeField]
+    private AudioClip activationSound;
+
+    [SerializeField]
+    private AudioClip pulseSound;
+
+    #endregion
+
+    #region Debug
 
     [Header("Debug")]
-    [SerializeField] private bool drawBlastRadius = true;
-    [SerializeField] private bool logStateChanges;
+
+    [SerializeField]
+    private bool drawBlastRadius = true;
 
     #endregion
 
     #region Runtime State
 
-    private readonly Collider[] targetResults =
-        new Collider[MaxTargetResults];
-
-    private readonly HashSet<GameObject> affectedTargets =
+    private readonly HashSet<Health> affectedEnemies =
         new();
 
     private Coroutine infernoRoutine;
 
     private bool isActive;
-    private bool isInitialized;
-    private bool isShuttingDown;
 
     #endregion
 
@@ -79,24 +110,38 @@ public sealed class ChaosInferno : MonoBehaviour
     public bool IsActive =>
         isActive;
 
-    public bool IsInitialized =>
-        isInitialized;
-
     public bool TryActivate()
     {
         if (!CanActivate())
+        {
             return false;
+        }
 
-        BeginChaosInferno();
+        isActive = true;
+
+        infernoRoutine =
+            StartCoroutine(
+                ChaosInfernoRoutine());
+
         return true;
     }
 
     public void Cancel()
     {
         if (!isActive)
+        {
             return;
+        }
 
-        FinishChaosInferno();
+        if (infernoRoutine != null)
+        {
+            StopCoroutine(
+                infernoRoutine);
+
+            infernoRoutine = null;
+        }
+
+        Finish();
     }
 
     #endregion
@@ -105,36 +150,12 @@ public sealed class ChaosInferno : MonoBehaviour
 
     private void Awake()
     {
-        CacheComponents();
-        ResolveReferences();
-    }
-
-    private void Start()
-    {
-        if (!InitializeChaosInferno())
-        {
-            enabled = false;
-        }
-    }
-
-    private void OnEnable()
-    {
-        if (isShuttingDown)
-            return;
-
-        CacheComponents();
         ResolveReferences();
     }
 
     private void OnDisable()
     {
-        CleanupRuntimeState();
-    }
-
-    private void OnDestroy()
-    {
-        isShuttingDown = true;
-        CleanupDestroyedState();
+        Cancel();
     }
 
     private void OnValidate()
@@ -146,18 +167,13 @@ public sealed class ChaosInferno : MonoBehaviour
 
         damage =
             Mathf.Max(
-                0f,
+                1,
                 damage);
 
         knockbackForce =
             Mathf.Max(
                 0f,
                 knockbackForce);
-
-        activeDuration =
-            Mathf.Max(
-                MinimumDuration,
-                activeDuration);
 
         pulseCount =
             Mathf.Max(
@@ -169,14 +185,15 @@ public sealed class ChaosInferno : MonoBehaviour
                 0f,
                 pulseInterval);
 
-        controlDuration =
+        activationDelay =
             Mathf.Max(
                 0f,
-                controlDuration);
+                activationDelay);
 
-        enemyTimeScale =
-            Mathf.Clamp01(
-                enemyTimeScale);
+        recoveryDuration =
+            Mathf.Max(
+                0f,
+                recoveryDuration);
 
         effectLifetime =
             Mathf.Max(
@@ -184,84 +201,26 @@ public sealed class ChaosInferno : MonoBehaviour
                 effectLifetime);
     }
 
-    private void OnDrawGizmosSelected()
-    {
-        if (!drawBlastRadius)
-            return;
-
-        Gizmos.DrawWireSphere(
-            GetBlastPosition(),
-            blastRadius);
-    }
-
     #endregion
 
-    #region Initialization
-
-    public bool InitializeChaosInferno()
-    {
-        if (isInitialized)
-            return true;
-
-        CacheComponents();
-        ResolveReferences();
-
-        if (!ValidateConfiguration())
-        {
-            Debug.LogError(
-                $"ChaosInferno failed to initialize on '{name}'.",
-                this);
-
-            isInitialized = false;
-            return false;
-        }
-
-        ResetRuntimeState();
-
-        isInitialized = true;
-        return true;
-    }
-
-    private void CacheComponents()
-    {
-        actionController ??=
-            GetComponentInParent<TeamActionController>();
-
-        audioSource ??=
-            GetComponentInParent<AudioSource>();
-    }
-
-    private void ResolveReferences()
-    {
-        animator ??=
-            GetComponentInChildren<Animator>(
-                includeInactive: true);
-
-        blastOrigin ??=
-            transform;
-    }
-
-    #endregion
-
-    #region Chaos Inferno State
+    #region Activation
 
     private bool CanActivate()
     {
-        return
-            isInitialized &&
-            !isActive &&
-            TeamSetup.Instance != null &&
-            TeamSetup.Instance.PlayableTeam ==
-                PlayableTeam.TeamDark &&
-            actionController != null;
+        if (isActive)
+        {
+            return false;
+        }
+
+        return IsTeamDark();
     }
 
-    private void BeginChaosInferno()
+    private IEnumerator ChaosInfernoRoutine()
     {
-        isActive = true;
-        affectedTargets.Clear();
+        ResolveReferences();
 
         PlayAnimation();
+
         PlaySound(
             activationSound);
 
@@ -269,267 +228,231 @@ public sealed class ChaosInferno : MonoBehaviour
             activationEffect,
             GetBlastPosition());
 
-        infernoRoutine =
-            StartCoroutine(
-                ChaosInfernoRoutine());
-
-        LogStateChange(
-            "Chaos Inferno started.");
-    }
-
-    private IEnumerator ChaosInfernoRoutine()
-    {
-        WaitForSeconds pulseWait =
-            pulseInterval > 0f
-                ? new WaitForSeconds(
-                    pulseInterval)
-                : null;
-
-        for (int pulseIndex = 0;
-             pulseIndex < pulseCount;
-             pulseIndex++)
-        {
-            ApplyInfernoPulse();
-
-            if (pulseIndex <
-                    pulseCount - 1 &&
-                pulseWait != null)
-            {
-                yield return pulseWait;
-            }
-        }
-
-        float remainingDuration =
-            Mathf.Max(
-                0f,
-                activeDuration -
-                pulseInterval *
-                Mathf.Max(
-                    0,
-                    pulseCount - 1));
-
-        if (remainingDuration > 0f)
+        if (activationDelay > 0f)
         {
             yield return
                 new WaitForSeconds(
-                    remainingDuration);
+                    activationDelay);
         }
 
-        FinishChaosInferno();
-    }
-
-    private void FinishChaosInferno()
-    {
-        if (!isActive)
-            return;
-
-        isActive = false;
-
-        if (infernoRoutine != null)
+        for (int pulse = 0;
+            pulse < pulseCount;
+            pulse++)
         {
-            StopCoroutine(
-                infernoRoutine);
+            ApplyPulse();
 
-            infernoRoutine = null;
+            if (pulse <
+                    pulseCount - 1 &&
+                pulseInterval > 0f)
+            {
+                yield return
+                    new WaitForSeconds(
+                        pulseInterval);
+            }
         }
 
-        affectedTargets.Clear();
+        if (recoveryDuration > 0f)
+        {
+            yield return
+                new WaitForSeconds(
+                    recoveryDuration);
+        }
 
-        LogStateChange(
-            "Chaos Inferno finished.");
-    }
-
-    private void ResetRuntimeState()
-    {
-        isActive = false;
         infernoRoutine = null;
-        affectedTargets.Clear();
+
+        Finish();
     }
 
-    #endregion
-
-    #region Chaos Control
-
-    private void ApplyChaosControl(
-        GameObject target)
+    private void Finish()
     {
-        if (target == null ||
-            controlDuration <= 0f)
-        {
-            return;
-        }
+        isActive = false;
 
-        target.SendMessage(
-            "ApplyChaosControl",
-            controlDuration,
-            SendMessageOptions.DontRequireReceiver);
-
-        target.SendMessage(
-            "SetLocalTimeScale",
-            enemyTimeScale,
-            SendMessageOptions.DontRequireReceiver);
-
-        SpawnEffect(
-            controlEffect,
-            target.transform.position);
+        affectedEnemies.Clear();
     }
 
     #endregion
 
     #region Damage
 
-    private void ApplyInfernoPulse()
+    private void ApplyPulse()
     {
+        Vector3 position =
+            GetBlastPosition();
+
+        if (!IsFiniteVector(
+                position))
+        {
+            return;
+        }
+
+        affectedEnemies.Clear();
+
         SpawnEffect(
             pulseEffect,
-            GetBlastPosition());
+            position);
 
         PlaySound(
             pulseSound);
 
-        int resultCount =
-            Physics.OverlapSphereNonAlloc(
-                GetBlastPosition(),
+        Collider[] enemies =
+            Physics.OverlapSphere(
+                position,
                 blastRadius,
-                targetResults,
                 enemyLayers,
-                QueryTriggerInteraction.Collide);
+                QueryTriggerInteraction.Ignore);
 
-        for (int index = 0;
-             index < resultCount;
-             index++)
+        foreach (Collider enemy in enemies)
         {
-            Collider enemy =
-                targetResults[index];
-
-            targetResults[index] = null;
-
             if (enemy == null)
-                continue;
-
-            GameObject target =
-                enemy.attachedRigidbody != null
-                    ? enemy.attachedRigidbody.gameObject
-                    : enemy.gameObject;
-
-            if (IsTeamCharacter(target) ||
-                !affectedTargets.Add(target))
             {
                 continue;
             }
 
-            target.SendMessage(
-                "TakeDamage",
-                damage,
-                SendMessageOptions.DontRequireReceiver);
+            Health health =
+                FindHealth(
+                    enemy);
+
+            if (health == null ||
+                health.dead ||
+                !affectedEnemies.Add(
+                    health))
+            {
+                continue;
+            }
+
+            health.TakeDamage(
+                damage);
 
             ApplyKnockback(
-                target,
-                enemy.attachedRigidbody);
-
-            ApplyChaosControl(
-                target);
-
-            if (destroyControlledEnemies)
-            {
-                target.SendMessage(
-                    "Break",
-                    SendMessageOptions.DontRequireReceiver);
-            }
+                enemy,
+                position);
         }
     }
 
+    private static Health FindHealth(
+        Collider target)
+    {
+        if (target == null)
+        {
+            return null;
+        }
+
+        Health health =
+            target.GetComponent<Health>();
+
+        health ??=
+            target.GetComponentInParent<Health>();
+
+        health ??=
+            target.GetComponentInChildren<Health>(
+                includeInactive: true);
+
+        return health;
+    }
+
+    #endregion
+
+    #region Knockback
+
     private void ApplyKnockback(
-        GameObject target,
-        Rigidbody targetRigidbody)
+        Collider target,
+        Vector3 blastPosition)
     {
         if (target == null ||
-            targetRigidbody == null ||
             knockbackForce <= 0f)
         {
             return;
         }
 
+        Rigidbody body =
+            target.attachedRigidbody;
+
+        if (body == null ||
+            body.isKinematic)
+        {
+            return;
+        }
+
         Vector3 direction =
-            target.transform.position -
-            GetBlastPosition();
+            body.worldCenterOfMass -
+            blastPosition;
 
         direction.y =
             Mathf.Max(
                 direction.y,
-                0.2f);
+                0.25f);
 
-        if (direction.sqrMagnitude <=
-            MinimumDirectionMagnitude)
+        if (!IsFiniteVector(
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
         {
             direction =
-                transform.forward;
+                transform.forward +
+                Vector3.up * 0.25f;
         }
 
-        targetRigidbody.AddForce(
+        body.AddForce(
             direction.normalized *
-            knockbackForce,
+                knockbackForce,
             ForceMode.VelocityChange);
     }
 
     #endregion
 
-    #region Team Filtering
+    #region Team Dark
 
-    private bool IsTeamCharacter(
-        GameObject target)
+    private bool IsTeamDark()
     {
-        if (target == null ||
-            actionController == null)
+        TeamSetup teamSetup =
+            Object.FindAnyObjectByType<TeamSetup>();
+
+        if (teamSetup == null ||
+            teamSetup.CurrentTeam == null)
         {
             return false;
         }
 
         return
-            MatchesCharacter(
-                target,
-                actionController.SpeedCharacter) ||
-            MatchesCharacter(
-                target,
-                actionController.FlyCharacter) ||
-            MatchesCharacter(
-                target,
-                actionController.PowerCharacter);
-    }
-
-    private static bool MatchesCharacter(
-        GameObject target,
-        Transform character)
-    {
-        return
-            character != null &&
-            (target == character.gameObject ||
-             target.transform.IsChildOf(character));
+            teamSetup.CurrentTeam.name ==
+            "Team Dark";
     }
 
     #endregion
 
-    #region Effects
+    #region References
 
-    private void SpawnEffect(
-        GameObject effectPrefab,
-        Vector3 position)
+    private void ResolveReferences()
     {
-        if (effectPrefab == null)
-            return;
+        blastOrigin ??=
+            transform;
 
-        GameObject spawnedEffect =
-            Instantiate(
-                effectPrefab,
-                position,
-                transform.rotation);
-
-        if (effectLifetime > 0f)
+        if (animator == null)
         {
-            Destroy(
-                spawnedEffect,
-                effectLifetime);
+            animator =
+                GetComponentInChildren<Animator>(
+                    includeInactive: true);
         }
+
+        audioSource ??=
+            GetComponent<AudioSource>();
+
+        audioSource ??=
+            GetComponentInParent<AudioSource>();
+    }
+
+    private Vector3 GetBlastPosition()
+    {
+        if (blastOrigin != null &&
+            IsFiniteVector(
+                blastOrigin.position))
+        {
+            return
+                blastOrigin.position;
+        }
+
+        return
+            transform.position;
     }
 
     #endregion
@@ -538,11 +461,29 @@ public sealed class ChaosInferno : MonoBehaviour
 
     private void PlayAnimation()
     {
-        if (animator == null)
+        if (animator == null ||
+            !animator.isActiveAndEnabled ||
+            animator.runtimeAnimatorController ==
+                null)
+        {
             return;
+        }
 
-        animator.SetTrigger(
-            ChaosInfernoHash);
+        foreach (
+            AnimatorControllerParameter parameter
+            in animator.parameters)
+        {
+            if (parameter.nameHash !=
+                ChaosInfernoHash)
+            {
+                continue;
+            }
+
+            animator.SetTrigger(
+                ChaosInfernoHash);
+
+            return;
+        }
     }
 
     #endregion
@@ -564,109 +505,60 @@ public sealed class ChaosInferno : MonoBehaviour
 
     #endregion
 
-    #region Utility
+    #region Effects
 
-    private Vector3 GetBlastPosition()
+    private void SpawnEffect(
+        GameObject effect,
+        Vector3 position)
     {
-        return
-            blastOrigin != null
-                ? blastOrigin.position
-                : transform.position;
+        if (effect == null ||
+            !IsFiniteVector(
+                position))
+        {
+            return;
+        }
+
+        GameObject instance =
+            Instantiate(
+                effect,
+                position,
+                transform.rotation);
+
+        if (effectLifetime > 0f)
+        {
+            Destroy(
+                instance,
+                effectLifetime);
+        }
     }
 
     #endregion
 
     #region Validation
 
-    private bool ValidateConfiguration()
+    private static bool IsFiniteVector(
+        Vector3 value)
     {
-        bool valid = true;
-
-        valid &=
-            ValidateReference(
-                actionController,
-                nameof(TeamActionController));
-
-        if (animator == null)
-        {
-            Debug.LogWarning(
-                "ChaosInferno could not find an Animator.",
-                this);
-        }
-
-        if (audioSource == null)
-        {
-            Debug.LogWarning(
-                "ChaosInferno could not find an AudioSource.",
-                this);
-        }
-
-        if (activationEffect == null)
-        {
-            Debug.LogWarning(
-                "ChaosInferno has no activation effect.",
-                this);
-        }
-
-        return valid;
-    }
-
-    private bool ValidateReference(
-        Object reference,
-        string displayName)
-    {
-        if (reference != null)
-            return true;
-
-        Debug.LogError(
-            $"ChaosInferno requires {displayName}.",
-            this);
-
-        return false;
+        return
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z);
     }
 
     #endregion
 
-    #region Cleanup
+    #region Gizmos
 
-    private void CleanupRuntimeState()
+    private void OnDrawGizmosSelected()
     {
-        if (isActive)
+        if (!drawBlastRadius)
         {
-            FinishChaosInferno();
-        }
-    }
-
-    private void CleanupDestroyedState()
-    {
-        CleanupRuntimeState();
-
-        isInitialized = false;
-
-        actionController = null;
-        animator = null;
-        audioSource = null;
-        blastOrigin = null;
-        activationEffect = null;
-        pulseEffect = null;
-        controlEffect = null;
-
-        affectedTargets.Clear();
-    }
-
-    #endregion
-
-    #region Debug
-
-    private void LogStateChange(
-        string message)
-    {
-        if (!logStateChanges)
             return;
+        }
 
-        Debug.Log(
-            message,
-            this);
+        Gizmos.DrawWireSphere(
+            GetBlastPosition(),
+            blastRadius);
     }
 
     #endregion

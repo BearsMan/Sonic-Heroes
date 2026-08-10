@@ -8,10 +8,6 @@ public sealed class CharacterPresentationProfile : ScriptableObject
     [Header("Model")]
     public GameObject characterModelPrefab;
 
-    [Header("Companion")]
-    public GameObject companionPrefab;
-    public string companionAnchorName = "CompanionAnchor";
-
     [Header("Audio")]
     public AudioClip jumpSound;
     public AudioClip rollSound;

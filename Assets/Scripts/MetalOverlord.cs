@@ -1,63 +1,26 @@
 using System.Collections;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-[RequireComponent(typeof(Animator))]
-public sealed class MetalOverlord : MonoBehaviour
+public class MetalOverlord : MonoBehaviour
 {
-    #region Types
-
-    public enum BossState
-    {
-        Intro,
-        Flying,
-        Attacking,
-        ChaosControl,
-        Defeated
-    }
-
-    #endregion
-
-    #region Animator Hashes
-
-    private static readonly int ShootCrystalsHash =
-        Animator.StringToHash(
-            "ShootCrystals");
-
-    private static readonly int LaunchMissilesHash =
-        Animator.StringToHash(
-            "LaunchMissiles");
-
-    private static readonly int DiveForShipHash =
-        Animator.StringToHash(
-            "DiveForShip");
-
-    private static readonly int ThrowShipHash =
-        Animator.StringToHash(
-            "ThrowShip");
-
-    private static readonly int ChaosControlHash =
-        Animator.StringToHash(
-            "Chaos Control!");
-
-    private static readonly int TakeHitHash =
-        Animator.StringToHash(
-            "TakeHit");
-
-    private static readonly int DefeatedHash =
-        Animator.StringToHash(
-            "Defeated");
-
-    #endregion
-
-    #region Inspector
+    #region References
 
     [Header("References")]
-    [SerializeField]
-    private Animator bossAnimator;
 
     [SerializeField]
     private Transform player;
+
+    [SerializeField]
+    private Animator animator;
+
+    [SerializeField]
+    private AudioSource audioSource;
+
+    #endregion
+
+    #region Attack Prefabs
+
+    [Header("Attack Prefabs")]
 
     [SerializeField]
     private GameObject crystalPillarPrefab;
@@ -71,38 +34,63 @@ public sealed class MetalOverlord : MonoBehaviour
     [SerializeField]
     private GameObject ringBalloonPrefab;
 
-    [Header("Boss")]
+    #endregion
+
+    #region Spawn Points
+
+    [Header("Spawn Points")]
+
     [SerializeField]
-    private BossState startingState =
-        BossState.Flying;
+    private Transform crystalSpawnPoint;
+
+    [SerializeField]
+    private Transform missileSpawnPoint;
+
+    [SerializeField]
+    private Transform shipSpawnPoint;
+
+    #endregion
+
+    #region Boss Health
+
+    [Header("Boss Health")]
 
     [SerializeField, Min(1)]
     private int teamBlastHitsRequired = 5;
 
+    [SerializeField, Min(0f)]
+    private float hitRecoveryTime = 1.5f;
+
+    #endregion
+
+    #region Ring Countdown
+
     [Header("Ring Countdown")]
+
     [SerializeField, Min(0f)]
     private float startingRings = 50f;
 
     [SerializeField, Min(0f)]
-    private float maximumRings = 50f;
-
-    [SerializeField, Min(0f)]
     private float ringDrainRate = 1f;
 
-    [Header("Attack Timers")]
-    [SerializeField, Min(0f)]
-    private float crystalAttackDelay = 4f;
+    [SerializeField, Min(1)]
+    private int ringBalloonAmount = 10;
+
+    [SerializeField, Min(0.1f)]
+    private float ringBalloonInterval = 8f;
 
     [SerializeField, Min(0f)]
-    private float missileAttackDelay = 7f;
+    private float ringBalloonSpawnRadius = 15f;
 
-    [SerializeField, Min(0f)]
-    private float shipAttackDelay = 12f;
+    #endregion
 
-    [SerializeField, Min(0f)]
-    private float chaosControlDelay = 20f;
+    #region Crystal Attack
 
-    [Header("Attack Settings")]
+    [Header("Crystal Attack")]
+
+    [SerializeField, Min(0.1f)]
+    private float crystalAttackInterval = 4f;
+
     [SerializeField, Min(1)]
     private int minimumCrystalCount = 3;
 
@@ -110,7 +98,16 @@ public sealed class MetalOverlord : MonoBehaviour
     private int maximumCrystalCount = 6;
 
     [SerializeField, Min(0f)]
-    private float crystalSpawnInterval = 0.4f;
+    private float crystalLaunchInterval = 0.4f;
+
+    #endregion
+
+    #region Missile Attack
+
+    [Header("Missile Attack")]
+
+    [SerializeField, Min(0.1f)]
+    private float missileAttackInterval = 7f;
 
     [SerializeField, Min(1)]
     private int minimumMissileCount = 2;
@@ -119,144 +116,130 @@ public sealed class MetalOverlord : MonoBehaviour
     private int maximumMissileCount = 4;
 
     [SerializeField, Min(0f)]
-    private float missileSpawnInterval = 0.6f;
+    private float missileLaunchInterval = 0.6f;
+
+    #endregion
+
+    #region Egg Fleet Attack
+
+    [Header("Egg Fleet Attack")]
+
+    [SerializeField, Min(0.1f)]
+    private float shipAttackInterval = 12f;
 
     [SerializeField, Min(0f)]
-    private float shipGrabDelay = 1.5f;
+    private float shipDiveDuration = 1.5f;
 
-    [SerializeField, Min(0f)]
-    private float shipSpawnOffset = 10f;
+    [SerializeField]
+    private Vector3 shipSpawnOffset =
+        new(0f, -10f, 0f);
+
+    #endregion
+
+    #region Chaos Control
 
     [Header("Chaos Control")]
-    [SerializeField, Min(0f)]
+
+    [SerializeField, Min(0.1f)]
+    private float chaosControlInterval = 20f;
+
+    [SerializeField, Min(0.1f)]
     private float chaosControlDuration = 20f;
 
     [SerializeField, Min(0f)]
-    private float chaosControlInputMultiplier = 2f;
+    private float mashReductionMultiplier = 2f;
 
-    [Header("Ring Balloons")]
-    [SerializeField, Min(0.01f)]
-    private float ringBalloonSpawnInterval = 8f;
+    #endregion
+
+    #region Effects
+
+    [Header("Effects")]
+
+    [SerializeField]
+    private GameObject teamBlastHitEffect;
+
+    [SerializeField]
+    private GameObject defeatEffect;
+
+    [SerializeField]
+    private GameObject chaosControlEffect;
 
     [SerializeField, Min(0f)]
-    private float ringBalloonSpawnRadius = 15f;
+    private float effectLifetime = 5f;
+
+    #endregion
+
+    #region Audio
+
+    [Header("Audio")]
+
+    [SerializeField]
+    private AudioClip crystalAttackSound;
+
+    [SerializeField]
+    private AudioClip missileAttackSound;
+
+    [SerializeField]
+    private AudioClip shipAttackSound;
+
+    [SerializeField]
+    private AudioClip chaosControlSound;
+
+    [SerializeField]
+    private AudioClip teamBlastHitSound;
+
+    [SerializeField]
+    private AudioClip defeatSound;
 
     #endregion
 
     #region Runtime State
 
-    [SerializeField]
-    private BossState currentState =
-        BossState.Intro;
-
-    [SerializeField]
-    private float currentRings;
-
-    private int teamBlastHits;
+    private float rings;
 
     private float crystalTimer;
     private float missileTimer;
     private float shipTimer;
-    private float chaosTimer;
+    private float chaosControlCooldownTimer;
+    private float chaosControlTimer;
+    private float hitRecoveryTimer;
 
-    private bool defeated;
-    private bool isInitialized;
-    private bool isShuttingDown;
+    private int teamBlastHitsReceived;
 
+    private bool isFrozenByChaosControl;
+    private bool isRecoveringFromHit;
+    private bool isDead;
+
+    private Coroutine crystalRoutine;
+    private Coroutine missileRoutine;
+    private Coroutine shipRoutine;
     private Coroutine ringBalloonRoutine;
-    private Coroutine chaosControlRoutine;
-
-    private WaitForSeconds crystalSpawnWait;
-    private WaitForSeconds missileSpawnWait;
-    private WaitForSeconds shipGrabWait;
-    private WaitForSeconds ringBalloonSpawnWait;
 
     #endregion
 
-    #region Public API
+    #region Properties
 
-    public BossState CurrentState =>
-        currentState;
+    public bool IsDead =>
+        isDead;
 
-    public float CurrentRings =>
-        currentRings;
+    public bool IsFrozen =>
+        isFrozenByChaosControl;
 
-    public bool IsDefeated =>
-        defeated;
+    public int TeamBlastHitsReceived =>
+        teamBlastHitsReceived;
 
-    public bool IsInitialized =>
-        isInitialized;
+    public int TeamBlastHitsRequired =>
+        teamBlastHitsRequired;
 
-    public void AddRings(
-        int amount)
-    {
-        if (!isInitialized ||
-            defeated ||
-            amount <= 0)
-        {
-            return;
-        }
+    public float Rings =>
+        rings;
 
-        currentRings =
-            Mathf.Clamp(
-                currentRings + amount,
-                0f,
-                maximumRings);
-    }
-
-    private void RefreshWaitInstructions()
-    {
-        crystalSpawnWait =
-            new WaitForSeconds(
-                crystalSpawnInterval);
-
-        missileSpawnWait =
-            new WaitForSeconds(
-                missileSpawnInterval);
-
-        shipGrabWait =
-            new WaitForSeconds(
-                shipGrabDelay);
-
-        ringBalloonSpawnWait =
-            new WaitForSeconds(
-                ringBalloonSpawnInterval);
-    }
-
-    public void OnTeamBlastHit()
-    {
-        if (!isInitialized ||
-            defeated)
-        {
-            return;
-        }
-
-        teamBlastHits++;
-
-        TriggerAnimator(
-            TakeHitHash);
-
-        if (teamBlastHits <
-            teamBlastHitsRequired)
-        {
-            return;
-        }
-
-        DefeatBoss();
-    }
-
-    public void OnNormalAttackHit()
-    {
-        if (!isInitialized ||
-            defeated)
-        {
-            return;
-        }
-
-        Debug.Log(
-            "Metal Overlord is immune.",
-            this);
-    }
+    public float BossProgress =>
+        teamBlastHitsRequired > 0
+            ? Mathf.Clamp01(
+                (float)teamBlastHitsReceived /
+                teamBlastHitsRequired)
+            : 1f;
 
     #endregion
 
@@ -264,56 +247,73 @@ public sealed class MetalOverlord : MonoBehaviour
 
     private void Awake()
     {
-        ResolveDependencies();
+        ResolveReferences();
+
+        rings =
+            startingRings;
     }
 
     private void Start()
     {
-        if (!InitializeBoss())
+        if (animator != null &&
+            animator.isActiveAndEnabled)
         {
-            enabled = false;
+            animator.SetBool(
+                "Flying",
+                true);
+
+            animator.Play(
+                "Flying");
         }
-    }
 
-    private void OnEnable()
-    {
-        if (isShuttingDown)
-            return;
-
-        ResolveDependencies();
-
-        if (!isInitialized)
-            return;
-
-        RestoreRuntimeState();
+        if (ringBalloonPrefab != null)
+        {
+            ringBalloonRoutine =
+                StartCoroutine(
+                    RingBalloonRoutine());
+        }
     }
 
     private void Update()
     {
-        if (!CanUpdateBoss())
+        if (isDead)
+        {
             return;
+        }
 
         UpdateRingCountdown();
 
-        if (currentState ==
-                BossState.Flying ||
-            currentState ==
-                BossState.Attacking)
+        if (isDead)
         {
-            UpdateAttackTimers();
+            return;
         }
+
+        UpdateHitRecovery();
+
+        if (isFrozenByChaosControl)
+        {
+            UpdateChaosControl();
+
+            return;
+        }
+
+        if (isRecoveringFromHit)
+        {
+            return;
+        }
+
+        UpdateAttackTimers();
     }
 
     private void OnDisable()
     {
-        CleanupRuntimeState();
-    }
+        StopBossCoroutines();
 
-    private void OnDestroy()
-    {
-        isShuttingDown = true;
+        isFrozenByChaosControl =
+            false;
 
-        CleanupDestroyedState();
+        isRecoveringFromHit =
+            false;
     }
 
     private void OnValidate()
@@ -323,40 +323,40 @@ public sealed class MetalOverlord : MonoBehaviour
                 1,
                 teamBlastHitsRequired);
 
+        hitRecoveryTime =
+            Mathf.Max(
+                0f,
+                hitRecoveryTime);
+
         startingRings =
             Mathf.Max(
                 0f,
                 startingRings);
-
-        maximumRings =
-            Mathf.Max(
-                startingRings,
-                maximumRings);
 
         ringDrainRate =
             Mathf.Max(
                 0f,
                 ringDrainRate);
 
-        crystalAttackDelay =
+        ringBalloonAmount =
             Mathf.Max(
-                0f,
-                crystalAttackDelay);
+                1,
+                ringBalloonAmount);
 
-        missileAttackDelay =
+        ringBalloonInterval =
             Mathf.Max(
-                0f,
-                missileAttackDelay);
+                0.1f,
+                ringBalloonInterval);
 
-        shipAttackDelay =
+        ringBalloonSpawnRadius =
             Mathf.Max(
                 0f,
-                shipAttackDelay);
+                ringBalloonSpawnRadius);
 
-        chaosControlDelay =
+        crystalAttackInterval =
             Mathf.Max(
-                0f,
-                chaosControlDelay);
+                0.1f,
+                crystalAttackInterval);
 
         minimumCrystalCount =
             Mathf.Max(
@@ -368,10 +368,15 @@ public sealed class MetalOverlord : MonoBehaviour
                 minimumCrystalCount,
                 maximumCrystalCount);
 
-        crystalSpawnInterval =
+        crystalLaunchInterval =
             Mathf.Max(
                 0f,
-                crystalSpawnInterval);
+                crystalLaunchInterval);
+
+        missileAttackInterval =
+            Mathf.Max(
+                0.1f,
+                missileAttackInterval);
 
         minimumMissileCount =
             Mathf.Max(
@@ -383,170 +388,40 @@ public sealed class MetalOverlord : MonoBehaviour
                 minimumMissileCount,
                 maximumMissileCount);
 
-        missileSpawnInterval =
+        missileLaunchInterval =
             Mathf.Max(
                 0f,
-                missileSpawnInterval);
+                missileLaunchInterval);
 
-        shipGrabDelay =
+        shipAttackInterval =
             Mathf.Max(
-                0f,
-                shipGrabDelay);
+                0.1f,
+                shipAttackInterval);
 
-        shipSpawnOffset =
+        shipDiveDuration =
             Mathf.Max(
                 0f,
-                shipSpawnOffset);
+                shipDiveDuration);
+
+        chaosControlInterval =
+            Mathf.Max(
+                0.1f,
+                chaosControlInterval);
 
         chaosControlDuration =
             Mathf.Max(
-                0f,
+                0.1f,
                 chaosControlDuration);
 
-        chaosControlInputMultiplier =
+        mashReductionMultiplier =
             Mathf.Max(
                 0f,
-                chaosControlInputMultiplier);
+                mashReductionMultiplier);
 
-        ringBalloonSpawnInterval =
-            Mathf.Max(
-                0.01f,
-                ringBalloonSpawnInterval);
-
-        ringBalloonSpawnRadius =
+        effectLifetime =
             Mathf.Max(
                 0f,
-                ringBalloonSpawnRadius);
-
-        if (!System.Enum.IsDefined(
-                typeof(BossState),
-                startingState))
-        {
-            startingState =
-                BossState.Flying;
-        }
-    }
-
-    #endregion
-
-    #region Initialization
-
-    private bool InitializeBoss()
-    {
-        if (isInitialized)
-            return true;
-
-        ResolveDependencies();
-
-        if (!ValidateConfiguration())
-        {
-            isInitialized = false;
-
-            Debug.LogError(
-                $"MetalOverlord failed to initialize on '{name}'.",
-                this);
-
-            return false;
-        }
-
-        ResetRuntimeState();
-        RefreshWaitInstructions();
-
-        currentState =
-            IsValidBossState(
-                startingState)
-                ? startingState
-                : BossState.Flying;
-
-        isInitialized = true;
-
-        StartRingBalloonRoutine();
-
-        return true;
-    }
-
-    private static bool IsValidBossState(
-        BossState state)
-    {
-        return
-            System.Enum.IsDefined(
-                typeof(BossState),
-                state);
-    }
-
-    private void ResolveDependencies()
-    {
-        ResolveAnimator();
-        ResolvePlayer();
-    }
-
-    private void ResolveAnimator()
-    {
-        bossAnimator ??=
-            GetComponent<Animator>();
-
-        bossAnimator ??=
-            GetComponentInChildren<Animator>(
-                includeInactive: true);
-    }
-
-    private void ResolvePlayer()
-    {
-        if (player != null)
-            return;
-
-        UltimatePlayerMovement playerMovement =
-            FindAnyObjectByType<UltimatePlayerMovement>(
-                FindObjectsInactive.Include);
-
-        if (playerMovement == null)
-            return;
-
-        player =
-            playerMovement.transform;
-    }
-
-    private void ResetRuntimeState()
-    {
-        teamBlastHits = 0;
-
-        currentRings =
-            Mathf.Clamp(
-                startingRings,
-                0f,
-                maximumRings);
-
-        crystalTimer = 0f;
-        missileTimer = 0f;
-        shipTimer = 0f;
-        chaosTimer = 0f;
-
-        defeated = false;
-    }
-
-    private void RestoreRuntimeState()
-    {
-        if (defeated)
-            return;
-
-        if (ringBalloonRoutine == null)
-        {
-            StartRingBalloonRoutine();
-        }
-    }
-
-    #endregion
-
-    #region Runtime Validation
-
-    private bool CanUpdateBoss()
-    {
-        return
-            isInitialized &&
-            !defeated &&
-            bossAnimator != null &&
-            IsValidBossState(
-                currentState);
+                effectLifetime);
     }
 
     #endregion
@@ -555,406 +430,93 @@ public sealed class MetalOverlord : MonoBehaviour
 
     private void UpdateRingCountdown()
     {
-        if (!float.IsFinite(
-                currentRings))
+        if (ringDrainRate <= 0f)
         {
-            currentRings =
-                Mathf.Clamp(
-                    startingRings,
-                    0f,
-                    maximumRings);
+            return;
         }
 
-        float safeDrainRate =
-            float.IsFinite(
-                ringDrainRate)
-                ? Mathf.Max(
-                    0f,
-                    ringDrainRate)
-                : 0f;
-
-        float drainAmount =
-            safeDrainRate *
+        rings -=
+            ringDrainRate *
             Time.deltaTime;
 
-        if (!float.IsFinite(
-                drainAmount))
-        {
-            drainAmount = 0f;
-        }
-
-        currentRings =
+        rings =
             Mathf.Max(
                 0f,
-                currentRings -
-                drainAmount);
+                rings);
 
-        if (currentRings >
-            Mathf.Epsilon)
+        if (rings <= 0f)
+        {
+            HandleRingDepletion();
+        }
+    }
+
+    private void HandleRingDepletion()
+    {
+        rings =
+            0f;
+
+        StopBossCoroutines();
+
+        isFrozenByChaosControl =
+            false;
+
+        isRecoveringFromHit =
+            false;
+    }
+
+    public void ResetRingCountdown()
+    {
+        if (isDead)
         {
             return;
         }
 
-        currentRings = 0f;
-
-        OnSuperSonicReverted();
+        rings =
+            startingRings;
     }
 
-    private void OnSuperSonicReverted()
+    public void AddRings(
+        int amount)
     {
-        Debug.Log(
-            "Super Sonic reverted.",
-            this);
-    }
-
-    #endregion
-
-    #region Attack Timers
-
-    private void UpdateAttackTimers()
-    {
-        crystalTimer =
-            AdvanceTimer(
-                crystalTimer);
-
-        missileTimer =
-            AdvanceTimer(
-                missileTimer);
-
-        shipTimer =
-            AdvanceTimer(
-                shipTimer);
-
-        chaosTimer =
-            AdvanceTimer(
-                chaosTimer);
-
-        if (HasTimerElapsed(
-                crystalTimer,
-                crystalAttackDelay))
-        {
-            crystalTimer = 0f;
-            LaunchCrystalPillars();
-        }
-
-        if (HasTimerElapsed(
-                missileTimer,
-                missileAttackDelay))
-        {
-            missileTimer = 0f;
-            LaunchMissiles();
-        }
-
-        if (HasTimerElapsed(
-                shipTimer,
-                shipAttackDelay))
-        {
-            shipTimer = 0f;
-            ThrowEggFleetShip();
-        }
-
-        if (HasTimerElapsed(
-                chaosTimer,
-                chaosControlDelay))
-        {
-            chaosTimer = 0f;
-            ActivateChaosControl();
-        }
-    }
-
-    private static float AdvanceTimer(
-        float timer)
-    {
-        if (!float.IsFinite(timer))
-        {
-            timer = 0f;
-        }
-
-        timer +=
-            Time.deltaTime;
-
-        return
-            float.IsFinite(timer)
-                ? timer
-                : 0f;
-    }
-
-    private static bool HasTimerElapsed(
-        float timer,
-        float delay)
-    {
-        if (!float.IsFinite(timer) ||
-            !float.IsFinite(delay))
-        {
-            return false;
-        }
-
-        return
-            timer >=
-            Mathf.Max(
-                0f,
-                delay);
-    }
-
-    #endregion
-
-    #region Crystal Attack
-
-    private void LaunchCrystalPillars()
-    {
-        if (player == null ||
-            crystalPillarPrefab == null)
+        if (isDead ||
+            amount <= 0)
         {
             return;
         }
 
-        TriggerAnimator(
-            ShootCrystalsHash);
-
-        StartCoroutine(
-            CrystalAttackRoutine());
+        rings +=
+            amount;
     }
 
-    private IEnumerator CrystalAttackRoutine()
+    public void CollectRingBalloon()
     {
-        int count =
-            Random.Range(
-                minimumCrystalCount,
-                maximumCrystalCount + 1);
-
-        for (int index = 0;
-             index < count;
-             index++)
-        {
-            if (defeated ||
-                player == null)
-            {
-                yield break;
-            }
-
-            Vector3 direction =
-                player.position -
-                transform.position;
-
-            if (!IsFiniteVector(
-                    direction) ||
-                direction.sqrMagnitude <=
-                    0.000001f)
-            {
-                yield return null;
-                continue;
-            }
-
-            direction.Normalize();
-
-            Quaternion rotation =
-                Quaternion.LookRotation(
-                    direction);
-
-            if (!IsFiniteQuaternion(
-                    rotation))
-            {
-                yield return null;
-                continue;
-            }
-
-            Instantiate(
-                crystalPillarPrefab,
-                transform.position,
-                rotation);
-
-            yield return
-                crystalSpawnWait;
-        }
-    }
-
-    #endregion
-
-    #region Missile Attack
-
-    private void LaunchMissiles()
-    {
-        if (missilePrefab == null)
-            return;
-
-        TriggerAnimator(
-            LaunchMissilesHash);
-
-        StartCoroutine(
-            MissileRoutine());
-    }
-
-    private IEnumerator MissileRoutine()
-    {
-        int count =
-            Random.Range(
-                minimumMissileCount,
-                maximumMissileCount + 1);
-
-        for (int index = 0;
-             index < count;
-             index++)
-        {
-            if (defeated)
-                yield break;
-
-            Instantiate(
-                missilePrefab,
-                transform.position,
-                Quaternion.identity);
-
-            yield return
-                missileSpawnWait;
-        }
-    }
-
-    #endregion
-
-    #region Ship Attack
-
-    private void ThrowEggFleetShip()
-    {
-        if (eggFleetShipPrefab == null)
-            return;
-
-        StartCoroutine(
-            ShipRoutine());
-    }
-
-    private IEnumerator ShipRoutine()
-    {
-        TriggerAnimator(
-            DiveForShipHash);
-
-        yield return
-            shipGrabWait;
-
-        if (defeated)
-            yield break;
-
-        Vector3 spawnPosition =
-            transform.position +
-            Vector3.down *
-            shipSpawnOffset;
-
-        if (!IsFiniteVector(
-                spawnPosition))
-        {
-            yield break;
-        }
-
-        Instantiate(
-            eggFleetShipPrefab,
-            spawnPosition,
-            Quaternion.identity);
-
-        TriggerAnimator(
-            ThrowShipHash);
-    }
-
-    #endregion
-
-    #region Chaos Control
-
-    private void ActivateChaosControl()
-    {
-        if (defeated ||
-            currentState ==
-                BossState.ChaosControl)
-        {
-            return;
-        }
-
-        currentState =
-            BossState.ChaosControl;
-
-        TriggerAnimator(
-            ChaosControlHash);
-
-        if (chaosControlRoutine != null)
-        {
-            StopCoroutine(
-                chaosControlRoutine);
-        }
-
-        chaosControlRoutine =
-            StartCoroutine(
-                ChaosControlRoutine());
-    }
-
-    private IEnumerator ChaosControlRoutine()
-    {
-        float timer =
-            chaosControlDuration;
-
-        while (timer > 0f &&
-               !defeated)
-        {
-            float delta =
-                Time.deltaTime;
-
-            if (Input.anyKey)
-            {
-                delta +=
-                    Time.deltaTime *
-                    chaosControlInputMultiplier;
-            }
-
-            if (!float.IsFinite(
-                    delta))
-            {
-                delta = 0f;
-            }
-
-            timer -=
-                delta;
-
-            yield return null;
-        }
-
-        chaosControlRoutine = null;
-
-        if (defeated)
-            yield break;
-
-        currentState =
-            BossState.Flying;
+        AddRings(
+            ringBalloonAmount);
     }
 
     #endregion
 
     #region Ring Balloons
 
-    private void StartRingBalloonRoutine()
+    private IEnumerator RingBalloonRoutine()
     {
-        if (ringBalloonRoutine != null)
-            return;
+        WaitForSeconds wait =
+            new(
+                ringBalloonInterval);
 
-        ringBalloonRoutine =
-            StartCoroutine(
-                SpawnRingBalloons());
-    }
-
-    private IEnumerator SpawnRingBalloons()
-    {
-        while (!defeated)
+        while (!isDead)
         {
             yield return
-                ringBalloonSpawnWait;
+                wait;
 
-            if (defeated)
-                yield break;
-
-            if (ringBalloonPrefab == null)
+            if (isDead ||
+                ringBalloonPrefab == null)
+            {
                 continue;
-
-            Vector3 randomOffset =
-                Random.insideUnitSphere *
-                ringBalloonSpawnRadius;
+            }
 
             Vector3 spawnPosition =
-                transform.position +
-                randomOffset;
+                GetRingBalloonSpawnPosition();
 
             if (!IsFiniteVector(
                     spawnPosition))
@@ -968,172 +530,692 @@ public sealed class MetalOverlord : MonoBehaviour
                 Quaternion.identity);
         }
 
-        ringBalloonRoutine = null;
+        ringBalloonRoutine =
+            null;
+    }
+
+    private Vector3 GetRingBalloonSpawnPosition()
+    {
+        Vector2 circle =
+            Random.insideUnitCircle *
+            ringBalloonSpawnRadius;
+
+        return
+            transform.position +
+            new Vector3(
+                circle.x,
+                0f,
+                circle.y);
+    }
+
+    #endregion
+
+    #region Attack Timers
+
+    private void UpdateAttackTimers()
+    {
+        crystalTimer +=
+            Time.deltaTime;
+
+        missileTimer +=
+            Time.deltaTime;
+
+        shipTimer +=
+            Time.deltaTime;
+
+        chaosControlCooldownTimer +=
+            Time.deltaTime;
+
+        if (crystalTimer >=
+            crystalAttackInterval)
+        {
+            crystalTimer =
+                0f;
+
+            if (crystalRoutine == null)
+            {
+                crystalRoutine =
+                    StartCoroutine(
+                        CrystalAttackRoutine());
+            }
+        }
+
+        if (missileTimer >=
+            missileAttackInterval)
+        {
+            missileTimer =
+                0f;
+
+            if (missileRoutine == null)
+            {
+                missileRoutine =
+                    StartCoroutine(
+                        MissileAttackRoutine());
+            }
+        }
+
+        if (shipTimer >=
+            shipAttackInterval)
+        {
+            shipTimer =
+                0f;
+
+            if (shipRoutine == null)
+            {
+                shipRoutine =
+                    StartCoroutine(
+                        ShipAttackRoutine());
+            }
+        }
+
+        if (chaosControlCooldownTimer >=
+            chaosControlInterval)
+        {
+            chaosControlCooldownTimer =
+                0f;
+
+            ActivateChaosControl();
+        }
+    }
+
+    #endregion
+
+    #region Crystal Attack
+
+    private IEnumerator CrystalAttackRoutine()
+    {
+        PlayTrigger(
+            "ShootCrystals");
+
+        PlaySound(
+            crystalAttackSound);
+
+        int count =
+            Random.Range(
+                minimumCrystalCount,
+                maximumCrystalCount + 1);
+
+        for (int index = 0;
+            index < count;
+            index++)
+        {
+            if (isDead ||
+                isFrozenByChaosControl)
+            {
+                break;
+            }
+
+            SpawnCrystalPillar();
+
+            if (crystalLaunchInterval > 0f &&
+                index < count - 1)
+            {
+                yield return
+                    new WaitForSeconds(
+                        crystalLaunchInterval);
+            }
+        }
+
+        crystalRoutine =
+            null;
+    }
+
+    private void SpawnCrystalPillar()
+    {
+        if (crystalPillarPrefab == null)
+        {
+            return;
+        }
+
+        Vector3 spawnPosition =
+            GetSpawnPosition(
+                crystalSpawnPoint);
+
+        Quaternion rotation =
+            GetRotationTowardsPlayer(
+                spawnPosition);
+
+        Instantiate(
+            crystalPillarPrefab,
+            spawnPosition,
+            rotation);
+    }
+
+    #endregion
+
+    #region Missile Attack
+
+    private IEnumerator MissileAttackRoutine()
+    {
+        PlayTrigger(
+            "LaunchMissiles");
+
+        PlaySound(
+            missileAttackSound);
+
+        int count =
+            Random.Range(
+                minimumMissileCount,
+                maximumMissileCount + 1);
+
+        for (int index = 0;
+            index < count;
+            index++)
+        {
+            if (isDead ||
+                isFrozenByChaosControl)
+            {
+                break;
+            }
+
+            SpawnMissile();
+
+            if (missileLaunchInterval > 0f &&
+                index < count - 1)
+            {
+                yield return
+                    new WaitForSeconds(
+                        missileLaunchInterval);
+            }
+        }
+
+        missileRoutine =
+            null;
+    }
+
+    private void SpawnMissile()
+    {
+        if (missilePrefab == null)
+        {
+            return;
+        }
+
+        Vector3 spawnPosition =
+            GetSpawnPosition(
+                missileSpawnPoint);
+
+        Quaternion rotation =
+            GetRotationTowardsPlayer(
+                spawnPosition);
+
+        Instantiate(
+            missilePrefab,
+            spawnPosition,
+            rotation);
+    }
+
+    #endregion
+
+    #region Egg Fleet Attack
+
+    private IEnumerator ShipAttackRoutine()
+    {
+        PlayTrigger(
+            "DiveForShip");
+
+        if (shipDiveDuration > 0f)
+        {
+            yield return
+                new WaitForSeconds(
+                    shipDiveDuration);
+        }
+
+        if (isDead ||
+            isFrozenByChaosControl)
+        {
+            shipRoutine =
+                null;
+
+            yield break;
+        }
+
+        SpawnEggFleetShip();
+
+        PlayTrigger(
+            "ThrowShip");
+
+        PlaySound(
+            shipAttackSound);
+
+        shipRoutine =
+            null;
+    }
+
+    private void SpawnEggFleetShip()
+    {
+        if (eggFleetShipPrefab == null)
+        {
+            return;
+        }
+
+        Vector3 spawnPosition;
+
+        if (shipSpawnPoint != null &&
+            IsFiniteVector(
+                shipSpawnPoint.position))
+        {
+            spawnPosition =
+                shipSpawnPoint.position;
+        }
+        else
+        {
+            spawnPosition =
+                transform.position +
+                shipSpawnOffset;
+        }
+
+        if (!IsFiniteVector(
+                spawnPosition))
+        {
+            return;
+        }
+
+        Instantiate(
+            eggFleetShipPrefab,
+            spawnPosition,
+            GetRotationTowardsPlayer(
+                spawnPosition));
+    }
+
+    #endregion
+
+    #region Chaos Control
+
+    private void ActivateChaosControl()
+    {
+        if (isDead ||
+            isFrozenByChaosControl)
+        {
+            return;
+        }
+
+        isFrozenByChaosControl =
+            true;
+
+        chaosControlTimer =
+            chaosControlDuration;
+
+        PlayTrigger(
+            "ChaosControl");
+
+        PlaySound(
+            chaosControlSound);
+
+        SpawnEffect(
+            chaosControlEffect,
+            transform.position);
+    }
+
+    private void UpdateChaosControl()
+    {
+        chaosControlTimer -=
+            Time.deltaTime;
+
+        if (Input.anyKey)
+        {
+            chaosControlTimer -=
+                Time.deltaTime *
+                mashReductionMultiplier;
+        }
+
+        if (chaosControlTimer <= 0f)
+        {
+            EndChaosControl();
+        }
+    }
+
+    private void EndChaosControl()
+    {
+        isFrozenByChaosControl =
+            false;
+
+        chaosControlTimer =
+            0f;
+    }
+
+    #endregion
+
+    #region Team Blast Damage
+
+    public bool OnTeamBlastHit()
+    {
+        if (isDead ||
+            isRecoveringFromHit)
+        {
+            return false;
+        }
+
+        teamBlastHitsReceived++;
+
+        teamBlastHitsReceived =
+            Mathf.Min(
+                teamBlastHitsReceived,
+                teamBlastHitsRequired);
+
+        PlayTrigger(
+            "TakeHit");
+
+        PlaySound(
+            teamBlastHitSound);
+
+        SpawnEffect(
+            teamBlastHitEffect,
+            transform.position);
+
+        if (teamBlastHitsReceived >=
+            teamBlastHitsRequired)
+        {
+            Defeat();
+
+            return true;
+        }
+
+        if (hitRecoveryTime > 0f)
+        {
+            isRecoveringFromHit =
+                true;
+
+            hitRecoveryTimer =
+                hitRecoveryTime;
+        }
+
+        return true;
+    }
+
+    public bool OnNormalAttackHit()
+    {
+        return false;
+    }
+
+    private void UpdateHitRecovery()
+    {
+        if (!isRecoveringFromHit)
+        {
+            return;
+        }
+
+        hitRecoveryTimer -=
+            Time.deltaTime;
+
+        if (hitRecoveryTimer <= 0f)
+        {
+            hitRecoveryTimer =
+                0f;
+
+            isRecoveringFromHit =
+                false;
+        }
     }
 
     #endregion
 
     #region Defeat
 
-    private void DefeatBoss()
+    private void Defeat()
     {
-        if (defeated)
+        if (isDead)
+        {
             return;
+        }
 
-        defeated = true;
+        isDead =
+            true;
 
-        currentState =
-            BossState.Defeated;
+        isFrozenByChaosControl =
+            false;
 
-        StopRuntimeCoroutines();
+        isRecoveringFromHit =
+            false;
 
-        TriggerAnimator(
-            DefeatedHash);
+        StopBossCoroutines();
 
-        Debug.Log(
-            "Metal Overlord Defeated.",
-            this);
+        PlayTrigger(
+            "Defeated");
+
+        PlaySound(
+            defeatSound);
+
+        SpawnEffect(
+            defeatEffect,
+            transform.position);
+    }
+
+    #endregion
+
+    #region Coroutines
+
+    private void StopBossCoroutines()
+    {
+        if (crystalRoutine != null)
+        {
+            StopCoroutine(
+                crystalRoutine);
+
+            crystalRoutine =
+                null;
+        }
+
+        if (missileRoutine != null)
+        {
+            StopCoroutine(
+                missileRoutine);
+
+            missileRoutine =
+                null;
+        }
+
+        if (shipRoutine != null)
+        {
+            StopCoroutine(
+                shipRoutine);
+
+            shipRoutine =
+                null;
+        }
+
+        if (ringBalloonRoutine != null)
+        {
+            StopCoroutine(
+                ringBalloonRoutine);
+
+            ringBalloonRoutine =
+                null;
+        }
+    }
+
+    #endregion
+
+    #region References
+
+    private void ResolveReferences()
+    {
+        animator ??=
+            GetComponent<Animator>();
+
+        audioSource ??=
+            GetComponent<AudioSource>();
+
+        if (player == null)
+        {
+            GameObject playerObject =
+                GameObject.FindWithTag(
+                    "Player");
+
+            if (playerObject != null)
+            {
+                player =
+                    playerObject.transform;
+            }
+        }
+    }
+
+    #endregion
+
+    #region Spawn Helpers
+
+    private Vector3 GetSpawnPosition(
+        Transform spawnPoint)
+    {
+        if (spawnPoint != null &&
+            IsFiniteVector(
+                spawnPoint.position))
+        {
+            return
+                spawnPoint.position;
+        }
+
+        return
+            transform.position;
+    }
+
+    private Quaternion GetRotationTowardsPlayer(
+        Vector3 origin)
+    {
+        if (player == null ||
+            !IsFiniteVector(
+                player.position) ||
+            !IsFiniteVector(
+                origin))
+        {
+            return
+                transform.rotation;
+        }
+
+        Vector3 direction =
+            player.position -
+            origin;
+
+        if (!IsFiniteVector(
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
+        {
+            return
+                transform.rotation;
+        }
+
+        return
+            Quaternion.LookRotation(
+                direction.normalized,
+                Vector3.up);
+    }
+
+    #endregion
+
+    #region Animation
+
+    private void PlayTrigger(
+        string trigger)
+    {
+        if (animator == null ||
+            !animator.isActiveAndEnabled ||
+            animator.runtimeAnimatorController ==
+                null ||
+            string.IsNullOrWhiteSpace(
+                trigger))
+        {
+            return;
+        }
+
+        animator.SetTrigger(
+            trigger);
+    }
+
+    #endregion
+
+    #region Audio
+
+    private void PlaySound(
+        AudioClip clip)
+    {
+        if (audioSource == null ||
+            clip == null)
+        {
+            return;
+        }
+
+        audioSource.PlayOneShot(
+            clip);
+    }
+
+    #endregion
+
+    #region Effects
+
+    private void SpawnEffect(
+        GameObject effect,
+        Vector3 position)
+    {
+        if (effect == null ||
+            !IsFiniteVector(
+                position))
+        {
+            return;
+        }
+
+        GameObject instance =
+            Instantiate(
+                effect,
+                position,
+                transform.rotation);
+
+        if (effectLifetime > 0f)
+        {
+            Destroy(
+                instance,
+                effectLifetime);
+        }
     }
 
     #endregion
 
     #region Validation
 
-    private bool ValidateConfiguration()
-    {
-        bool valid = true;
-
-        valid &=
-            ValidateReference(
-                bossAnimator,
-                nameof(Animator));
-
-        if (player == null)
-        {
-            Debug.LogWarning(
-                "MetalOverlord could not resolve the player.",
-                this);
-        }
-
-        if (crystalPillarPrefab == null)
-        {
-            Debug.LogWarning(
-                "MetalOverlord has no crystal pillar prefab.",
-                this);
-        }
-
-        if (missilePrefab == null)
-        {
-            Debug.LogWarning(
-                "MetalOverlord has no missile prefab.",
-                this);
-        }
-
-        if (eggFleetShipPrefab == null)
-        {
-            Debug.LogWarning(
-                "MetalOverlord has no Egg Fleet ship prefab.",
-                this);
-        }
-
-        if (ringBalloonPrefab == null)
-        {
-            Debug.LogWarning(
-                "MetalOverlord has no ring balloon prefab.",
-                this);
-        }
-
-        return valid;
-    }
-
-    private bool ValidateReference(
-        UnityEngine.Object reference,
-        string displayName)
-    {
-        if (reference != null)
-            return true;
-
-        Debug.LogError(
-            $"MetalOverlord requires {displayName}.",
-            this);
-
-        return false;
-    }
-
-    #endregion
-
-    #region Helpers
-
-    private void TriggerAnimator(
-        int parameterHash)
-    {
-        if (bossAnimator == null)
-            return;
-
-        bossAnimator.SetTrigger(
-            parameterHash);
-    }
-
     private static bool IsFiniteVector(
         Vector3 value)
     {
         return
-            float.IsFinite(value.x) &&
-            float.IsFinite(value.y) &&
-            float.IsFinite(value.z);
-    }
-
-    private static bool IsFiniteQuaternion(
-        Quaternion value)
-    {
-        return
-            float.IsFinite(value.x) &&
-            float.IsFinite(value.y) &&
-            float.IsFinite(value.z) &&
-            float.IsFinite(value.w);
+            float.IsFinite(
+                value.x) &&
+            float.IsFinite(
+                value.y) &&
+            float.IsFinite(
+                value.z);
     }
 
     #endregion
 
-    #region Cleanup
+    #region Gizmos
 
-    private void CleanupRuntimeState()
+    private void OnDrawGizmosSelected()
     {
-        StopRuntimeCoroutines();
-    }
-
-    private void StopRuntimeCoroutines()
-    {
-        if (ringBalloonRoutine != null)
+        if (ringBalloonSpawnRadius > 0f)
         {
-            StopCoroutine(
-                ringBalloonRoutine);
-
-            ringBalloonRoutine = null;
+            Gizmos.DrawWireSphere(
+                transform.position,
+                ringBalloonSpawnRadius);
         }
 
-        if (chaosControlRoutine != null)
+        if (crystalSpawnPoint != null)
         {
-            StopCoroutine(
-                chaosControlRoutine);
-
-            chaosControlRoutine = null;
+            Gizmos.DrawWireSphere(
+                crystalSpawnPoint.position,
+                0.5f);
         }
-    }
 
-    private void CleanupDestroyedState()
-    {
-        CleanupRuntimeState();
+        if (missileSpawnPoint != null)
+        {
+            Gizmos.DrawWireSphere(
+                missileSpawnPoint.position,
+                0.5f);
+        }
 
-        isInitialized = false;
-
-        bossAnimator = null;
-        player = null;
-
-        crystalPillarPrefab = null;
-        missilePrefab = null;
-        eggFleetShipPrefab = null;
-        ringBalloonPrefab = null;
+        if (shipSpawnPoint != null)
+        {
+            Gizmos.DrawWireSphere(
+                shipSpawnPoint.position,
+                0.5f);
+        }
     }
 
     #endregion

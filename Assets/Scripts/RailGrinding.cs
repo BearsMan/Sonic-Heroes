@@ -1,13 +1,8 @@
-using System;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-[RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(UltimatePlayerMovement))]
-[RequireComponent(typeof(AudioSource))]
-public sealed class RailGrinding : MonoBehaviour
+public class RailGrinding : MonoBehaviour
 {
-    #region Types
+    #region Team Type
 
     public enum TeamType
     {
@@ -18,227 +13,203 @@ public sealed class RailGrinding : MonoBehaviour
 
     #endregion
 
-    #region Animator Hashes
-    private static readonly int IsGrindingHash =
-        Animator.StringToHash("IsGrinding");
-
-    private static readonly int IsCrouchingHash =
-        Animator.StringToHash("IsCrouching");
-
-    private static readonly int GrindSpeedHash =
-        Animator.StringToHash("GrindSpeed");
-
-    private const int RailSwitchBufferSize = 16;
-    private const float MinimumVectorMagnitude = 0.000001f;
-    #endregion
-
-    #region Inspector
-
-    [Header("References")]
-    [SerializeField] private UltimatePlayerMovement playerMovement;
-    [SerializeField] private Animator railAnimator;
-    [SerializeField] private Transform member2;
-    [SerializeField] private Transform member3;
+    #region Grind Speed
 
     [Header("Grind Speed")]
-    [SerializeField, Min(0f)] private float baseGrindSpeed = 18f;
-    [SerializeField, Min(0f)] private float maxGrindSpeed = 40f;
-    [SerializeField, Min(0f)] private float minGrindSpeed = 2f;
-    [SerializeField, Min(0f)] private float slopeAcceleration = 12f;
-    [SerializeField, Min(0f)] private float crouchSpeedMultiplier = 1.25f;
 
-    [Header("Team Speed Modifiers")]
-    [SerializeField, Min(0f)] private float speedTeamModifier = 1f;
-    [SerializeField, Min(0f)] private float flyTeamModifier = 0.85f;
-    [SerializeField, Min(0f)] private float powerTeamModifier = 0.75f;
+    [SerializeField, Min(0.1f)]
+    private float baseGrindSpeed = 18f;
+
+    [SerializeField, Min(0.1f)]
+    private float maximumGrindSpeed = 40f;
+
+    [SerializeField, Min(0f)]
+    private float minimumGrindSpeed = 2f;
+
+    [SerializeField, Min(0f)]
+    private float slopeAcceleration = 12f;
+
+    [SerializeField, Min(0f)]
+    private float crouchSpeedMultiplier = 1.25f;
+
+    #endregion
+
+    #region Team Modifiers
+
+    [Header("Team Type Modifiers")]
+
+    [SerializeField, Min(0f)]
+    private float speedModifier = 1f;
+
+    [SerializeField, Min(0f)]
+    private float flyModifier = 0.85f;
+
+    [SerializeField, Min(0f)]
+    private float powerModifier = 0.75f;
+
+    #endregion
+
+    #region Team Formation
 
     [Header("Team Formation")]
-    [SerializeField, Min(0f)] private float memberSpacing = 1.2f;
-    [SerializeField, Min(0f)] private float memberSnapSpeed = 14f;
+
+    [SerializeField]
+    private Transform member2;
+
+    [SerializeField]
+    private Transform member3;
+
+    [SerializeField, Min(0f)]
+    private float memberSpacing = 1.2f;
+
+    [SerializeField, Min(0f)]
+    private float memberSnapSpeed = 14f;
+
+    #endregion
+
+    #region Rail Detection
 
     [Header("Rail Detection")]
-    [SerializeField] private LayerMask railLayerMask;
-    [SerializeField, Min(0f)] private float grindSnapRadius = 1.2f;
-    [SerializeField, Min(0f)] private float railDetectionRadius = 1.2f;
-    [SerializeField, Min(0f)] private float railRayDistance = 1.75f;
-    [SerializeField]
-    private Vector3 railDetectionOffset =
-        new(0f, -0.25f, 0f);
 
-    [Header("Rail Movement")]
-    [SerializeField, Min(0f)] private float snapSpeed = 20f;
+    [SerializeField]
+    private LayerMask railLayers;
+
+    [SerializeField]
+    private string railTag = "Rail";
+
+    [SerializeField, Min(0.01f)]
+    private float grindSnapRadius = 1.2f;
+
+    #endregion
+
+    #region Rail Switching
 
     [Header("Rail Switching")]
-    [SerializeField, Min(0f)] private float switchScanRadius = 4f;
-    [SerializeField, Range(0f, 180f)] private float switchMaxAngle = 45f;
-    [SerializeField, Min(0f)] private float switchCooldown = 0.4f;
-    [SerializeField, Range(0f, 1f)] private float switchInputThreshold = 0.5f;
+
+    [SerializeField, Min(0.1f)]
+    private float switchScanRadius = 4f;
+
+    [SerializeField, Range(0f, 180f)]
+    private float switchMaximumAngle = 45f;
+
+    [SerializeField, Min(0f)]
+    private float switchCooldown = 0.4f;
+
+    [SerializeField, Range(0f, 1f)]
+    private float railSwitchJumpMultiplier = 0.35f;
+
+    #endregion
+
+    #region Rail Alignment
+
+    [Header("Rail Alignment")]
+
+    [SerializeField, Min(0f)]
+    private float snapSpeed = 20f;
+
+    [SerializeField, Min(0f)]
+    private float rotationSpeed = 720f;
+
+    #endregion
+
+    #region Jump
 
     [Header("Jump Off Rail")]
-    [SerializeField] private KeyCode railJumpKey = KeyCode.Space;
-    [SerializeField, Min(0f)] private float railJumpForce = 12f;
-    [SerializeField, Min(0f)] private float railJumpForwardForce = 6f;
 
-    [Header("Crouching")]
-    [SerializeField] private KeyCode crouchKey = KeyCode.LeftControl;
+    [SerializeField, Min(0f)]
+    private float railJumpForce = 12f;
+
+    [SerializeField, Min(0f)]
+    private float railJumpForwardForce = 6f;
+
+    #endregion
+
+    #region References
+
+    [Header("References")]
+
+    [SerializeField]
+    private Rigidbody playerRigidbody;
+
+    [SerializeField]
+    private Animator animator;
+
+    [SerializeField]
+    private AudioSource audioSource;
+
+    #endregion
+
+    #region Effects
+
+    [Header("Effects")]
+
+    [SerializeField]
+    private ParticleSystem leaderSparks;
+
+    [SerializeField]
+    private ParticleSystem member2Sparks;
+
+    [SerializeField]
+    private ParticleSystem member3Sparks;
+
+    #endregion
+
+    #region Audio
 
     [Header("Audio")]
-    [SerializeField] private AudioClip grindLoopSFX;
-    [SerializeField] private AudioClip grindStartSFX;
-    [SerializeField] private AudioClip grindEndSFX;
-    [SerializeField] private AudioClip railSwitchSFX;
 
-    [Header("Particle Effects")]
-    [SerializeField] private ParticleSystem leaderSparksFX;
-    [SerializeField] private ParticleSystem member2SparksFX;
-    [SerializeField] private ParticleSystem member3SparksFX;
+    [SerializeField]
+    private AudioClip grindLoopSound;
 
-    [Header("Debug")]
-    [SerializeField] private bool logStateChanges;
+    [SerializeField]
+    private AudioClip grindStartSound;
+
+    [SerializeField]
+    private AudioClip grindEndSound;
+
+    [SerializeField]
+    private AudioClip railSwitchSound;
 
     #endregion
 
     #region Runtime State
 
-    [SerializeField] private TeamType currentTeam = TeamType.Speed;
-    [SerializeField] private bool isGrinding;
-    [SerializeField] private bool isCrouching;
-    [SerializeField] private float currentGrindSpeed;
-    private readonly Collider[] railSwitchBuffer =
-    new Collider[RailSwitchBufferSize];
-    [SerializeField, Range(0f, 1f)] private float splineT;
-
     private RailSpline currentRail;
-    private float currentRailLength;
-    private float grindSnapRadiusSqr;
-    private float switchScanRadiusSqr;
-    private float currentTeamModifier = 1f;
-    private Rigidbody playerRigidbody;
-    private AudioSource audioSource;
 
-    private float grindDirectionSign = 1f;
-    private float lastSwitchTime = float.NegativeInfinity;
+    private TeamType currentTeam =
+        TeamType.Speed;
 
-    private bool isInitialized;
-    private bool isShuttingDown;
+    private float railPosition;
+    private float grindSpeed;
+    private float previousGravityStateTime;
+    private float lastSwitchTime =
+        float.NegativeInfinity;
+
+    private bool isGrinding;
+    private bool isCrouching;
+    private bool previousGravity;
 
     #endregion
 
-    #region Public API
+    #region Properties
 
-    public TeamType CurrentTeam => currentTeam;
-    public bool IsCrouching => isCrouching;
-    public float CurrentGrindSpeed => currentGrindSpeed;
-    public float SplineT => splineT;
-    public RailSpline CurrentRail => currentRail;
-    public bool IsInitialized => isInitialized;
+    public bool IsGrinding =>
+        isGrinding;
 
-    public bool IsGrinding
-    {
-        get
-        {
-            return isGrinding;
-        }
-    }
+    public bool IsCrouching =>
+        isCrouching;
 
-    public void SetTeamType(
-    TeamType teamType)
-    {
-        currentTeam = teamType;
+    public float CurrentGrindSpeed =>
+        grindSpeed;
 
-        currentTeamModifier =
-            GetTeamModifier();
-    }
+    public float RailPosition =>
+        railPosition;
 
-    public bool TrySnapToRail(
-    RailSpline rail,
-    float contactT)
-    {
-        if (!isInitialized ||
-            isGrinding ||
-            rail == null ||
-            playerRigidbody == null)
-        {
-            return false;
-        }
+    public RailSpline CurrentRail =>
+        currentRail;
 
-        if (!float.IsFinite(contactT))
-        {
-            return false;
-        }
-
-        Vector3 playerPosition =
-            playerRigidbody.position;
-
-        if (!IsFiniteVector(
-                playerPosition))
-        {
-            return false;
-        }
-
-        float clampedT =
-            Mathf.Clamp01(contactT);
-
-        Vector3 railPoint =
-            rail.GetPoint(
-                clampedT);
-
-        if (!IsFiniteVector(
-                railPoint))
-        {
-            return false;
-        }
-
-        float snapDistanceSqr =
-            (railPoint -
-             playerPosition)
-            .sqrMagnitude;
-
-        if (!float.IsFinite(
-        snapDistanceSqr) ||
-    snapDistanceSqr >
-    grindSnapRadiusSqr)
-        {
-            return false;
-        }
-
-        float railLength =
-            rail.ApproximateLength();
-
-        if (!float.IsFinite(
-                railLength) ||
-            railLength <= Mathf.Epsilon)
-        {
-            return false;
-        }
-
-        currentRail = rail;
-        splineT = clampedT;
-        currentRailLength = railLength;
-
-        DetermineGrindingDirection();
-        CalculateStartingSpeed();
-
-        if (!IsValidGrindingRuntimeState())
-        {
-            currentRail = null;
-            currentRailLength = 0f;
-            currentGrindSpeed = 0f;
-            splineT = 0f;
-
-            return false;
-        }
-
-        StartGrinding();
-
-        return isGrinding;
-    }
-
-    public void ForceStopGrinding()
-    {
-        StopGrinding(
-            jumped: false);
-    }
+    public TeamType CurrentTeam =>
+        currentTeam;
 
     #endregion
 
@@ -246,109 +217,60 @@ public sealed class RailGrinding : MonoBehaviour
 
     private void Awake()
     {
-        CacheComponents();
         ResolveReferences();
-    }
-
-    private void Start()
-    {
-        if (!InitializeRailGrinding())
-        {
-            enabled = false;
-        }
-    }
-
-    private void OnEnable()
-    {
-        if (isShuttingDown)
-            return;
-
-        CacheComponents();
-        ResolveReferences();
-
-        if (!isInitialized)
-            return;
-
-        RestoreRuntimeState();
+        StopEffects();
     }
 
     private void Update()
     {
-        if (!isInitialized ||
-            !isGrinding)
-        {
-            return;
-        }
-
-        HandleGrindingInput();
-        UpdateAnimatorState();
-    }
-
-    private void FixedUpdate()
-    {
-        if (!isInitialized)
-            return;
-
         if (!isGrinding)
         {
-            CheckForNearbyRail();
             return;
         }
 
+        if (!ValidateGrindingState())
+        {
+            StopGrinding();
+
+            return;
+        }
+
+        UpdateInput();
+        UpdateGrindSpeed();
         AdvanceAlongRail();
-
-        if (!isGrinding)
-            return;
-
-        AlignLeaderToRail();
+        AlignLeader();
         PositionTeammates();
+        UpdateAnimator();
     }
 
     private void OnDisable()
     {
-        CleanupRuntimeState();
-    }
+        if (isGrinding)
+        {
+            StopGrinding();
+        }
 
-    private void OnDestroy()
-    {
-        isShuttingDown = true;
-        CleanupDestroyedState();
-    }
-
-    private void OnTriggerEnter(
-        Collider other)
-    {
-        TryAttachFromCollider(other);
-    }
-
-    private void OnTriggerStay(
-        Collider other)
-    {
-        TryAttachFromCollider(other);
+        StopEffects();
+        StopGrindLoop();
     }
 
     private void OnValidate()
     {
         baseGrindSpeed =
             Mathf.Max(
-                0f,
+                0.1f,
                 baseGrindSpeed);
 
-        minGrindSpeed =
+        maximumGrindSpeed =
             Mathf.Max(
-                0f,
-                minGrindSpeed);
-
-        maxGrindSpeed =
-            Mathf.Max(
-                minGrindSpeed,
-                maxGrindSpeed);
-
-        baseGrindSpeed =
-            Mathf.Clamp(
                 baseGrindSpeed,
-                minGrindSpeed,
-                maxGrindSpeed);
+                maximumGrindSpeed);
+
+        minimumGrindSpeed =
+            Mathf.Clamp(
+                minimumGrindSpeed,
+                0f,
+                maximumGrindSpeed);
 
         slopeAcceleration =
             Mathf.Max(
@@ -360,20 +282,20 @@ public sealed class RailGrinding : MonoBehaviour
                 0f,
                 crouchSpeedMultiplier);
 
-        speedTeamModifier =
+        speedModifier =
             Mathf.Max(
                 0f,
-                speedTeamModifier);
+                speedModifier);
 
-        flyTeamModifier =
+        flyModifier =
             Mathf.Max(
                 0f,
-                flyTeamModifier);
+                flyModifier);
 
-        powerTeamModifier =
+        powerModifier =
             Mathf.Max(
                 0f,
-                powerTeamModifier);
+                powerModifier);
 
         memberSpacing =
             Mathf.Max(
@@ -387,43 +309,28 @@ public sealed class RailGrinding : MonoBehaviour
 
         grindSnapRadius =
             Mathf.Max(
-                0f,
+                0.01f,
                 grindSnapRadius);
-
-        railDetectionRadius =
-            Mathf.Max(
-                0f,
-                railDetectionRadius);
-
-        railRayDistance =
-            Mathf.Max(
-                0f,
-                railRayDistance);
-
-        snapSpeed =
-            Mathf.Max(
-                0f,
-                snapSpeed);
 
         switchScanRadius =
             Mathf.Max(
-                0f,
+                0.1f,
                 switchScanRadius);
-
-        switchMaxAngle =
-            Mathf.Clamp(
-                switchMaxAngle,
-                0f,
-                180f);
 
         switchCooldown =
             Mathf.Max(
                 0f,
                 switchCooldown);
 
-        switchInputThreshold =
-            Mathf.Clamp01(
-                switchInputThreshold);
+        snapSpeed =
+            Mathf.Max(
+                0f,
+                snapSpeed);
+
+        rotationSpeed =
+            Mathf.Max(
+                0f,
+                rotationSpeed);
 
         railJumpForce =
             Mathf.Max(
@@ -434,953 +341,477 @@ public sealed class RailGrinding : MonoBehaviour
             Mathf.Max(
                 0f,
                 railJumpForwardForce);
-
-        splineT =
-            Mathf.Clamp01(
-                splineT);
-
-        RefreshCachedValues();
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Vector3 detectionOrigin =
-            transform.position +
-            railDetectionOffset;
-
-        Gizmos.DrawWireSphere(
-            detectionOrigin,
-            railDetectionRadius);
-
-        Gizmos.DrawLine(
-            detectionOrigin,
-            detectionOrigin +
-            Vector3.down *
-            railRayDistance);
-
-        Gizmos.DrawWireSphere(
-            transform.position,
-            switchScanRadius);
     }
 
     #endregion
 
-    #region Initialization
+    #region Trigger Detection
 
-    public bool InitializeRailGrinding()
-    {
-        if (isInitialized)
-            return true;
-
-        CacheComponents();
-        ResolveReferences();
-
-        if (!ValidateConfiguration())
-        {
-            Debug.LogError(
-                $"RailGrinding failed to initialize on '{name}'.",
-                this);
-
-            isInitialized = false;
-            return false;
-        }
-
-        ResetRuntimeState();
-        RefreshCachedValues();
-
-        currentTeamModifier =
-            GetTeamModifier();
-
-        StopAllSparksFX();
-        UpdateAnimatorState();
-
-        isInitialized = true;
-
-        return true;
-    }
-
-    private void CacheComponents()
-    {
-        playerRigidbody ??=
-            GetComponent<Rigidbody>();
-
-        audioSource ??=
-            GetComponent<AudioSource>();
-
-        playerMovement ??=
-            GetComponent<UltimatePlayerMovement>();
-    }
-
-    private void ResolveReferences()
-    {
-        railAnimator ??=
-            GetComponentInChildren<Animator>(
-                includeInactive: true);
-    }
-
-    private void RefreshCachedValues()
-    {
-        grindSnapRadiusSqr =
-            grindSnapRadius *
-            grindSnapRadius;
-
-        switchScanRadiusSqr =
-            switchScanRadius *
-            switchScanRadius;
-    }
-
-    private void RestoreRuntimeState()
-    {
-        if (!isGrinding)
-        {
-            StopGrindLoop();
-            StopAllSparksFX();
-        }
-
-        UpdateAnimatorState();
-    }
-
-    #endregion
-
-    #region Rail Detection
-
-    private void CheckForNearbyRail()
-    {
-        if (playerRigidbody == null ||
-            railLayerMask.value == 0)
-        {
-            return;
-        }
-
-        Vector3 detectionOrigin =
-            playerRigidbody.position +
-            railDetectionOffset;
-
-        if (TryAttachFromRaycast(
-                detectionOrigin))
-        {
-            return;
-        }
-
-        TryAttachFromOverlap(
-            detectionOrigin);
-    }
-
-    private bool TryAttachFromRaycast(
-        Vector3 detectionOrigin)
-    {
-        if (!Physics.Raycast(
-                detectionOrigin,
-                Vector3.down,
-                out RaycastHit hit,
-                railRayDistance,
-                railLayerMask,
-                QueryTriggerInteraction.Collide))
-        {
-            return false;
-        }
-
-        RailSpline rail =
-            hit.collider.GetComponentInParent<RailSpline>();
-
-        return TryAttachToRail(rail);
-    }
-
-    private void TryAttachFromOverlap(
-        Vector3 detectionOrigin)
-    {
-        Collider[] nearbyColliders =
-            Physics.OverlapSphere(
-                detectionOrigin,
-                railDetectionRadius,
-                railLayerMask,
-                QueryTriggerInteraction.Collide);
-
-        RailSpline closestRail = null;
-        float closestT = 0f;
-        float closestDistanceSqr = float.MaxValue;
-
-        foreach (Collider nearbyCollider in nearbyColliders)
-        {
-            if (nearbyCollider == null)
-                continue;
-
-            RailSpline candidate =
-                nearbyCollider.GetComponentInParent<RailSpline>();
-
-            if (candidate == null)
-                continue;
-
-            float candidateT =
-                candidate.GetClosestT(
-                    playerRigidbody.position);
-
-            Vector3 candidatePoint =
-                candidate.GetPoint(
-                    candidateT);
-
-            float distanceSqr =
-                (candidatePoint -
-                 playerRigidbody.position)
-                .sqrMagnitude;
-
-            if (distanceSqr >= closestDistanceSqr)
-                continue;
-
-            closestDistanceSqr = distanceSqr;
-            closestRail = candidate;
-            closestT = candidateT;
-        }
-
-        if (closestRail == null ||
-    closestDistanceSqr >
-    grindSnapRadiusSqr)
-        {
-            return;
-        }
-
-        TrySnapToRail(
-            closestRail,
-            closestT);
-    }
-
-    private void TryAttachFromCollider(
+    private void OnTriggerEnter(
         Collider other)
     {
-        if (!isInitialized ||
-            isGrinding ||
+        if (isGrinding ||
             other == null)
         {
             return;
         }
 
-        bool validLayer =
-            IsLayerInMask(
-                other.gameObject.layer,
-                railLayerMask);
-
-        if (!validLayer &&
-            !other.CompareTag("Rail"))
+        if (!IsRailCollider(
+                other))
         {
             return;
         }
 
         RailSpline rail =
+            other.GetComponent<RailSpline>();
+
+        rail ??=
             other.GetComponentInParent<RailSpline>();
 
-        TryAttachToRail(rail);
+        if (rail == null)
+        {
+            return;
+        }
+
+        TrySnapToRail(
+            rail);
     }
 
-    private bool TryAttachToRail(
+    #endregion
+
+    #region Public API
+
+    public void SetTeamType(
+        TeamType team)
+    {
+        currentTeam =
+            team;
+    }
+
+    public bool TrySnapToRail(
         RailSpline rail)
     {
-        if (rail == null ||
-            playerRigidbody == null)
+        if (rail == null)
         {
             return false;
         }
 
-        float closestT =
+        float closestPosition =
             rail.GetClosestT(
-                playerRigidbody.position);
+                transform.position);
 
-        return TrySnapToRail(
-            rail,
-            closestT);
+        return
+            TrySnapToRail(
+                rail,
+                closestPosition);
     }
 
-    private static bool IsLayerInMask(
-        int layer,
-        LayerMask layerMask)
+    public bool TrySnapToRail(
+        RailSpline rail,
+        float contactT)
     {
-        return
-            (layerMask.value &
-             (1 << layer)) != 0;
+        if (isGrinding ||
+            rail == null)
+        {
+            return false;
+        }
+
+        float targetT =
+            Mathf.Clamp01(
+                contactT);
+
+        Vector3 railPoint =
+            rail.GetPoint(
+                targetT);
+
+        if (!IsFiniteVector(
+                railPoint))
+        {
+            return false;
+        }
+
+        float distance =
+            Vector3.Distance(
+                transform.position,
+                railPoint);
+
+        if (!float.IsFinite(
+                distance) ||
+            distance >
+                grindSnapRadius)
+        {
+            return false;
+        }
+
+        currentRail =
+            rail;
+
+        railPosition =
+            targetT;
+
+        Vector3 railForward =
+            GetRailForward();
+
+        float inheritedSpeed =
+            0f;
+
+        if (playerRigidbody != null &&
+            IsFiniteVector(
+                playerRigidbody.linearVelocity))
+        {
+            inheritedSpeed =
+                Mathf.Abs(
+                    Vector3.Dot(
+                        playerRigidbody.linearVelocity,
+                        railForward));
+        }
+
+        grindSpeed =
+            Mathf.Max(
+                baseGrindSpeed *
+                    GetTeamModifier(),
+                inheritedSpeed);
+
+        grindSpeed =
+            Mathf.Clamp(
+                grindSpeed,
+                minimumGrindSpeed,
+                maximumGrindSpeed);
+
+        StartGrinding();
+
+        return true;
+    }
+
+    public void StopRailGrinding()
+    {
+        StopGrinding();
     }
 
     #endregion
 
-    #region Grinding State
+    #region Start And Stop
 
     private void StartGrinding()
     {
-        if (currentRail == null ||
-            playerRigidbody == null)
+        if (currentRail == null)
         {
             return;
         }
 
-        isGrinding = true;
-        isCrouching = false;
+        isGrinding =
+            true;
 
-        playerMovement?.EnterGrindingState();
+        isCrouching =
+            false;
 
-        playerRigidbody.useGravity = false;
-        playerRigidbody.linearVelocity = Vector3.zero;
-        playerRigidbody.angularVelocity = Vector3.zero;
+        if (playerRigidbody != null)
+        {
+            previousGravity =
+                playerRigidbody.useGravity;
 
-        PlayOneShot(grindStartSFX);
+            playerRigidbody.useGravity =
+                false;
+
+            playerRigidbody.linearVelocity =
+                Vector3.zero;
+
+            playerRigidbody.angularVelocity =
+                Vector3.zero;
+        }
+
+        PlaySound(
+            grindStartSound);
+
         StartGrindLoop();
-        PlayAllSparksFX();
-        UpdateAnimatorState();
+        StartEffects();
 
-        LogStateChange(
-            $"Started grinding on '{currentRail.name}'.");
+        UpdateAnimator();
     }
 
     private void StopGrinding(
-        bool jumped)
+        bool jumped = false)
     {
         if (!isGrinding)
+        {
             return;
+        }
 
         Vector3 exitDirection =
-            GetTravelDirection();
+            GetRailForward();
 
-        isGrinding = false;
-        isCrouching = false;
+        isGrinding =
+            false;
+
+        isCrouching =
+            false;
 
         if (playerRigidbody != null)
         {
-            playerRigidbody.useGravity = true;
-            playerRigidbody.WakeUp();
+            playerRigidbody.useGravity =
+                previousGravity;
 
-            float forwardSpeed =
-                jumped
-                    ? currentGrindSpeed +
-                      railJumpForwardForce
-                    : currentGrindSpeed;
-
-            Vector3 exitVelocity =
-                exitDirection *
-                forwardSpeed;
+            playerRigidbody.angularVelocity =
+                Vector3.zero;
 
             if (jumped)
             {
-                exitVelocity +=
+                Vector3 exitVelocity =
+                    exitDirection *
+                        (
+                            grindSpeed +
+                            railJumpForwardForce
+                        ) +
                     Vector3.up *
-                    railJumpForce;
-            }
+                        railJumpForce;
 
-            playerRigidbody.linearVelocity =
-                exitVelocity;
-        }
-
-        playerMovement?.ExitGrindingState();
-
-        currentRail = null;
-        currentRailLength = 0f;
-
-        StopGrindLoop();
-        PlayOneShot(grindEndSFX);
-        StopAllSparksFX();
-        UpdateAnimatorState();
-
-        LogStateChange(
-            jumped
-                ? "Jumped off rail."
-                : "Stopped grinding.");
-    }
-
-    private void ResetRuntimeState()
-    {
-        isGrinding = false;
-        isCrouching = false;
-        currentRail = null;
-        currentRailLength = 0f;
-        currentGrindSpeed = 0f;
-        splineT = 0f;
-        grindDirectionSign = 1f;
-        lastSwitchTime = float.NegativeInfinity;
-    }
-
-    #endregion
-
-    #region Rail Movement
-
-    private void DetermineGrindingDirection()
-    {
-        grindDirectionSign = 1f;
-
-        if (currentRail == null ||
-            playerRigidbody == null)
-        {
-            return;
-        }
-
-        if (!float.IsFinite(splineT))
-        {
-            splineT = 0f;
-            return;
-        }
-
-        Vector3 railTangent =
-            currentRail.GetTangent(
-                splineT);
-
-        if (!IsFiniteVector(
-                railTangent) ||
-            railTangent.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            return;
-        }
-
-        railTangent.Normalize();
-
-        Vector3 velocity =
-            playerRigidbody.linearVelocity;
-
-        if (IsFiniteVector(
-                velocity))
-        {
-            float velocityDot =
-                Vector3.Dot(
-                    velocity,
-                    railTangent);
-
-            if (float.IsFinite(
-                    velocityDot) &&
-                Mathf.Abs(velocityDot) >
-                    0.1f)
-            {
-                grindDirectionSign =
-                    velocityDot >= 0f
-                        ? 1f
-                        : -1f;
-
-                return;
-            }
-        }
-
-        Vector3 forward =
-            transform.forward;
-
-        if (!IsFiniteVector(
-                forward) ||
-            forward.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            return;
-        }
-
-        float facingDot =
-            Vector3.Dot(
-                forward.normalized,
-                railTangent);
-
-        if (!float.IsFinite(
-                facingDot))
-        {
-            return;
-        }
-
-        grindDirectionSign =
-            facingDot >= 0f
-                ? 1f
-                : -1f;
-    }
-
-    private void CalculateStartingSpeed()
-    {
-        float teamModifier =
-            float.IsFinite(currentTeamModifier)
-                ? Mathf.Max(
-                    0f,
-                    currentTeamModifier)
-                : 1f;
-
-        float safeBaseSpeed =
-            float.IsFinite(baseGrindSpeed)
-                ? Mathf.Max(
-                    0f,
-                    baseGrindSpeed)
-                : 0f;
-
-        float safeMinimumSpeed =
-            float.IsFinite(minGrindSpeed)
-                ? Mathf.Max(
-                    0f,
-                    minGrindSpeed)
-                : 0f;
-
-        float safeMaximumSpeed =
-            float.IsFinite(maxGrindSpeed)
-                ? Mathf.Max(
-                    safeMinimumSpeed,
-                    maxGrindSpeed)
-                : safeMinimumSpeed;
-
-        float teamBaseSpeed =
-            safeBaseSpeed *
-            teamModifier;
-
-        if (!float.IsFinite(
-                teamBaseSpeed))
-        {
-            teamBaseSpeed =
-                safeMinimumSpeed;
-        }
-
-        float inheritedSpeed = 0f;
-
-        if (playerRigidbody != null)
-        {
-            Vector3 travelDirection =
-                GetTravelDirection();
-
-            Vector3 velocity =
-                playerRigidbody.linearVelocity;
-
-            if (IsFiniteVector(
-                    travelDirection) &&
-                travelDirection.sqrMagnitude >
-                    MinimumVectorMagnitude &&
-                IsFiniteVector(
-                    velocity))
-            {
-                travelDirection.Normalize();
-
-                float projectedSpeed =
-                    Vector3.Dot(
-                        velocity,
-                        travelDirection);
-
-                if (float.IsFinite(
-                        projectedSpeed))
+                if (IsFiniteVector(
+                        exitVelocity))
                 {
-                    inheritedSpeed =
-                        Mathf.Abs(
-                            projectedSpeed);
+                    playerRigidbody.linearVelocity =
+                        exitVelocity;
                 }
             }
         }
 
-        float startingSpeed =
-            Mathf.Max(
-                teamBaseSpeed,
-                inheritedSpeed);
+        StopEffects();
+        StopGrindLoop();
 
-        if (!float.IsFinite(
-                startingSpeed))
+        PlaySound(
+            grindEndSound);
+
+        if (animator != null &&
+            animator.isActiveAndEnabled)
         {
-            startingSpeed =
-                safeMinimumSpeed;
+            animator.SetBool(
+                "IsGrinding",
+                false);
+
+            animator.SetBool(
+                "IsCrouching",
+                false);
         }
 
-        currentGrindSpeed =
-            Mathf.Clamp(
-                startingSpeed,
-                safeMinimumSpeed,
-                safeMaximumSpeed);
-    }
-
-    private void AdvanceAlongRail()
-    {
-        if (currentRail == null ||
-            !IsValidGrindingRuntimeState())
-        {
-            StopGrinding(
-                jumped: false);
-
-            return;
-        }
-
-        Vector3 travelDirection =
-            GetTravelDirection();
-
-        if (!IsFiniteVector(
-                travelDirection) ||
-            travelDirection.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            StopGrinding(
-                jumped: false);
-
-            return;
-        }
-
-        travelDirection.Normalize();
-
-        float safeSlopeAcceleration =
-            float.IsFinite(slopeAcceleration)
-                ? Mathf.Max(
-                    0f,
-                    slopeAcceleration)
-                : 0f;
-
-        float slopeAmount =
-            Vector3.Dot(
-                travelDirection,
-                Vector3.down);
-
-        if (!float.IsFinite(
-                slopeAmount))
-        {
-            slopeAmount = 0f;
-        }
-
-        float speedDelta =
-            slopeAmount *
-            safeSlopeAcceleration *
-            Time.fixedDeltaTime;
-
-        if (!float.IsFinite(
-                speedDelta))
-        {
-            speedDelta = 0f;
-        }
-
-        currentGrindSpeed +=
-            speedDelta;
-
-        if (!float.IsFinite(
-                currentGrindSpeed))
-        {
-            StopGrinding(
-                jumped: false);
-
-            return;
-        }
-
-        float safeMinimumSpeed =
-            float.IsFinite(minGrindSpeed)
-                ? Mathf.Max(
-                    0f,
-                    minGrindSpeed)
-                : 0f;
-
-        float safeMaximumSpeed =
-            float.IsFinite(maxGrindSpeed)
-                ? Mathf.Max(
-                    safeMinimumSpeed,
-                    maxGrindSpeed)
-                : safeMinimumSpeed;
-
-        currentGrindSpeed =
-            Mathf.Clamp(
-                currentGrindSpeed,
-                safeMinimumSpeed,
-                safeMaximumSpeed);
-
-        float crouchMultiplier =
-            float.IsFinite(crouchSpeedMultiplier)
-                ? Mathf.Max(
-                    0f,
-                    crouchSpeedMultiplier)
-                : 1f;
-
-        float effectiveSpeed =
-            isCrouching
-                ? currentGrindSpeed *
-                  crouchMultiplier
-                : currentGrindSpeed;
-
-        if (!float.IsFinite(
-                effectiveSpeed))
-        {
-            StopGrinding(
-                jumped: false);
-
-            return;
-        }
-
-        effectiveSpeed =
-            Mathf.Clamp(
-                effectiveSpeed,
-                safeMinimumSpeed,
-                safeMaximumSpeed);
-
-        if (!float.IsFinite(
-                currentRailLength) ||
-            currentRailLength <=
-                Mathf.Epsilon)
-        {
-            StopGrinding(
-                jumped: false);
-
-            return;
-        }
-
-        float directionSign =
-            float.IsFinite(grindDirectionSign) &&
-            Mathf.Abs(grindDirectionSign) >
-                MinimumVectorMagnitude
-                ? Mathf.Sign(
-                    grindDirectionSign)
-                : 1f;
-
-        float parameterDelta =
-            directionSign *
-            effectiveSpeed *
-            Time.fixedDeltaTime /
-            currentRailLength;
-
-        if (!float.IsFinite(
-                parameterDelta))
-        {
-            StopGrinding(
-                jumped: false);
-
-            return;
-        }
-
-        splineT +=
-            parameterDelta;
-
-        if (!float.IsFinite(
-                splineT))
-        {
-            StopGrinding(
-                jumped: false);
-
-            return;
-        }
-
-        if (splineT > 0f &&
-            splineT < 1f)
-        {
-            return;
-        }
-
-        splineT =
-            Mathf.Clamp01(
-                splineT);
-
-        StopGrinding(
-            jumped: false);
-    }
-
-    private void AlignLeaderToRail()
-    {
-        if (currentRail == null ||
-            playerRigidbody == null ||
-            !float.IsFinite(splineT))
-        {
-            return;
-        }
-
-        Vector3 currentPosition =
-            playerRigidbody.position;
-
-        if (!IsFiniteVector(
-                currentPosition))
-        {
-            StopGrinding(
-                jumped: false);
-
-            return;
-        }
-
-        Vector3 targetPosition =
-            currentRail.GetPoint(
-                splineT);
-
-        if (!IsFiniteVector(
-                targetPosition))
-        {
-            StopGrinding(
-                jumped: false);
-
-            return;
-        }
-
-        float safeSnapSpeed =
-            float.IsFinite(snapSpeed)
-                ? Mathf.Max(
-                    0f,
-                    snapSpeed)
-                : 0f;
-
-        float positionLerpFactor =
-            safeSnapSpeed *
-            Time.fixedDeltaTime;
-
-        if (!float.IsFinite(
-                positionLerpFactor))
-        {
-            positionLerpFactor = 0f;
-        }
-
-        Vector3 snappedPosition =
-            Vector3.Lerp(
-                currentPosition,
-                targetPosition,
-                Mathf.Clamp01(
-                    positionLerpFactor));
-
-        if (!IsFiniteVector(
-                snappedPosition))
-        {
-            StopGrinding(
-                jumped: false);
-
-            return;
-        }
-
-        playerRigidbody.MovePosition(
-            snappedPosition);
-
-        Vector3 travelDirection =
-            GetTravelDirection();
-
-        if (!IsFiniteVector(
-                travelDirection) ||
-            travelDirection.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            return;
-        }
-
-        travelDirection.Normalize();
-
-        Quaternion currentRotation =
-            playerRigidbody.rotation;
-
-        if (!IsFiniteQuaternion(
-                currentRotation))
-        {
-            currentRotation =
-                Quaternion.identity;
-        }
-
-        Quaternion targetRotation =
-            Quaternion.LookRotation(
-                travelDirection,
-                Vector3.up);
-
-        if (!IsFiniteQuaternion(
-                targetRotation))
-        {
-            return;
-        }
-
-        float rotationLerpFactor =
-            safeSnapSpeed *
-            Time.fixedDeltaTime;
-
-        if (!float.IsFinite(
-                rotationLerpFactor))
-        {
-            rotationLerpFactor = 0f;
-        }
-
-        Quaternion smoothedRotation =
-            Quaternion.Slerp(
-                currentRotation,
-                targetRotation,
-                Mathf.Clamp01(
-                    rotationLerpFactor));
-
-        if (!IsFiniteQuaternion(
-                smoothedRotation))
-        {
-            return;
-        }
-
-        playerRigidbody.MoveRotation(
-            smoothedRotation);
-    }
-
-    private static bool IsFiniteQuaternion(
-    Quaternion value)
-    {
-        return
-            float.IsFinite(value.x) &&
-            float.IsFinite(value.y) &&
-            float.IsFinite(value.z) &&
-            float.IsFinite(value.w);
-    }
-
-    private Vector3 GetTravelDirection()
-    {
-        Vector3 fallbackDirection =
-            transform.forward;
-
-        if (!IsFiniteVector(
-                fallbackDirection) ||
-            fallbackDirection.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            fallbackDirection =
-                Vector3.forward;
-        }
-        else
-        {
-            fallbackDirection.Normalize();
-        }
-
-        if (currentRail == null ||
-            !float.IsFinite(splineT))
-        {
-            return fallbackDirection;
-        }
-
-        Vector3 tangent =
-            currentRail.GetTangent(
-                splineT);
-
-        if (!IsFiniteVector(
-                tangent) ||
-            tangent.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            return fallbackDirection;
-        }
-
-        tangent.Normalize();
-
-        float directionSign =
-            float.IsFinite(grindDirectionSign) &&
-            Mathf.Abs(grindDirectionSign) >
-                MinimumVectorMagnitude
-                ? Mathf.Sign(
-                    grindDirectionSign)
-                : 1f;
-
-        Vector3 travelDirection =
-            tangent *
-            directionSign;
-
-        if (!IsFiniteVector(
-                travelDirection) ||
-            travelDirection.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            return fallbackDirection;
-        }
-
-        return travelDirection;
+        currentRail =
+            null;
+
+        railPosition =
+            0f;
     }
 
     #endregion
 
     #region Input
 
-    private void HandleGrindingInput()
+    private void UpdateInput()
     {
-        if (Input.GetKeyDown(railJumpKey))
+        if (Input.GetButtonDown(
+                "Jump"))
         {
             StopGrinding(
-                jumped: true);
+                true);
 
             return;
         }
 
         isCrouching =
-            Input.GetKey(crouchKey);
+            Input.GetButton(
+                "Crouch");
 
-        float horizontalInput =
-            Input.GetAxisRaw("Horizontal");
+        float horizontal =
+            Input.GetAxis(
+                "Horizontal");
 
-        if (Mathf.Abs(horizontalInput) <
-            switchInputThreshold)
+        if (Mathf.Abs(
+                horizontal) >
+            0.5f)
+        {
+            TrySwitchRail(
+                horizontal);
+        }
+    }
+
+    #endregion
+
+    #region Grind Speed
+
+    private void UpdateGrindSpeed()
+    {
+        if (currentRail == null)
         {
             return;
         }
 
-        TrySwitchRail(
-            horizontalInput);
+        Vector3 tangent =
+            currentRail.GetTangent(
+                railPosition);
+
+        if (!IsFiniteVector(
+                tangent) ||
+            tangent.sqrMagnitude <=
+                0.0001f)
+        {
+            return;
+        }
+
+        float slope =
+            Vector3.Dot(
+                tangent.normalized,
+                Vector3.down);
+
+        grindSpeed +=
+            slope *
+            slopeAcceleration *
+            Time.deltaTime;
+
+        if (isCrouching)
+        {
+            grindSpeed +=
+                baseGrindSpeed *
+                (
+                    crouchSpeedMultiplier -
+                    1f
+                ) *
+                Time.deltaTime;
+        }
+
+        grindSpeed =
+            Mathf.Clamp(
+                grindSpeed,
+                0f,
+                maximumGrindSpeed);
+
+        if (grindSpeed <
+            minimumGrindSpeed)
+        {
+            StopGrinding();
+        }
+    }
+
+    #endregion
+
+    #region Rail Movement
+
+    private void AdvanceAlongRail()
+    {
+        if (currentRail == null)
+        {
+            return;
+        }
+
+        float railLength =
+            currentRail.ApproximateLength();
+
+        if (!float.IsFinite(
+                railLength) ||
+            railLength <= 0f)
+        {
+            StopGrinding();
+
+            return;
+        }
+
+        railPosition +=
+            (
+                grindSpeed *
+                Time.deltaTime
+            ) /
+            railLength;
+
+        if (railPosition >= 1f)
+        {
+            railPosition =
+                1f;
+
+            AlignLeader();
+
+            StopGrinding();
+        }
+    }
+
+    private void AlignLeader()
+    {
+        if (currentRail == null)
+        {
+            return;
+        }
+
+        Vector3 targetPosition =
+            currentRail.GetPoint(
+                railPosition);
+
+        Vector3 tangent =
+            currentRail.GetTangent(
+                railPosition);
+
+        if (!IsFiniteVector(
+                targetPosition))
+        {
+            return;
+        }
+
+        Vector3 nextPosition =
+            Vector3.Lerp(
+                transform.position,
+                targetPosition,
+                Mathf.Clamp01(
+                    snapSpeed *
+                    Time.deltaTime));
+
+        if (IsFiniteVector(
+                nextPosition))
+        {
+            if (playerRigidbody != null &&
+                !playerRigidbody.isKinematic)
+            {
+                playerRigidbody.MovePosition(
+                    nextPosition);
+            }
+            else
+            {
+                transform.position =
+                    nextPosition;
+            }
+        }
+
+        RotateAlongRail(
+            tangent);
+    }
+
+    private void RotateAlongRail(
+        Vector3 direction)
+    {
+        if (!IsFiniteVector(
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
+        {
+            return;
+        }
+
+        Quaternion targetRotation =
+            Quaternion.LookRotation(
+                direction.normalized,
+                Vector3.up);
+
+        Quaternion rotation =
+            Quaternion.RotateTowards(
+                transform.rotation,
+                targetRotation,
+                rotationSpeed *
+                    Time.deltaTime);
+
+        if (playerRigidbody != null &&
+            !playerRigidbody.isKinematic)
+        {
+            playerRigidbody.MoveRotation(
+                rotation);
+        }
+        else
+        {
+            transform.rotation =
+                rotation;
+        }
     }
 
     #endregion
@@ -1390,72 +821,51 @@ public sealed class RailGrinding : MonoBehaviour
     private void PositionTeammates()
     {
         if (currentRail == null)
+        {
             return;
+        }
 
-        PlaceMemberAtOffset(
+        PlaceMember(
             member2,
-            memberSpacing,
-            member2SparksFX);
+            memberSpacing);
 
-        PlaceMemberAtOffset(
+        PlaceMember(
             member3,
-            memberSpacing * 2f,
-            member3SparksFX);
+            memberSpacing * 2f);
     }
 
-    private void PlaceMemberAtOffset(
-    Transform member,
-    float worldOffset,
-    ParticleSystem sparks)
+    private void PlaceMember(
+        Transform member,
+        float distanceBehind)
     {
         if (member == null ||
-            currentRail == null ||
-            !float.IsFinite(currentRailLength) ||
-            currentRailLength <= Mathf.Epsilon)
+            currentRail == null)
         {
             return;
         }
 
-        if (!float.IsFinite(worldOffset))
-        {
-            return;
-        }
-
-        float offsetT =
-            worldOffset /
-            currentRailLength;
+        float railLength =
+            currentRail.ApproximateLength();
 
         if (!float.IsFinite(
-                offsetT))
+                railLength) ||
+            railLength <= 0f)
         {
             return;
         }
-
-        float directionSign =
-            float.IsFinite(grindDirectionSign) &&
-            Mathf.Abs(grindDirectionSign) >
-                MinimumVectorMagnitude
-                ? Mathf.Sign(
-                    grindDirectionSign)
-                : 1f;
 
         float memberT =
-            splineT -
-            directionSign *
-            offsetT;
-
-        if (!float.IsFinite(
-                memberT))
-        {
-            return;
-        }
-
-        memberT =
             Mathf.Clamp01(
-                memberT);
+                railPosition -
+                distanceBehind /
+                    railLength);
 
         Vector3 targetPosition =
             currentRail.GetPoint(
+                memberT);
+
+        Vector3 tangent =
+            currentRail.GetTangent(
                 memberT);
 
         if (!IsFiniteVector(
@@ -1464,126 +874,24 @@ public sealed class RailGrinding : MonoBehaviour
             return;
         }
 
-        Vector3 currentPosition =
-            member.position;
-
-        if (!IsFiniteVector(
-                currentPosition))
-        {
-            currentPosition =
-                targetPosition;
-        }
-
-        float safeSnapSpeed =
-            float.IsFinite(memberSnapSpeed)
-                ? Mathf.Max(
-                    0f,
-                    memberSnapSpeed)
-                : 0f;
-
-        float lerpFactor =
-            safeSnapSpeed *
-            Time.fixedDeltaTime;
-
-        if (!float.IsFinite(
-                lerpFactor))
-        {
-            lerpFactor = 0f;
-        }
-
-        Vector3 nextPosition =
+        member.position =
             Vector3.Lerp(
-                currentPosition,
+                member.position,
                 targetPosition,
                 Mathf.Clamp01(
-                    lerpFactor));
+                    memberSnapSpeed *
+                    Time.deltaTime));
 
         if (IsFiniteVector(
-                nextPosition))
+                tangent) &&
+            tangent.sqrMagnitude >
+                0.0001f)
         {
-            member.position =
-                nextPosition;
+            member.rotation =
+                Quaternion.LookRotation(
+                    tangent.normalized,
+                    Vector3.up);
         }
-
-        Vector3 tangent =
-            currentRail.GetTangent(
-                memberT);
-
-        if (!IsFiniteVector(
-                tangent) ||
-            tangent.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            UpdateMemberSparks(
-                sparks);
-
-            return;
-        }
-
-        tangent.Normalize();
-
-        Vector3 travelDirection =
-            tangent *
-            directionSign;
-
-        if (!IsFiniteVector(
-                travelDirection) ||
-            travelDirection.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            UpdateMemberSparks(
-                sparks);
-
-            return;
-        }
-
-        Quaternion targetRotation =
-            Quaternion.LookRotation(
-                travelDirection,
-                Vector3.up);
-
-        if (IsFiniteQuaternion(
-                targetRotation))
-        {
-            Quaternion currentRotation =
-                member.rotation;
-
-            if (!IsFiniteQuaternion(
-                    currentRotation))
-            {
-                currentRotation =
-                    targetRotation;
-            }
-
-            Quaternion nextRotation =
-                Quaternion.Slerp(
-                    currentRotation,
-                    targetRotation,
-                    Mathf.Clamp01(
-                        lerpFactor));
-
-            if (IsFiniteQuaternion(
-                    nextRotation))
-            {
-                member.rotation =
-                    nextRotation;
-            }
-        }
-
-        UpdateMemberSparks(
-            sparks);
-    }
-
-    private static void UpdateMemberSparks(
-    ParticleSystem sparks)
-    {
-        if (sparks == null ||
-            sparks.isPlaying)
-        {
-            return;
-        }
-
-        sparks.Play();
     }
 
     #endregion
@@ -1591,406 +899,236 @@ public sealed class RailGrinding : MonoBehaviour
     #region Rail Switching
 
     private void TrySwitchRail(
-        float lateralInput)
+        float horizontalInput)
     {
-        if (!CanAttemptRailSwitch())
-            return;
-
-        Vector3 playerPosition =
-            playerRigidbody.position;
-
-        Vector3 travelDirection =
-            GetTravelDirection();
-
-        Vector3 preferredDirection =
-            GetPreferredSwitchDirection(
-                travelDirection,
-                lateralInput);
-
-        if (!TryFindBestRailSwitch(
-                playerPosition,
-                travelDirection,
-                preferredDirection,
-                out RailSwitchCandidate candidate))
+        if (currentRail == null ||
+            Time.time -
+                lastSwitchTime <
+                switchCooldown)
         {
             return;
         }
 
-        ApplyRailSwitch(candidate);
-    }
+        Vector3 position =
+            transform.position;
 
-    private bool CanAttemptRailSwitch()
-    {
-        return
-            currentRail != null &&
-            playerRigidbody != null &&
-            Time.time -
-            lastSwitchTime >=
-            switchCooldown;
-    }
+        Vector3 currentForward =
+            GetRailForward();
 
-    private static Vector3 GetPreferredSwitchDirection(
-        Vector3 travelDirection,
-        float lateralInput)
-    {
-        Vector3 rightDirection =
+        Vector3 lateralDirection =
             Vector3.Cross(
                 Vector3.up,
-                travelDirection).normalized;
+                currentForward)
+            .normalized *
+            Mathf.Sign(
+                horizontalInput);
 
-        return
-            rightDirection *
-            Mathf.Sign(lateralInput);
-    }
-
-    private bool TryFindBestRailSwitch(
-    Vector3 playerPosition,
-    Vector3 travelDirection,
-    Vector3 preferredDirection,
-    out RailSwitchCandidate bestCandidate)
-    {
-        bestCandidate = default;
-
-        bool foundCandidate = false;
-        float bestScore = float.MaxValue;
-
-        int railCount =
-            Physics.OverlapSphereNonAlloc(
-                playerPosition,
+        Collider[] nearbyRails =
+            Physics.OverlapSphere(
+                position,
                 switchScanRadius,
-                railSwitchBuffer,
-                railLayerMask,
+                railLayers,
                 QueryTriggerInteraction.Collide);
 
-        for (int index = 0;
-             index < railCount;
-             index++)
-        {
-            Collider nearbyCollider =
-                railSwitchBuffer[index];
+        RailSpline bestRail =
+            null;
 
-            if (!TryEvaluateRailCandidate(
-                    nearbyCollider,
-                    playerPosition,
-                    travelDirection,
-                    preferredDirection,
-                    out RailSwitchCandidate candidate))
+        float bestT =
+            0f;
+
+        float bestScore =
+            float.PositiveInfinity;
+
+        foreach (Collider candidateCollider
+            in nearbyRails)
+        {
+            if (candidateCollider == null)
             {
                 continue;
             }
 
-            if (candidate.Score >= bestScore)
+            RailSpline candidate =
+                candidateCollider
+                    .GetComponent<RailSpline>();
+
+            candidate ??=
+                candidateCollider
+                    .GetComponentInParent<RailSpline>();
+
+            if (candidate == null ||
+                candidate ==
+                    currentRail)
+            {
                 continue;
+            }
 
-            bestScore = candidate.Score;
-            bestCandidate = candidate;
-            foundCandidate = true;
-        }
+            float candidateT =
+                candidate.GetClosestT(
+                    position);
 
-        return foundCandidate;
-    }
+            Vector3 candidatePosition =
+                candidate.GetPoint(
+                    candidateT);
 
-    private bool TryEvaluateRailCandidate(
-    Collider nearbyCollider,
-    Vector3 playerPosition,
-    Vector3 travelDirection,
-    Vector3 preferredDirection,
-    out RailSwitchCandidate candidate)
-    {
-        candidate = default;
+            Vector3 candidateTangent =
+                candidate.GetTangent(
+                    candidateT);
 
-        if (nearbyCollider == null ||
-            !IsFiniteVector(playerPosition) ||
-            !IsFiniteVector(travelDirection) ||
-            !IsFiniteVector(preferredDirection))
-        {
-            return false;
-        }
+            if (!IsFiniteVector(
+                    candidatePosition) ||
+                !IsFiniteVector(
+                    candidateTangent))
+            {
+                continue;
+            }
 
-        if (travelDirection.sqrMagnitude <=
-                MinimumVectorMagnitude ||
-            preferredDirection.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            return false;
-        }
+            float distance =
+                Vector3.Distance(
+                    position,
+                    candidatePosition);
 
-        RailSpline rail =
-            nearbyCollider.GetComponentInParent<RailSpline>();
-
-        if (rail == null ||
-            rail == currentRail)
-        {
-            return false;
-        }
-
-        float railT =
-            rail.GetClosestT(
-                playerPosition);
-
-        if (!float.IsFinite(
-                railT))
-        {
-            return false;
-        }
-
-        railT =
-            Mathf.Clamp01(
-                railT);
-
-        Vector3 railPoint =
-            rail.GetPoint(
-                railT);
-
-        if (!IsFiniteVector(
-                railPoint))
-        {
-            return false;
-        }
-
-        Vector3 toRail =
-            railPoint -
-            playerPosition;
-
-        if (!IsFiniteVector(
-                toRail))
-        {
-            return false;
-        }
-
-        float distanceSqr =
-            toRail.sqrMagnitude;
-
-        if (!float.IsFinite(
-                distanceSqr) ||
-            distanceSqr <=
-                MinimumVectorMagnitude)
-        {
-            return false;
-        }
-
-        if (!float.IsFinite(
-                switchScanRadiusSqr) ||
-            switchScanRadiusSqr <= 0f ||
-            distanceSqr >
-                switchScanRadiusSqr)
-        {
-            return false;
-        }
-
-        float distance =
-            Mathf.Sqrt(
-                distanceSqr);
-
-        if (!float.IsFinite(
-                distance) ||
-            distance <=
-                Mathf.Epsilon)
-        {
-            return false;
-        }
-
-        Vector3 toRailDirection =
-            toRail /
-            distance;
-
-        if (!IsFiniteVector(
-                toRailDirection) ||
-            toRailDirection.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            return false;
-        }
-
-        Vector3 safePreferredDirection =
-            preferredDirection.normalized;
-
-        if (!IsFiniteVector(
-                safePreferredDirection) ||
-            safePreferredDirection.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            return false;
-        }
-
-        float sideAmount =
-            Vector3.Dot(
-                toRailDirection,
-                safePreferredDirection);
-
-        if (!float.IsFinite(
-                sideAmount) ||
-            sideAmount <= 0f)
-        {
-            return false;
-        }
-
-        Vector3 railTangent =
-            rail.GetTangent(
-                railT);
-
-        if (!IsFiniteVector(
-                railTangent) ||
-            railTangent.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            return false;
-        }
-
-        railTangent.Normalize();
-
-        Vector3 safeTravelDirection =
-            travelDirection.normalized;
-
-        if (!IsFiniteVector(
-                safeTravelDirection) ||
-            safeTravelDirection.sqrMagnitude <=
-                MinimumVectorMagnitude)
-        {
-            return false;
-        }
-
-        float forwardAngle =
-            Vector3.Angle(
-                safeTravelDirection,
-                railTangent);
-
-        float reverseAngle =
-            Vector3.Angle(
-                safeTravelDirection,
-                -railTangent);
-
-        if (!float.IsFinite(
-                forwardAngle) ||
-            !float.IsFinite(
-                reverseAngle))
-        {
-            return false;
-        }
-
-        float bestAngle =
-            Mathf.Min(
-                forwardAngle,
-                reverseAngle);
-
-        float safeMaximumAngle =
-            float.IsFinite(
-                switchMaxAngle)
-                ? Mathf.Clamp(
-                    switchMaxAngle,
-                    0f,
-                    180f)
-                : 0f;
-
-        if (!float.IsFinite(
-                bestAngle) ||
-            bestAngle >
-                safeMaximumAngle)
-        {
-            return false;
-        }
-
-        float directionSign =
-            forwardAngle <= reverseAngle
-                ? 1f
-                : -1f;
-
-        float safeSwitchRadius =
-            float.IsFinite(
-                switchScanRadius)
-                ? Mathf.Max(
-                    0f,
+            if (!float.IsFinite(
+                    distance) ||
+                distance >
                     switchScanRadius)
-                : 0f;
+            {
+                continue;
+            }
 
-        float score =
-            distance -
-            sideAmount *
-            safeSwitchRadius;
+            float angle =
+                Vector3.Angle(
+                    currentForward,
+                    candidateTangent);
 
-        if (!float.IsFinite(
-                score))
-        {
-            return false;
+            if (angle >
+                switchMaximumAngle)
+            {
+                continue;
+            }
+
+            Vector3 toCandidate =
+                candidatePosition -
+                position;
+
+            if (toCandidate.sqrMagnitude >
+                0.0001f)
+            {
+                toCandidate.Normalize();
+            }
+
+            float sidePreference =
+                Vector3.Dot(
+                    toCandidate,
+                    lateralDirection);
+
+            if (sidePreference <= 0f)
+            {
+                continue;
+            }
+
+            float score =
+                distance -
+                sidePreference *
+                    switchScanRadius;
+
+            if (score >=
+                bestScore)
+            {
+                continue;
+            }
+
+            bestScore =
+                score;
+
+            bestRail =
+                candidate;
+
+            bestT =
+                candidateT;
         }
 
-        candidate =
-            new RailSwitchCandidate(
-                rail,
-                railT,
-                directionSign,
-                score);
-
-        return true;
-    }
-
-    private void ApplyRailSwitch(
-    RailSwitchCandidate candidate)
-    {
-        if (candidate.Rail == null)
-            return;
-
-        if (!float.IsFinite(
-                candidate.SplineT) ||
-            !float.IsFinite(
-                candidate.DirectionSign) ||
-            !float.IsFinite(
-                candidate.Score))
-        {
-            return;
-        }
-
-        float directionSign =
-            Mathf.Sign(
-                candidate.DirectionSign);
-
-        if (Mathf.Approximately(
-                directionSign,
-                0f))
-        {
-            directionSign = 1f;
-        }
-
-        float railLength =
-            candidate.Rail.ApproximateLength();
-
-        if (!float.IsFinite(
-                railLength) ||
-            railLength <=
-                Mathf.Epsilon)
+        if (bestRail == null)
         {
             return;
         }
 
         currentRail =
-            candidate.Rail;
+            bestRail;
 
-        splineT =
-            Mathf.Clamp01(
-                candidate.SplineT);
-
-        grindDirectionSign =
-            directionSign;
-
-        currentRailLength =
-            railLength;
-
-        AlignLeaderToRail();
-
-        if (!isGrinding ||
-            currentRail == null)
-        {
-            return;
-        }
+        railPosition =
+            bestT;
 
         lastSwitchTime =
             Time.time;
 
-        PlayOneShot(
-            railSwitchSFX);
+        PlaySound(
+            railSwitchSound);
 
-        LogStateChange(
-            $"Switched to rail '{currentRail.name}'.");
+        if (playerRigidbody != null)
+        {
+            Vector3 velocity =
+                GetRailForward() *
+                    grindSpeed +
+                Vector3.up *
+                    railJumpForce *
+                    railSwitchJumpMultiplier;
+
+            if (IsFiniteVector(
+                    velocity))
+            {
+                playerRigidbody.linearVelocity =
+                    velocity;
+            }
+        }
+    }
+
+    #endregion
+
+    #region Rail Validation
+
+    private bool ValidateGrindingState()
+    {
+        if (currentRail == null)
+        {
+            return false;
+        }
+
+        Vector3 currentPoint =
+            currentRail.GetPoint(
+                railPosition);
+
+        Vector3 tangent =
+            currentRail.GetTangent(
+                railPosition);
+
+        return
+            IsFiniteVector(
+                currentPoint) &&
+            IsFiniteVector(
+                tangent);
+    }
+
+    private bool IsRailCollider(
+        Collider candidate)
+    {
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(
+                railTag) &&
+            candidate.CompareTag(
+                railTag))
+        {
+            return true;
+        }
+
+        return
+            candidate.GetComponent<RailSpline>() !=
+                null ||
+            candidate.GetComponentInParent<RailSpline>() !=
+                null;
     }
 
     #endregion
@@ -2002,13 +1140,13 @@ public sealed class RailGrinding : MonoBehaviour
         return currentTeam switch
         {
             TeamType.Speed =>
-                speedTeamModifier,
+                speedModifier,
 
             TeamType.Fly =>
-                flyTeamModifier,
+                flyModifier,
 
             TeamType.Power =>
-                powerTeamModifier,
+                powerModifier,
 
             _ =>
                 1f
@@ -2017,31 +1155,134 @@ public sealed class RailGrinding : MonoBehaviour
 
     #endregion
 
+    #region Rail Direction
+
+    private Vector3 GetRailForward()
+    {
+        if (currentRail == null)
+        {
+            return
+                transform.forward;
+        }
+
+        Vector3 tangent =
+            currentRail.GetTangent(
+                railPosition);
+
+        if (!IsFiniteVector(
+                tangent) ||
+            tangent.sqrMagnitude <=
+                0.0001f)
+        {
+            return
+                transform.forward;
+        }
+
+        return
+            tangent.normalized;
+    }
+
+    #endregion
+
+    #region References
+
+    private void ResolveReferences()
+    {
+        playerRigidbody ??=
+            GetComponent<Rigidbody>();
+
+        animator ??=
+            GetComponentInChildren<Animator>(
+                includeInactive: true);
+
+        audioSource ??=
+            GetComponent<AudioSource>();
+
+        audioSource ??=
+            GetComponentInChildren<AudioSource>(
+                includeInactive: true);
+    }
+
+    #endregion
+
     #region Animation
 
-    private void UpdateAnimatorState()
+    private void UpdateAnimator()
     {
-        if (railAnimator == null)
+        if (animator == null ||
+            !animator.isActiveAndEnabled ||
+            animator.runtimeAnimatorController ==
+                null)
+        {
             return;
+        }
 
-        railAnimator.SetBool(
-            IsGrindingHash,
+        SetAnimatorBool(
+            "IsGrinding",
             isGrinding);
 
-        railAnimator.SetBool(
-            IsCrouchingHash,
+        SetAnimatorBool(
+            "IsCrouching",
             isCrouching);
 
-        railAnimator.SetFloat(
-            GrindSpeedHash,
-            currentGrindSpeed);
+        SetAnimatorFloat(
+            "GrindSpeed",
+            grindSpeed);
+    }
+
+    private void SetAnimatorBool(
+        string parameterName,
+        bool value)
+    {
+        foreach (
+            AnimatorControllerParameter parameter
+            in animator.parameters)
+        {
+            if (parameter.name !=
+                    parameterName ||
+                parameter.type !=
+                    AnimatorControllerParameterType.Bool)
+            {
+                continue;
+            }
+
+            animator.SetBool(
+                parameterName,
+                value);
+
+            return;
+        }
+    }
+
+    private void SetAnimatorFloat(
+        string parameterName,
+        float value)
+    {
+        foreach (
+            AnimatorControllerParameter parameter
+            in animator.parameters)
+        {
+            if (parameter.name !=
+                    parameterName ||
+                parameter.type !=
+                    AnimatorControllerParameterType.Float)
+            {
+                continue;
+            }
+
+            animator.SetFloat(
+                parameterName,
+                value);
+
+            return;
+        }
     }
 
     #endregion
 
     #region Audio
 
-    private void PlayOneShot(
+    private void PlaySound(
         AudioClip clip)
     {
         if (audioSource == null ||
@@ -2050,75 +1291,90 @@ public sealed class RailGrinding : MonoBehaviour
             return;
         }
 
-        audioSource.PlayOneShot(clip);
+        audioSource.PlayOneShot(
+            clip);
     }
 
     private void StartGrindLoop()
     {
         if (audioSource == null ||
-            grindLoopSFX == null)
+            grindLoopSound == null)
         {
             return;
         }
 
-        audioSource.clip = grindLoopSFX;
-        audioSource.loop = true;
+        audioSource.clip =
+            grindLoopSound;
+
+        audioSource.loop =
+            true;
+
         audioSource.Play();
     }
 
     private void StopGrindLoop()
     {
         if (audioSource == null)
+        {
             return;
+        }
 
-        audioSource.loop = false;
-        audioSource.Stop();
-        audioSource.clip = null;
+        audioSource.loop =
+            false;
+
+        if (audioSource.clip ==
+            grindLoopSound)
+        {
+            audioSource.Stop();
+            audioSource.clip = null;
+        }
     }
 
     #endregion
 
-    #region Particle Effects
+    #region Effects
 
-    private void PlayAllSparksFX()
+    private void StartEffects()
     {
-        if (leaderSparksFX)
-        {
-            leaderSparksFX.Play();
-        }
+        PlayEffect(
+            leaderSparks);
 
-        if (member2SparksFX)
-        {
-            member2SparksFX.Play();
-        }
+        PlayEffect(
+            member2Sparks);
 
-        if (member3SparksFX)
+        PlayEffect(
+            member3Sparks);
+    }
+
+    private void StopEffects()
+    {
+        StopEffect(
+            leaderSparks);
+
+        StopEffect(
+            member2Sparks);
+
+        StopEffect(
+            member3Sparks);
+    }
+
+    private static void PlayEffect(
+        ParticleSystem effect)
+    {
+        if (effect != null &&
+            !effect.isPlaying)
         {
-            member3SparksFX.Play();
+            effect.Play();
         }
     }
 
-    private void StopAllSparksFX()
+    private static void StopEffect(
+        ParticleSystem effect)
     {
-        if (leaderSparksFX)
+        if (effect != null &&
+            effect.isPlaying)
         {
-            leaderSparksFX.Stop(
-                true,
-                ParticleSystemStopBehavior.StopEmittingAndClear);
-        }
-
-        if (member2SparksFX)
-        {
-            member2SparksFX.Stop(
-                true,
-                ParticleSystemStopBehavior.StopEmittingAndClear);
-        }
-
-        if (member3SparksFX)
-        {
-            member3SparksFX.Stop(
-                true,
-                ParticleSystemStopBehavior.StopEmittingAndClear);
+            effect.Stop();
         }
     }
 
@@ -2126,152 +1382,13 @@ public sealed class RailGrinding : MonoBehaviour
 
     #region Validation
 
-    private bool ValidateConfiguration()
-    {
-        bool valid = true;
-
-        valid &=
-            ValidateReference(
-                playerRigidbody,
-                nameof(Rigidbody));
-
-        valid &=
-            ValidateReference(
-                playerMovement,
-                nameof(UltimatePlayerMovement));
-
-        valid &=
-            ValidateReference(
-                audioSource,
-                nameof(AudioSource));
-
-        if (railLayerMask.value == 0)
-        {
-            Debug.LogWarning(
-                "RailGrinding rail layer mask is empty.",
-                this);
-        }
-
-        if (railAnimator == null)
-        {
-            Debug.LogWarning(
-                "RailGrinding could not find an Animator.",
-                this);
-        }
-
-        return valid;
-    }
-
-    private bool ValidateReference(
-        UnityEngine.Object reference,
-        string displayName)
-    {
-        if (reference != null)
-            return true;
-
-        Debug.LogError(
-            $"RailGrinding requires {displayName}.",
-            this);
-
-        return false;
-    }
-
-    #endregion
-
-    #region Cleanup
-
-    private void CleanupRuntimeState()
-    {
-        if (isGrinding)
-        {
-            StopGrinding(
-                jumped: false);
-        }
-
-        StopGrindLoop();
-        StopAllSparksFX();
-        isCrouching = false;
-        UpdateAnimatorState();
-    }
-
-    private void CleanupDestroyedState()
-    {
-        CleanupRuntimeState();
-
-        isInitialized = false;
-
-        currentRail = null;
-        currentRailLength = 0f;
-        playerRigidbody = null;
-        playerMovement = null;
-        audioSource = null;
-        railAnimator = null;
-
-        member2 = null;
-        member3 = null;
-
-        leaderSparksFX = null;
-        member2SparksFX = null;
-        member3SparksFX = null;
-    }
-
-    #endregion
-
     private static bool IsFiniteVector(
-    Vector3 value)
+        Vector3 value)
     {
         return
             float.IsFinite(value.x) &&
             float.IsFinite(value.y) &&
             float.IsFinite(value.z);
-    }
-
-    private bool IsValidGrindingRuntimeState()
-    {
-        return
-            currentRail != null &&
-            playerRigidbody != null &&
-            float.IsFinite(splineT) &&
-            float.IsFinite(currentRailLength) &&
-            currentRailLength > Mathf.Epsilon &&
-            float.IsFinite(currentGrindSpeed) &&
-            currentGrindSpeed >= 0f;
-    }
-
-    #region Debug
-    private void LogStateChange(
-        string message)
-    {
-        if (!logStateChanges)
-            return;
-
-        Debug.Log(
-            message,
-            this);
-    }
-
-    #endregion
-
-    #region Internal Types
-
-    private readonly struct RailSwitchCandidate
-    {
-        public RailSwitchCandidate(
-            RailSpline rail,
-            float splineT,
-            float directionSign,
-            float score)
-        {
-            Rail = rail;
-            SplineT = splineT;
-            DirectionSign = directionSign;
-            Score = score;
-        }
-
-        public RailSpline Rail { get; }
-        public float SplineT { get; }
-        public float DirectionSign { get; }
-        public float Score { get; }
     }
 
     #endregion

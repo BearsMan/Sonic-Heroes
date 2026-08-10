@@ -7,7 +7,7 @@ public class HealthBar : MonoBehaviour
     public Sprite[] bars = new Sprite[3];
     public Sprite[] sleepSprite;
     public SpriteRenderer bar;
-    private bool sleeping = true;
+    bool sleeping = true;
     private void Awake()
     {
 
@@ -38,20 +38,14 @@ public class HealthBar : MonoBehaviour
     {
         while (true)
         {
-            Debug.Log($"Object: {gameObject.name}");
-            Debug.Log($"SleepSprite Length: {sleepSprite.Length}");
-
-            Debug.Log("Frame 0");
             bar.sprite = sleepSprite[0];
             yield return new WaitForSeconds(1);
-
-            Debug.Log("Frame 1");
             bar.sprite = sleepSprite[1];
             yield return new WaitForSeconds(1);
-
-            Debug.Log("Frame 2");
             bar.sprite = sleepSprite[2];
             yield return new WaitForSeconds(1);
+
+
         }
     }
 
