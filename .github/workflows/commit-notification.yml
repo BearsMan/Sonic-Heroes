@@ -1,0 +1,23 @@
+name: Commit Notification
+
+run-name: "${{ github.actor }} pushed to ${{ github.ref_name }}"
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+
+jobs:
+  commit-notification:
+    name: Commit pushed
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Show commit details
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Pushed by: ${{ github.actor }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Message: ${{ github.event.head_commit.message }}"
