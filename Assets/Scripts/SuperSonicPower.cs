@@ -1,113 +1,126 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-public sealed class SuperSonicPower : MonoBehaviour
+public class SuperSonicPower : MonoBehaviour
 {
-    #region Constants
-
-    private const int MaxTargetResults = 64;
-    private const float MinimumDirectionMagnitude = 0.001f;
-    private const float MinimumDuration = 0.05f;
-
-    #endregion
-
-    #region Animator Hashes
+    #region Animator
 
     private static readonly int SuperSonicPowerHash =
-        Animator.StringToHash("Super Sonic Power");
+        Animator.StringToHash(
+            "Super Sonic Power");
 
     #endregion
 
-    #region Inspector
+    #region References
 
-    [Header("References")]
-    [SerializeField] private TeamActionController actionController;
-    [SerializeField] private Animator animator;
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private Transform blastOrigin;
+    [Header("Super Team Sonic")]
 
-    [Header("Super Sonic Power")]
-    [SerializeField, Min(0.1f)] private float blastRadius = 24f;
-    [SerializeField, Min(0f)] private float damage = 250f;
-    [SerializeField, Min(0f)] private float knockbackForce = 30f;
-    [SerializeField, Min(MinimumDuration)] private float activeDuration = 1.25f;
-    [SerializeField, Min(1)] private int pulseCount = 3;
-    [SerializeField, Min(0f)] private float pulseInterval = 0.2f;
-    [SerializeField] private LayerMask enemyLayers = ~0;
+    [SerializeField]
+    private TeamActionController actionController;
 
-    [Header("Last Story")]
-    [SerializeField] private bool requireMetalOverlord = true;
-    [SerializeField] private bool damageMetalOverlord = true;
-    [SerializeField, Min(1)] private int metalOverlordHits = 1;
-    [SerializeField, Min(0f)] private float metalOverlordHitInterval = 0.15f;
+    [SerializeField]
+    private Transform superSonic;
 
-    [Header("Team Support")]
-    [SerializeField, Min(0f)] private float invincibilityDuration = 6f;
-    [SerializeField] private bool protectWholeTeam = true;
+    [SerializeField]
+    private Transform superTails;
 
-    [Header("Effects")]
-    [SerializeField] private GameObject activationEffect;
-    [SerializeField] private GameObject pulseEffect;
-    [SerializeField] private GameObject bossImpactEffect;
-    [SerializeField, Min(0f)] private float effectLifetime = 5f;
+    [SerializeField]
+    private Transform superKnuckles;
 
-    [Header("Audio")]
-    [SerializeField] private AudioClip activationSound;
-    [SerializeField] private AudioClip pulseSound;
-    [SerializeField] private AudioClip bossImpactSound;
+    [SerializeField]
+    private Animator animator;
 
-    [Header("Debug")]
-    [SerializeField] private bool drawBlastRadius = true;
-    [SerializeField] private bool logStateChanges;
+    [SerializeField]
+    private AudioSource audioSource;
 
     #endregion
 
-    #region Runtime State
+    #region Metal Overlord
 
-    private readonly Collider[] targetResults =
-        new Collider[MaxTargetResults];
+    [Header("Metal Overlord")]
 
-    private readonly HashSet<GameObject> affectedTargets =
-        new();
-
-    private Coroutine superPowerRoutine;
+    [SerializeField]
     private MetalOverlord metalOverlord;
 
-    private bool isActive;
-    private bool isInitialized;
-    private bool isShuttingDown;
+    [SerializeField, Min(1)]
+    private int bossHits = 1;
+
+    [SerializeField, Min(0f)]
+    private float bossHitInterval = 0.15f;
 
     #endregion
 
-    #region Public API
+    #region Attack
 
-    public bool IsActive =>
-        isActive;
+    [Header("Super Sonic Power")]
+
+    [SerializeField, Min(0f)]
+    private float startupDuration = 0.35f;
+
+    [SerializeField, Min(0f)]
+    private float attackDuration = 1.25f;
+
+    [SerializeField, Min(0f)]
+    private float recoveryDuration = 0.35f;
+
+    #endregion
+
+    #region Effects
+
+    [Header("Effects")]
+
+    [SerializeField]
+    private Transform effectOrigin;
+
+    [SerializeField]
+    private GameObject activationEffect;
+
+    [SerializeField]
+    private GameObject bossImpactEffect;
+
+    [SerializeField, Min(0f)]
+    private float effectLifetime = 5f;
+
+    #endregion
+
+    #region Audio
+
+    [Header("Audio")]
+
+    [SerializeField]
+    private AudioClip activationSound;
+
+    [SerializeField]
+    private AudioClip bossImpactSound;
+
+    [SerializeField]
+    private AudioClip completionSound;
+
+    #endregion
+
+    #region Runtime
+
+    private Coroutine powerRoutine;
+
+    private bool isInitialized;
+    private bool isActive;
+    private bool bossWasHit;
+
+    #endregion
+
+    #region Properties
 
     public bool IsInitialized =>
         isInitialized;
 
+    public bool IsActive =>
+        isActive;
+
     public bool HasMetalOverlordTarget =>
         metalOverlord != null;
 
-    public bool TryActivate()
-    {
-        if (!CanActivate())
-            return false;
-
-        BeginSuperSonicPower();
-        return true;
-    }
-
-    public void Cancel()
-    {
-        if (!isActive)
-            return;
-
-        FinishSuperSonicPower();
-    }
+    public bool BossWasHit =>
+        bossWasHit;
 
     #endregion
 
@@ -115,84 +128,83 @@ public sealed class SuperSonicPower : MonoBehaviour
 
     private void Awake()
     {
-        CacheComponents();
         ResolveReferences();
     }
 
     private void Start()
     {
-        if (!InitializeSuperSonicPower())
-        {
-            enabled = false;
-        }
-    }
-
-    private void OnEnable()
-    {
-        if (isShuttingDown)
-            return;
-
-        CacheComponents();
-        ResolveReferences();
+        Initialize();
     }
 
     private void OnDisable()
     {
-        CleanupRuntimeState();
+        Cancel();
     }
 
     private void OnDestroy()
     {
-        isShuttingDown = true;
-        CleanupDestroyedState();
+        Cancel();
+
+        actionController =
+            null;
+
+        superSonic =
+            null;
+
+        superTails =
+            null;
+
+        superKnuckles =
+            null;
+
+        animator =
+            null;
+
+        audioSource =
+            null;
+
+        effectOrigin =
+            null;
+
+        metalOverlord =
+            null;
+
+        activationEffect =
+            null;
+
+        bossImpactEffect =
+            null;
+
+        isInitialized =
+            false;
     }
 
     private void OnValidate()
     {
-        blastRadius =
-            Mathf.Max(
-                0.1f,
-                blastRadius);
-
-        damage =
-            Mathf.Max(
-                0f,
-                damage);
-
-        knockbackForce =
-            Mathf.Max(
-                0f,
-                knockbackForce);
-
-        activeDuration =
-            Mathf.Max(
-                MinimumDuration,
-                activeDuration);
-
-        pulseCount =
+        bossHits =
             Mathf.Max(
                 1,
-                pulseCount);
+                bossHits);
 
-        pulseInterval =
+        bossHitInterval =
             Mathf.Max(
                 0f,
-                pulseInterval);
+                bossHitInterval);
 
-        metalOverlordHits =
-            Mathf.Max(
-                1,
-                metalOverlordHits);
-
-        metalOverlordHitInterval =
+        startupDuration =
             Mathf.Max(
                 0f,
-                metalOverlordHitInterval);
+                startupDuration);
 
-        invincibilityDuration =
+        attackDuration =
             Mathf.Max(
                 0f,
-                invincibilityDuration);
+                attackDuration);
+
+        recoveryDuration =
+            Mathf.Max(
+                0f,
+                recoveryDuration);
 
         effectLifetime =
             Mathf.Max(
@@ -200,296 +212,242 @@ public sealed class SuperSonicPower : MonoBehaviour
                 effectLifetime);
     }
 
-    private void OnDrawGizmosSelected()
-    {
-        if (!drawBlastRadius)
-            return;
-
-        Gizmos.DrawWireSphere(
-            GetBlastPosition(),
-            blastRadius);
-    }
-
     #endregion
 
     #region Initialization
 
-    public bool InitializeSuperSonicPower()
+    public bool Initialize()
     {
         if (isInitialized)
+        {
             return true;
+        }
 
-        CacheComponents();
         ResolveReferences();
 
-        if (!ValidateConfiguration())
+        if (actionController == null ||
+            metalOverlord == null)
         {
-            Debug.LogError(
-                $"SuperSonicPower failed to initialize on '{name}'.",
-                this);
-
-            isInitialized = false;
             return false;
         }
 
-        ResetRuntimeState();
+        ResolveSuperTeam();
 
-        isInitialized = true;
+        if (!HasValidSuperTeam())
+        {
+            return false;
+        }
+
+        isActive =
+            false;
+
+        bossWasHit =
+            false;
+
+        powerRoutine =
+            null;
+
+        isInitialized =
+            true;
+
         return true;
-    }
-
-    private void CacheComponents()
-    {
-        actionController ??=
-            GetComponentInParent<TeamActionController>();
-
-        audioSource ??=
-            GetComponentInParent<AudioSource>();
     }
 
     private void ResolveReferences()
     {
+        actionController ??=
+            GetComponentInParent<
+                TeamActionController>();
+
         animator ??=
             GetComponentInChildren<Animator>(
                 includeInactive: true);
 
-        blastOrigin ??=
+        audioSource ??=
+            GetComponent<AudioSource>();
+
+        audioSource ??=
+            GetComponentInParent<AudioSource>();
+
+        effectOrigin ??=
             transform;
 
-        metalOverlord ??=
-            FindAnyObjectByType<MetalOverlord>();
+        if (metalOverlord == null)
+        {
+            metalOverlord =
+                FindAnyObjectByType<
+                    MetalOverlord>();
+        }
+    }
+
+    private void ResolveSuperTeam()
+    {
+        if (actionController == null)
+        {
+            return;
+        }
+
+        superSonic ??=
+            actionController.SpeedCharacter;
+
+        superTails ??=
+            actionController.FlyCharacter;
+
+        superKnuckles ??=
+            actionController.PowerCharacter;
+    }
+
+    private bool HasValidSuperTeam()
+    {
+        return
+            superSonic != null &&
+            superTails != null &&
+            superKnuckles != null &&
+            superSonic.gameObject.activeInHierarchy &&
+            superTails.gameObject.activeInHierarchy &&
+            superKnuckles.gameObject.activeInHierarchy;
     }
 
     #endregion
 
-    #region Super Sonic Power State
+    #region Public API
+
+    public bool TryActivate()
+    {
+        if (!CanActivate())
+        {
+            return false;
+        }
+
+        bossWasHit =
+            false;
+
+        isActive =
+            true;
+
+        powerRoutine =
+            StartCoroutine(
+                SuperSonicPowerRoutine());
+
+        return true;
+    }
+
+    public void Cancel()
+    {
+        if (powerRoutine != null)
+        {
+            StopCoroutine(
+                powerRoutine);
+
+            powerRoutine =
+                null;
+        }
+
+        if (!isActive)
+        {
+            return;
+        }
+
+        isActive =
+            false;
+
+        RestoreTeamControl();
+    }
+
+    #endregion
+
+    #region Activation
 
     private bool CanActivate()
     {
-        return
-            isInitialized &&
-            !isActive &&
-            actionController != null &&
-            (!requireMetalOverlord ||
-             metalOverlord != null);
+        if (!isInitialized ||
+            isActive ||
+            actionController == null)
+        {
+            return false;
+        }
+
+        if (metalOverlord == null ||
+            !metalOverlord.gameObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        if (!HasValidSuperTeam())
+        {
+            return false;
+        }
+
+        return true;
     }
 
-    private void BeginSuperSonicPower()
+    private IEnumerator SuperSonicPowerRoutine()
     {
-        isActive = true;
-        affectedTargets.Clear();
-
-        ResolveReferences();
+        LockTeamControl();
 
         PlayAnimation();
+
         PlaySound(
             activationSound);
 
         SpawnEffect(
             activationEffect,
-            GetBlastPosition());
+            GetEffectPosition());
 
-        if (protectWholeTeam)
-        {
-            ApplyTeamInvincibility();
-        }
-
-        superPowerRoutine =
-            StartCoroutine(
-                SuperSonicPowerRoutine());
-
-        LogStateChange(
-            "Super Sonic Power started.");
-    }
-
-    private IEnumerator SuperSonicPowerRoutine()
-    {
-        WaitForSeconds pulseWait =
-            pulseInterval > 0f
-                ? new WaitForSeconds(
-                    pulseInterval)
-                : null;
-
-        for (int pulseIndex = 0;
-             pulseIndex < pulseCount;
-             pulseIndex++)
-        {
-            ApplyPowerPulse();
-
-            if (pulseIndex <
-                    pulseCount - 1 &&
-                pulseWait != null)
-            {
-                yield return pulseWait;
-            }
-        }
-
-        if (damageMetalOverlord &&
-            metalOverlord != null)
-        {
-            yield return
-                DamageMetalOverlordRoutine();
-        }
-
-        float remainingDuration =
-            Mathf.Max(
-                0f,
-                activeDuration -
-                pulseInterval *
-                Mathf.Max(
-                    0,
-                    pulseCount - 1));
-
-        if (remainingDuration > 0f)
+        if (startupDuration > 0f)
         {
             yield return
                 new WaitForSeconds(
-                    remainingDuration);
+                    startupDuration);
         }
 
-        FinishSuperSonicPower();
-    }
-
-    private void FinishSuperSonicPower()
-    {
-        if (!isActive)
-            return;
-
-        isActive = false;
-
-        if (superPowerRoutine != null)
+        if (metalOverlord == null)
         {
-            StopCoroutine(
-                superPowerRoutine);
+            FinishPower();
 
-            superPowerRoutine = null;
+            yield break;
         }
 
-        affectedTargets.Clear();
+        yield return
+            HitMetalOverlord();
 
-        LogStateChange(
-            "Super Sonic Power finished.");
-    }
+        if (attackDuration > 0f)
+        {
+            yield return
+                new WaitForSeconds(
+                    attackDuration);
+        }
 
-    private void ResetRuntimeState()
-    {
-        isActive = false;
-        superPowerRoutine = null;
-        affectedTargets.Clear();
+        if (recoveryDuration > 0f)
+        {
+            yield return
+                new WaitForSeconds(
+                    recoveryDuration);
+        }
+
+        FinishPower();
     }
 
     #endregion
 
-    #region Damage
+    #region Boss Attack
 
-    private void ApplyPowerPulse()
+    private IEnumerator HitMetalOverlord()
     {
-        SpawnEffect(
-            pulseEffect,
-            GetBlastPosition());
-
-        PlaySound(
-            pulseSound);
-
-        int resultCount =
-            Physics.OverlapSphereNonAlloc(
-                GetBlastPosition(),
-                blastRadius,
-                targetResults,
-                enemyLayers,
-                QueryTriggerInteraction.Collide);
-
-        for (int index = 0;
-             index < resultCount;
-             index++)
+        for (int hitIndex = 0;
+            hitIndex < bossHits;
+            hitIndex++)
         {
-            Collider enemy =
-                targetResults[index];
-
-            targetResults[index] = null;
-
-            if (enemy == null)
-                continue;
-
-            GameObject target =
-                enemy.attachedRigidbody != null
-                    ? enemy.attachedRigidbody.gameObject
-                    : enemy.gameObject;
-
-            if (IsTeamCharacter(target) ||
-                !affectedTargets.Add(target))
+            if (metalOverlord == null ||
+                !metalOverlord.gameObject.activeInHierarchy)
             {
-                continue;
+                yield break;
             }
 
-            target.SendMessage(
-                "TakeDamage",
-                damage,
-                SendMessageOptions.DontRequireReceiver);
-
-            target.SendMessage(
-                "Break",
-                SendMessageOptions.DontRequireReceiver);
-
-            ApplyKnockback(
-                target,
-                enemy.attachedRigidbody);
-        }
-    }
-
-    private void ApplyKnockback(
-        GameObject target,
-        Rigidbody targetRigidbody)
-    {
-        if (target == null ||
-            targetRigidbody == null ||
-            knockbackForce <= 0f)
-        {
-            return;
-        }
-
-        Vector3 direction =
-            target.transform.position -
-            GetBlastPosition();
-
-        direction.y =
-            Mathf.Max(
-                direction.y,
-                0.2f);
-
-        if (direction.sqrMagnitude <=
-            MinimumDirectionMagnitude)
-        {
-            direction =
-                transform.forward;
-        }
-
-        targetRigidbody.AddForce(
-            direction.normalized *
-            knockbackForce,
-            ForceMode.VelocityChange);
-    }
-
-    #endregion
-
-    #region Metal Overlord
-
-    private IEnumerator DamageMetalOverlordRoutine()
-    {
-        WaitForSeconds hitWait =
-            metalOverlordHitInterval > 0f
-                ? new WaitForSeconds(
-                    metalOverlordHitInterval)
-                : null;
-
-        for (int hitIndex = 0;
-             hitIndex < metalOverlordHits;
-             hitIndex++)
-        {
-            if (metalOverlord == null)
-                yield break;
-
             metalOverlord.OnTeamBlastHit();
+
+            bossWasHit =
+                true;
 
             SpawnEffect(
                 bossImpactEffect,
@@ -499,103 +457,108 @@ public sealed class SuperSonicPower : MonoBehaviour
                 bossImpactSound);
 
             if (hitIndex <
-                    metalOverlordHits - 1 &&
-                hitWait != null)
+                    bossHits - 1 &&
+                bossHitInterval > 0f)
             {
-                yield return hitWait;
+                yield return
+                    new WaitForSeconds(
+                        bossHitInterval);
             }
         }
     }
 
     #endregion
 
-    #region Team Support
+    #region Team Control
 
-    private void ApplyTeamInvincibility()
+    private void LockTeamControl()
     {
-        ApplyInvincibilityToCharacter(
-            actionController.SpeedCharacter);
+        SetCharacterMovement(
+            superSonic,
+            false);
 
-        ApplyInvincibilityToCharacter(
-            actionController.FlyCharacter);
+        SetCharacterMovement(
+            superTails,
+            false);
 
-        ApplyInvincibilityToCharacter(
-            actionController.PowerCharacter);
+        SetCharacterMovement(
+            superKnuckles,
+            false);
     }
 
-    private void ApplyInvincibilityToCharacter(
-        Transform character)
+    private void RestoreTeamControl()
     {
-        if (character == null ||
-            invincibilityDuration <= 0f)
+        SetCharacterMovement(
+            superSonic,
+            true);
+
+        SetCharacterMovement(
+            superTails,
+            true);
+
+        SetCharacterMovement(
+            superKnuckles,
+            true);
+    }
+
+    private static void SetCharacterMovement(
+        Transform character,
+        bool enabled)
+    {
+        if (character == null)
         {
             return;
         }
 
-        character.gameObject.SendMessage(
-            "SetTemporaryInvincibility",
-            invincibilityDuration,
-            SendMessageOptions.DontRequireReceiver);
-    }
+        UltimatePlayerMovement movement =
+            character.GetComponent<
+                UltimatePlayerMovement>();
 
-    #endregion
+        movement ??=
+            character.GetComponentInParent<
+                UltimatePlayerMovement>();
 
-    #region Team Filtering
+        movement ??=
+            character.GetComponentInChildren<
+                UltimatePlayerMovement>(
+                    includeInactive: true);
 
-    private bool IsTeamCharacter(
-        GameObject target)
-    {
-        if (target == null ||
-            actionController == null)
+        if (movement == null)
         {
-            return false;
-        }
-
-        return
-            MatchesCharacter(
-                target,
-                actionController.SpeedCharacter) ||
-            MatchesCharacter(
-                target,
-                actionController.FlyCharacter) ||
-            MatchesCharacter(
-                target,
-                actionController.PowerCharacter);
-    }
-
-    private static bool MatchesCharacter(
-        GameObject target,
-        Transform character)
-    {
-        return
-            character != null &&
-            (target == character.gameObject ||
-             target.transform.IsChildOf(character));
-    }
-
-    #endregion
-
-    #region Effects
-
-    private void SpawnEffect(
-        GameObject effectPrefab,
-        Vector3 position)
-    {
-        if (effectPrefab == null)
             return;
-
-        GameObject spawnedEffect =
-            Instantiate(
-                effectPrefab,
-                position,
-                transform.rotation);
-
-        if (effectLifetime > 0f)
-        {
-            Destroy(
-                spawnedEffect,
-                effectLifetime);
         }
+
+        if (enabled)
+        {
+            movement.EnableMovement();
+        }
+        else
+        {
+            movement.DisableMovement();
+        }
+    }
+
+    #endregion
+
+    #region Completion
+
+    private void FinishPower()
+    {
+        if (!isActive)
+        {
+            return;
+        }
+
+        isActive =
+            false;
+
+        powerRoutine =
+            null;
+
+        RestoreTeamControl();
+
+        PlaySound(
+            completionSound);
     }
 
     #endregion
@@ -604,11 +567,59 @@ public sealed class SuperSonicPower : MonoBehaviour
 
     private void PlayAnimation()
     {
-        if (animator == null)
+        if (animator == null ||
+            !animator.isActiveAndEnabled ||
+            animator.runtimeAnimatorController ==
+                null)
+        {
             return;
+        }
 
         animator.SetTrigger(
             SuperSonicPowerHash);
+    }
+
+    #endregion
+
+    #region Effects
+
+    private Vector3 GetEffectPosition()
+    {
+        if (effectOrigin != null &&
+            IsFiniteVector(
+                effectOrigin.position))
+        {
+            return
+                effectOrigin.position;
+        }
+
+        return
+            transform.position;
+    }
+
+    private void SpawnEffect(
+        GameObject effect,
+        Vector3 position)
+    {
+        if (effect == null ||
+            !IsFiniteVector(
+                position))
+        {
+            return;
+        }
+
+        GameObject instance =
+            Instantiate(
+                effect,
+                position,
+                transform.rotation);
+
+        if (effectLifetime > 0f)
+        {
+            Destroy(
+                instance,
+                effectLifetime);
+        }
     }
 
     #endregion
@@ -630,118 +641,18 @@ public sealed class SuperSonicPower : MonoBehaviour
 
     #endregion
 
-    #region Utility
-
-    private Vector3 GetBlastPosition()
-    {
-        return
-            blastOrigin != null
-                ? blastOrigin.position
-                : transform.position;
-    }
-
-    #endregion
-
     #region Validation
 
-    private bool ValidateConfiguration()
+    private static bool IsFiniteVector(
+        Vector3 value)
     {
-        bool valid = true;
-
-        valid &=
-            ValidateReference(
-                actionController,
-                nameof(TeamActionController));
-
-        if (requireMetalOverlord &&
-            metalOverlord == null)
-        {
-            Debug.LogWarning(
-                "SuperSonicPower requires MetalOverlord, but none was found.",
-                this);
-        }
-
-        if (animator == null)
-        {
-            Debug.LogWarning(
-                "SuperSonicPower could not find an Animator.",
-                this);
-        }
-
-        if (audioSource == null)
-        {
-            Debug.LogWarning(
-                "SuperSonicPower could not find an AudioSource.",
-                this);
-        }
-
-        if (activationEffect == null)
-        {
-            Debug.LogWarning(
-                "SuperSonicPower has no activation effect.",
-                this);
-        }
-
-        return valid;
-    }
-
-    private bool ValidateReference(
-        Object reference,
-        string displayName)
-    {
-        if (reference != null)
-            return true;
-
-        Debug.LogError(
-            $"SuperSonicPower requires {displayName}.",
-            this);
-
-        return false;
-    }
-
-    #endregion
-
-    #region Cleanup
-
-    private void CleanupRuntimeState()
-    {
-        if (isActive)
-        {
-            FinishSuperSonicPower();
-        }
-    }
-
-    private void CleanupDestroyedState()
-    {
-        CleanupRuntimeState();
-
-        isInitialized = false;
-
-        actionController = null;
-        animator = null;
-        audioSource = null;
-        blastOrigin = null;
-        metalOverlord = null;
-        activationEffect = null;
-        pulseEffect = null;
-        bossImpactEffect = null;
-
-        affectedTargets.Clear();
-    }
-
-    #endregion
-
-    #region Debug
-
-    private void LogStateChange(
-        string message)
-    {
-        if (!logStateChanges)
-            return;
-
-        Debug.Log(
-            message,
-            this);
+        return
+            float.IsFinite(
+                value.x) &&
+            float.IsFinite(
+                value.y) &&
+            float.IsFinite(
+                value.z);
     }
 
     #endregion

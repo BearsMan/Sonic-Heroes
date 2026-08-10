@@ -86,6 +86,11 @@ public class UltimatePlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (isSurrendered)
+        {
+            return;
+        }
+
         Move();
     }
     private Animator anim;
@@ -258,6 +263,22 @@ public class UltimatePlayerMovement : MonoBehaviour
 
 
         }
+    }
+
+    public void DisableMovement()
+    {
+        isSurrendered = true;
+
+        if (body != null)
+        {
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+        }
+    }
+
+    public void EnableMovement()
+    {
+        isSurrendered = false;
     }
 
     public void SurrenderControl(Vector2 up, float newSurrenderTime)

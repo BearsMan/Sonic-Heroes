@@ -15,29 +15,46 @@ public class CameraController : MonoBehaviour
 
     }
 
+    public void SetTarget(Transform target)
+    {
+        if (target == null)
+        {
+            return;
+        }
+
+        sonic = target;
+    }
+
     // Update is called once per frame
     void Update()
     {
-        Vector2 look = new Vector2();
-
-        look.x = Input.GetAxis("Mouse X");
-        look.y = Input.GetAxis("Mouse Y");
-
-        transform.position = sonic.position - (transform.forward * 0.5f + sonic.up * 2);
-        transform.rotation = Quaternion.LookRotation(Vector3.Cross(transform.right, sonic.up));
-
-        float cameraDistance = 8;
-        if (Physics.Raycast(transform.position, -transform.forward, out RaycastHit hit, 8.3f, cameraMask) && rayCastingOff == false)
         {
-            float distance = Vector3.Distance(transform.position, hit.point);
-            cameraDistance = distance - 0.3f;
+            if (sonic == null ||
+                cam == null)
+            {
+                return;
+            }
+            Vector2 look = new Vector2();
+
+            look.x = Input.GetAxis("Mouse X");
+            look.y = Input.GetAxis("Mouse Y");
+
+            transform.position = sonic.position - (transform.forward * 0.5f + sonic.up * 2);
+            transform.rotation = Quaternion.LookRotation(Vector3.Cross(transform.right, sonic.up));
+
+            float cameraDistance = 8;
+            if (Physics.Raycast(transform.position, -transform.forward, out RaycastHit hit, 8.3f, cameraMask) && rayCastingOff == false)
+            {
+                float distance = Vector3.Distance(transform.position, hit.point);
+                cameraDistance = distance - 0.3f;
+            }
+            float ratio = cameraDistance / 8;
+            cam.localPosition = new Vector3(0, 5 * ratio, -cameraDistance);
+
+
+
+            Look(look);
         }
-        float ratio = cameraDistance / 8;
-        cam.localPosition = new Vector3(0, 5 * ratio, -cameraDistance);
-
-
-
-        Look(look);
     }
 
     private float xRotation;

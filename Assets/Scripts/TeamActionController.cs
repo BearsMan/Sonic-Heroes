@@ -1,9 +1,7 @@
 using System;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-[RequireComponent(typeof(UltimatePlayerMovement))]
-public sealed class TeamActionController : MonoBehaviour
+public class TeamActionController : MonoBehaviour
 {
     #region Types
 
@@ -19,7 +17,6 @@ public sealed class TeamActionController : MonoBehaviour
         None,
         HomingAttack,
         ChaosControl,
-        ShadowChaosAttack,
         AmyHammerAttack,
         TornadoJump,
         TriangleDive,
@@ -28,30 +25,17 @@ public sealed class TeamActionController : MonoBehaviour
         ThunderShoot,
         FireDunk,
         LightDash,
-        TeamBlast
+        TeamBlast,
+        SonicOverdrive,
+        SuperSonicPower
     }
 
     #endregion
 
-    #region Inspector
+    #region Team
 
-    [Header("Current Team State")]
-    [SerializeField]
-    private TeamFormation currentFormation =
-        TeamFormation.Speed;
+    [Header("Team")]
 
-    [SerializeField]
-    private TeamAction currentAction =
-        TeamAction.None;
-
-    [Header("Followers")]
-    [SerializeField]
-    private FollowerNavigation leftFollower;
-
-    [SerializeField]
-    private FollowerNavigation rightFollower;
-
-    [Header("Team References")]
     [SerializeField]
     private Transform speedCharacter;
 
@@ -62,24 +46,42 @@ public sealed class TeamActionController : MonoBehaviour
     private Transform powerCharacter;
 
     [SerializeField]
-    private UltimatePlayerMovement movement;
+    private TeamFormation currentFormation =
+        TeamFormation.Speed;
+
+    #endregion
+
+    #region Controllers
+
+    [Header("Controllers")]
 
     [SerializeField]
-    private RailGrinding railGrinding;
+    private UltimatePlayerMovement movement;
 
     [SerializeField]
     private CharacterSwitch characterSwitch;
 
     [SerializeField]
+    private FollowerNavigation leftFollower;
+
+    [SerializeField]
+    private FollowerNavigation rightFollower;
+
+    [SerializeField]
     private CameraController cameraController;
+
+    [SerializeField]
+    private RailGrinding railGrinding;
 
     [SerializeField]
     private HUD hud;
 
-    [SerializeField]
-    private TeamBlast teamBlast;
+    #endregion
 
-    [Header("Optional Formation Input")]
+    #region Input
+
+    [Header("Formation Input")]
+
     [SerializeField]
     private bool readFormationInput = true;
 
@@ -95,22 +97,27 @@ public sealed class TeamActionController : MonoBehaviour
     private KeyCode powerFormationKey =
         KeyCode.Alpha3;
 
-    [Header("Debug")]
-    [SerializeField]
-    private bool logStateChanges;
-
     #endregion
 
-    #region Runtime State
+    #region Runtime
+
+    private TeamAction currentAction =
+        TeamAction.None;
 
     private bool actionLocked;
-    private bool isInitialized;
-
-    private UltimatePlayerMovement[] cachedCharacterMovements;
+    private bool initialized;
 
     #endregion
 
-    #region Public API
+    #region Events
+
+    public event Action<TeamFormation> FormationChanged;
+    public event Action<TeamAction> ActionStarted;
+    public event Action<TeamAction> ActionEnded;
+
+    #endregion
+
+    #region Properties
 
     public TeamFormation CurrentFormation =>
         currentFormation;
@@ -126,7 +133,7 @@ public sealed class TeamActionController : MonoBehaviour
         actionLocked;
 
     public bool IsInitialized =>
-        isInitialized;
+        initialized;
 
     public UltimatePlayerMovement Movement =>
         movement;
@@ -140,14 +147,74 @@ public sealed class TeamActionController : MonoBehaviour
     public Transform PowerCharacter =>
         powerCharacter;
 
-    public event Action<TeamFormation>
-        FormationChanged;
+    #endregion
 
-    public event Action<TeamAction>
-        ActionStarted;
+    #region Unity Lifecycle
 
-    public event Action<TeamAction>
-        ActionEnded;
+    private void Awake()
+    {
+        ResolveReferences();
+    }
+
+    private void Start()
+    {
+        InitializeController();
+    }
+
+    private void Update()
+    {
+        if (!initialized)
+        {
+            return;
+        }
+
+        SynchronizeFormation();
+
+        if (CanReadFormationInput())
+        {
+            ReadFormationInput();
+        }
+    }
+
+    private void OnDisable()
+    {
+        currentAction =
+            TeamAction.None;
+
+        if (movement != null)
+        {
+            movement.EnableMovement();
+        }
+
+        EnableFollowers();
+    }
+
+    private void OnDestroy()
+    {
+        FormationChanged =
+            null;
+
+        ActionStarted =
+            null;
+
+        ActionEnded =
+            null;
+    }
+
+    private void OnValidate()
+    {
+        if (!Enum.IsDefined(
+                typeof(TeamFormation),
+                currentFormation))
+        {
+            currentFormation =
+                TeamFormation.Speed;
+        }
+    }
+
+    #endregion
+
+    #region Initialization
 
     public bool Setup(
         Transform speed,
@@ -159,9 +226,10 @@ public sealed class TeamActionController : MonoBehaviour
             fly,
             power);
 
-        ResolveDependencies();
+        ResolveReferences();
 
-        return InitializeController();
+        return
+            InitializeController();
     }
 
     public void SetCharacters(
@@ -169,48 +237,203 @@ public sealed class TeamActionController : MonoBehaviour
         Transform fly,
         Transform power)
     {
-        speedCharacter = speed;
-        flyCharacter = fly;
-        powerCharacter = power;
+        speedCharacter =
+            speed;
 
-        if (!isInitialized)
-            return;
+        flyCharacter =
+            fly;
 
-        RefreshControllers();
+        powerCharacter =
+            power;
+
+        ResolveMovement();
+        RefreshFormationSystems();
     }
 
     public void SetFollowers(
         FollowerNavigation left,
         FollowerNavigation right)
     {
-        leftFollower = left;
-        rightFollower = right;
+        leftFollower =
+            left;
 
-        EnsureFollowerRootsActive();
+        rightFollower =
+            right;
+
+        leftFollower?.SetTeamController(this);
+        rightFollower?.SetTeamController(this);
     }
 
-    public bool SetFormation(
-        TeamFormation newFormation)
+    private bool InitializeController()
     {
-        if (!CanChangeFormation(
-                newFormation))
+        if (initialized)
+        {
+            return true;
+        }
+
+        ResolveReferences();
+        ResolveCharacters();
+
+        if (movement == null ||
+            speedCharacter == null ||
+            flyCharacter == null ||
+            powerCharacter == null)
+        {
+            return false;
+        }
+
+        currentAction =
+            TeamAction.None;
+
+        actionLocked =
+            false;
+
+        initialized =
+            true;
+
+        SynchronizeFormation(
+            forceRefresh: true);
+
+        return true;
+    }
+
+    #endregion
+
+    #region References
+
+    private void ResolveReferences()
+    {
+        characterSwitch ??=
+            GetComponent<CharacterSwitch>();
+
+        characterSwitch ??=
+            GetComponentInParent<CharacterSwitch>();
+
+        leftFollower ??=
+            FindFollower(
+                0);
+
+        rightFollower ??=
+            FindFollower(
+                1);
+
+        leftFollower.SetTeamController(this);
+        rightFollower.SetTeamController(this);
+
+        cameraController ??=
+            FindAnyObjectByType<
+                CameraController>();
+
+        railGrinding ??=
+            GetComponent<RailGrinding>();
+
+        railGrinding ??=
+            GetComponentInParent<RailGrinding>();
+
+        hud ??=
+            FindAnyObjectByType<HUD>();
+
+        ResolveCharacters();
+        ResolveMovement();
+    }
+
+    private void ResolveCharacters()
+    {
+        if (characterSwitch == null)
+        {
+            return;
+        }
+
+        speedCharacter ??=
+            characterSwitch.speedCharacter;
+
+        flyCharacter ??=
+            characterSwitch.flyingCharacter;
+
+        powerCharacter ??=
+            characterSwitch.powerCharacter;
+    }
+
+    private void ResolveMovement()
+    {
+        movement ??=
+            GetComponent<
+                UltimatePlayerMovement>();
+
+        movement ??=
+            GetComponentInParent<
+                UltimatePlayerMovement>();
+
+        if (movement != null)
+        {
+            return;
+        }
+
+        Transform leader =
+            GetFormationLeader();
+
+        if (leader == null)
+        {
+            return;
+        }
+
+        movement =
+            leader.GetComponentInParent<
+                UltimatePlayerMovement>();
+
+        movement ??=
+            leader.GetComponentInChildren<
+                UltimatePlayerMovement>(
+                    includeInactive: true);
+    }
+
+    private FollowerNavigation FindFollower(
+        int index)
+    {
+        FollowerNavigation[] followers =
+            GetComponentsInChildren<
+                FollowerNavigation>(
+                    includeInactive: true);
+
+        if (followers == null ||
+            index < 0 ||
+            index >= followers.Length)
+        {
+            return null;
+        }
+
+        return followers[index];
+    }
+
+    #endregion
+
+    #region Formation
+
+    public bool SetFormation(
+        TeamFormation formation)
+    {
+        if (!initialized ||
+            actionLocked ||
+            IsPerformingAction ||
+            !Enum.IsDefined(
+                typeof(TeamFormation),
+                formation))
         {
             return false;
         }
 
         if (currentFormation ==
-            newFormation)
+            formation)
         {
             return true;
         }
 
         currentFormation =
-            newFormation;
+            formation;
 
-        RefreshControllers();
+        ApplyFormationToCharacterSwitch();
 
-        LogStateChange(
-            $"Formation changed to {currentFormation}.");
+        RefreshFormationSystems();
 
         FormationChanged?.Invoke(
             currentFormation);
@@ -218,13 +441,80 @@ public sealed class TeamActionController : MonoBehaviour
         return true;
     }
 
+    private void SynchronizeFormation(
+        bool forceRefresh = false)
+    {
+        if (characterSwitch == null)
+        {
+            return;
+        }
+
+        TeamFormation expected =
+            characterSwitch.CurrentLeaderType switch
+            {
+                CHARACTERTYPES.Fly =>
+                    TeamFormation.Fly,
+
+                CHARACTERTYPES.Power =>
+                    TeamFormation.Power,
+
+                _ =>
+                    TeamFormation.Speed
+            };
+
+        if (!forceRefresh &&
+            expected ==
+                currentFormation)
+        {
+            return;
+        }
+
+        currentFormation =
+            expected;
+
+        ResolveCharacters();
+        ResolveMovement();
+
+        RefreshFormationSystems();
+
+        FormationChanged?.Invoke(
+            currentFormation);
+    }
+
+    private void ApplyFormationToCharacterSwitch()
+    {
+        if (characterSwitch == null)
+        {
+            return;
+        }
+
+        CHARACTERTYPES type =
+            currentFormation switch
+            {
+                TeamFormation.Fly =>
+                    CHARACTERTYPES.Fly,
+
+                TeamFormation.Power =>
+                    CHARACTERTYPES.Power,
+
+                _ =>
+                    CHARACTERTYPES.Speed
+            };
+
+        if (characterSwitch.CurrentLeaderType !=
+            type)
+        {
+            characterSwitch.SetCharacter(
+                type);
+        }
+
+        ResolveCharacters();
+    }
+
     public Transform GetFormationLeader()
     {
         return currentFormation switch
         {
-            TeamFormation.Speed =>
-                speedCharacter,
-
             TeamFormation.Fly =>
                 flyCharacter,
 
@@ -236,33 +526,114 @@ public sealed class TeamActionController : MonoBehaviour
         };
     }
 
+    private void RefreshFormationSystems()
+    {
+        RefreshRailGrinding();
+        RefreshCamera();
+        RefreshHUD();
+    }
+
+    private void RefreshRailGrinding()
+    {
+        if (railGrinding == null)
+        {
+            return;
+        }
+
+        RailGrinding.TeamType type =
+            currentFormation switch
+            {
+                TeamFormation.Fly =>
+                    RailGrinding.TeamType.Fly,
+
+                TeamFormation.Power =>
+                    RailGrinding.TeamType.Power,
+
+                _ =>
+                    RailGrinding.TeamType.Speed
+            };
+
+        railGrinding.SetTeamType(
+            type);
+    }
+
+    private void RefreshCamera()
+    {
+        if (cameraController == null)
+        {
+            return;
+        }
+
+        Transform leader =
+            GetFormationLeader();
+
+        if (leader != null)
+        {
+            cameraController.SetTarget(
+                leader);
+        }
+    }
+
+    private void RefreshHUD()
+    {
+        if (hud == null)
+        {
+            return;
+        }
+
+        CHARACTERTYPES type =
+            currentFormation switch
+            {
+                TeamFormation.Fly =>
+                    CHARACTERTYPES.Fly,
+
+                TeamFormation.Power =>
+                    CHARACTERTYPES.Power,
+
+                _ =>
+                    CHARACTERTYPES.Speed
+            };
+
+        hud.SetCharacter(
+            type);
+
+        hud.UpdateHUD();
+    }
+
+    #endregion
+
+    #region Actions
+
     public bool CanBeginAction(
         TeamAction action,
         TeamFormation requiredFormation,
         bool mustBeGrounded = false,
         bool mustBeAirborne = false)
     {
-        if (!isInitialized ||
-            action ==
-                TeamAction.None ||
+        if (!initialized ||
             actionLocked ||
             IsPerformingAction ||
+            action ==
+                TeamAction.None ||
             currentFormation !=
                 requiredFormation)
         {
             return false;
         }
 
+        if (movement == null)
+        {
+            return false;
+        }
+
         if (mustBeGrounded &&
-            (movement == null ||
-             !movement.IsGrounded))
+            !movement.IsGrounded)
         {
             return false;
         }
 
         if (mustBeAirborne &&
-            (movement == null ||
-             movement.IsGrounded))
+            movement.IsGrounded)
         {
             return false;
         }
@@ -291,12 +662,11 @@ public sealed class TeamActionController : MonoBehaviour
 
         if (surrenderMovementControl)
         {
-            movement?.DisableMovement();
+            movement.DisableMovement();
         }
 
-        LogStateChange(
-            $"Started action: {currentAction}.");
-
+        DisableFollowers();
+       
         ActionStarted?.Invoke(
             currentAction);
 
@@ -307,33 +677,35 @@ public sealed class TeamActionController : MonoBehaviour
         bool restoreMovementControl = true)
     {
         if (!IsPerformingAction)
+        {
             return;
+        }
 
-        TeamAction endedAction =
+        TeamAction completed =
             currentAction;
 
         currentAction =
             TeamAction.None;
 
-        if (restoreMovementControl)
+        if (restoreMovementControl &&
+            movement != null)
         {
-            movement?.EnableMovement();
+            movement.EnableMovement();
         }
 
-        LogStateChange(
-            $"Finished action: {endedAction}.");
-
+        EnableFollowers();
+        
         ActionEnded?.Invoke(
-            endedAction);
+            completed);
     }
 
     public void CancelCurrentAction()
     {
-        if (!IsPerformingAction)
-            return;
-
-        EndAction(
-            restoreMovementControl: true);
+        if (IsPerformingAction)
+        {
+            EndAction(
+                restoreMovementControl: true);
+        }
     }
 
     public void SetActionLock(
@@ -342,19 +714,18 @@ public sealed class TeamActionController : MonoBehaviour
         actionLocked =
             locked;
 
-        if (actionLocked &&
-            IsPerformingAction)
+        if (actionLocked)
         {
             CancelCurrentAction();
         }
-
-        RefreshTeamBlast();
     }
+
+    #endregion
+
+    #region Followers
 
     public void EnableFollowers()
     {
-        EnsureFollowerRootsActive();
-
         leftFollower?.EnableAgent();
         rightFollower?.EnableAgent();
     }
@@ -367,550 +738,14 @@ public sealed class TeamActionController : MonoBehaviour
 
     #endregion
 
-    #region Unity Lifecycle
-
-    private void Awake()
-    {
-        ResolveDependencies();
-        ConfigureComponents();
-    }
-
-    private void Start()
-    {
-        if (!InitializeController())
-        {
-            enabled = false;
-        }
-    }
-
-    private void OnEnable()
-    {
-        ResolveDependencies();
-        ConfigureComponents();
-
-        if (!isInitialized)
-            return;
-
-        SubscribeToCharacterSwitch();
-        RestoreRuntimeState();
-    }
-
-    private void Update()
-    {
-        if (!CanReadFormationInput())
-            return;
-
-        ReadFormationInput();
-    }
-
-    private void OnDisable()
-    {
-        UnsubscribeFromCharacterSwitch();
-        CleanupRuntimeState();
-    }
-
-    private void OnDestroy()
-    {
-        UnsubscribeFromCharacterSwitch();
-        CleanupDestroyedState();
-    }
-
-    private void OnValidate()
-    {
-        ValidateSerializedState();
-        ValidateFormationInputKeys();
-    }
-
-    #endregion
-
-    #region Initialization
-
-    private bool InitializeController()
-    {
-        if (isInitialized)
-            return true;
-
-        ResolveDependencies();
-        ConfigureComponents();
-
-        if (!ValidateConfiguration())
-        {
-            isInitialized = false;
-
-            Debug.LogError(
-                $"TeamActionController failed to initialize on '{name}'.",
-                this);
-
-            return false;
-        }
-
-        ResetRuntimeState();
-
-        isInitialized = true;
-
-        SubscribeToCharacterSwitch();
-        RefreshControllers();
-
-        FormationChanged?.Invoke(
-            currentFormation);
-
-        return true;
-    }
-
-    private void ResolveDependencies()
-    {
-        ResolveMovement();
-        ResolveRailGrinding();
-        ResolveCharacterSwitch();
-        ResolveCharacters();
-        ResolveFollowers();
-        ResolveCameraController();
-        ResolveHUD();
-        ResolveTeamBlast();
-    }
-
-    private void ConfigureComponents()
-    {
-        EnsureFollowerRootsActive();
-    }
-
-    private void ResolveMovement()
-    {
-        movement ??=
-            GetComponent<UltimatePlayerMovement>();
-
-        movement ??=
-            GetComponentInParent<UltimatePlayerMovement>();
-    }
-
-    private void ResolveRailGrinding()
-    {
-        railGrinding ??=
-            GetComponent<RailGrinding>();
-
-        railGrinding ??=
-            GetComponentInParent<RailGrinding>();
-    }
-
-    private void ResolveCharacterSwitch()
-    {
-        characterSwitch ??=
-            GetComponent<CharacterSwitch>();
-
-        characterSwitch ??=
-            GetComponentInParent<CharacterSwitch>();
-    }
-
-    private void ResolveCharacters()
-    {
-        if (speedCharacter != null &&
-            flyCharacter != null &&
-            powerCharacter != null)
-        {
-            return;
-        }
-
-        RefreshCharacterCache();
-
-        if (cachedCharacterMovements == null ||
-            cachedCharacterMovements.Length == 0)
-        {
-            return;
-        }
-
-        foreach (UltimatePlayerMovement characterMovement
-                 in cachedCharacterMovements)
-        {
-            if (characterMovement == null)
-                continue;
-
-            CharacterDefinition definition =
-                characterMovement.CharacterDefinition;
-
-            if (definition == null ||
-                !definition.IsValid())
-            {
-                continue;
-            }
-
-            Transform character =
-                characterMovement.transform;
-
-            if (character == null)
-                continue;
-
-            switch (definition.characterType)
-            {
-                case CharacterDefinition.CharacterType.Speed:
-                    speedCharacter ??=
-                        character;
-                    break;
-
-                case CharacterDefinition.CharacterType.Fly:
-                    flyCharacter ??=
-                        character;
-                    break;
-
-                case CharacterDefinition.CharacterType.Power:
-                    powerCharacter ??=
-                        character;
-                    break;
-            }
-
-            if (speedCharacter != null &&
-                flyCharacter != null &&
-                powerCharacter != null)
-            {
-                return;
-            }
-        }
-    }
-
-    private void RefreshCharacterCache()
-    {
-        if (cachedCharacterMovements != null &&
-            cachedCharacterMovements.Length > 0 &&
-            HasValidCharacterCache())
-        {
-            return;
-        }
-
-        Transform searchRoot =
-            transform.root != null
-                ? transform.root
-                : transform;
-
-        cachedCharacterMovements =
-            searchRoot.GetComponentsInChildren<UltimatePlayerMovement>(
-                includeInactive: true);
-    }
-
-    private bool HasValidCharacterCache()
-    {
-        if (cachedCharacterMovements == null ||
-            cachedCharacterMovements.Length == 0)
-        {
-            return false;
-        }
-
-        foreach (UltimatePlayerMovement characterMovement
-                 in cachedCharacterMovements)
-        {
-            if (characterMovement != null)
-                return true;
-        }
-
-        return false;
-    }
-
-    private void ResolveFollowers()
-    {
-        if (leftFollower != null &&
-            rightFollower != null)
-        {
-            return;
-        }
-
-        FollowerNavigation[] followers =
-            GetComponentsInChildren<FollowerNavigation>(
-                includeInactive: true);
-
-        foreach (FollowerNavigation follower in followers)
-        {
-            if (follower == null)
-                continue;
-
-            if (leftFollower == null)
-            {
-                leftFollower =
-                    follower;
-
-                continue;
-            }
-
-            if (rightFollower == null &&
-                follower != leftFollower)
-            {
-                rightFollower =
-                    follower;
-
-                return;
-            }
-        }
-    }
-
-    private void ResolveCameraController()
-    {
-        if (cameraController != null)
-            return;
-
-        cameraController =
-            GetComponentInParent<CameraController>();
-
-        cameraController ??=
-            GetComponentInChildren<CameraController>(
-                includeInactive: true);
-
-        cameraController ??=
-            FindAnyObjectByType<CameraController>(
-                FindObjectsInactive.Include);
-    }
-
-    private void ResolveHUD()
-    {
-        if (hud != null)
-            return;
-
-        hud =
-            GetComponentInParent<HUD>();
-
-        hud ??=
-            GetComponentInChildren<HUD>(
-                includeInactive: true);
-
-        hud ??=
-            FindAnyObjectByType<HUD>(
-                FindObjectsInactive.Include);
-    }
-
-    private void ResolveTeamBlast()
-    {
-        if (teamBlast != null)
-            return;
-
-        teamBlast =
-            GetComponent<TeamBlast>();
-
-        teamBlast ??=
-            GetComponentInParent<TeamBlast>();
-
-        teamBlast ??=
-            GetComponentInChildren<TeamBlast>(
-                includeInactive: true);
-
-        teamBlast ??=
-            FindAnyObjectByType<TeamBlast>(
-                FindObjectsInactive.Include);
-    }
-
-    private void ResetRuntimeState()
-    {
-        actionLocked = false;
-
-        if (!IsValidTeamAction(
-                currentAction))
-        {
-            currentAction =
-                TeamAction.None;
-        }
-
-        if (!IsValidFormation(
-                currentFormation))
-        {
-            currentFormation =
-                TeamFormation.Speed;
-        }
-    }
-
-    private void RestoreRuntimeState()
-    {
-        RefreshControllers();
-    }
-
-    #endregion
-
-    #region Formation
-
-    private bool CanChangeFormation(
-        TeamFormation formation)
-    {
-        return
-            isInitialized &&
-            IsValidFormation(
-                formation) &&
-            !actionLocked &&
-            !IsPerformingAction;
-    }
-
-    private void RefreshControllers()
-    {
-        ApplyFormationToSystems();
-        RefreshCamera();
-        RefreshHUD();
-        RefreshTeamBlast();
-        EnsureFollowerRootsActive();
-    }
-
-    private void ApplyFormationToSystems()
-    {
-        if (railGrinding == null)
-            return;
-
-        RailGrinding.TeamType railTeam =
-            currentFormation switch
-            {
-                TeamFormation.Speed =>
-                    RailGrinding.TeamType.Speed,
-
-                TeamFormation.Fly =>
-                    RailGrinding.TeamType.Fly,
-
-                TeamFormation.Power =>
-                    RailGrinding.TeamType.Power,
-
-                _ =>
-                    RailGrinding.TeamType.Speed
-            };
-
-        railGrinding.SetTeamType(
-            railTeam);
-    }
-
-    private void RefreshCamera()
-    {
-        if (cameraController == null)
-            return;
-
-        Transform leader =
-            GetFormationLeader();
-
-        if (leader == null)
-            return;
-
-        cameraController.SetTarget(
-            leader,
-            snapImmediately: true);
-    }
-
-    private void RefreshHUD()
-    {
-        if (hud == null)
-            return;
-
-        CHARACTERTYPES leaderType =
-            currentFormation switch
-            {
-                TeamFormation.Speed =>
-                    CHARACTERTYPES.Speed,
-
-                TeamFormation.Fly =>
-                    CHARACTERTYPES.Fly,
-
-                TeamFormation.Power =>
-                    CHARACTERTYPES.Power,
-
-                _ =>
-                    CHARACTERTYPES.Speed
-            };
-
-        hud.SetCharacter(
-            leaderType);
-
-        hud.UpdateHUD();
-    }
-
-    private void RefreshTeamBlast()
-    {
-        if (teamBlast == null)
-            return;
-
-        teamBlast.SetInputEnabled(
-            isInitialized &&
-            !actionLocked &&
-            !IsPerformingAction);
-    }
-
-    #endregion
-
-    #region Character Switching
-
-    private void SubscribeToCharacterSwitch()
-    {
-        if (characterSwitch == null)
-            return;
-
-        characterSwitch.LeaderChanged -=
-            HandleLeaderChanged;
-
-        characterSwitch.LeaderChanged +=
-            HandleLeaderChanged;
-    }
-
-    private void UnsubscribeFromCharacterSwitch()
-    {
-        if (characterSwitch == null)
-            return;
-
-        characterSwitch.LeaderChanged -=
-            HandleLeaderChanged;
-    }
-
-    private void HandleLeaderChanged(
-        CHARACTERTYPES leaderType)
-    {
-        TeamFormation formation =
-            leaderType switch
-            {
-                CHARACTERTYPES.Speed =>
-                    TeamFormation.Speed,
-
-                CHARACTERTYPES.Fly =>
-                    TeamFormation.Fly,
-
-                CHARACTERTYPES.Power =>
-                    TeamFormation.Power,
-
-                _ =>
-                    TeamFormation.Speed
-            };
-
-        SetFormation(
-            formation);
-    }
-
-    #endregion
-
-    #region Followers
-
-    private void EnsureFollowerRootsActive()
-    {
-        SetFollowerRootActive(
-            leftFollower);
-
-        SetFollowerRootActive(
-            rightFollower);
-    }
-
-    private static void SetFollowerRootActive(
-        FollowerNavigation follower)
-    {
-        if (follower == null)
-            return;
-
-        Transform followerTransform =
-            follower.transform;
-
-        if (followerTransform == null)
-            return;
-
-        if (!followerTransform.gameObject.activeSelf)
-        {
-            followerTransform.gameObject.SetActive(
-                true);
-        }
-    }
-
-    #endregion
-
     #region Input
 
     private bool CanReadFormationInput()
     {
         return
-            isInitialized &&
             readFormationInput &&
-            !IsPerformingAction &&
-            !actionLocked;
+            !actionLocked &&
+            !IsPerformingAction;
     }
 
     private void ReadFormationInput()
@@ -939,214 +774,6 @@ public sealed class TeamActionController : MonoBehaviour
             SetFormation(
                 TeamFormation.Power);
         }
-    }
-
-    #endregion
-
-    #region Validation
-
-    private void ValidateSerializedState()
-    {
-        if (!IsValidFormation(
-                currentFormation))
-        {
-            currentFormation =
-                TeamFormation.Speed;
-        }
-
-        if (!IsValidTeamAction(
-                currentAction))
-        {
-            currentAction =
-                TeamAction.None;
-        }
-    }
-
-    private void ValidateFormationInputKeys()
-    {
-        if (!readFormationInput)
-            return;
-
-        if (speedFormationKey ==
-                flyFormationKey ||
-            speedFormationKey ==
-                powerFormationKey ||
-            flyFormationKey ==
-                powerFormationKey)
-        {
-            Debug.LogWarning(
-                "TeamActionController has duplicate formation input keys.",
-                this);
-        }
-    }
-
-    private bool ValidateConfiguration()
-    {
-        bool valid = true;
-
-        valid &=
-            ValidateReference(
-                movement,
-                nameof(UltimatePlayerMovement));
-
-        valid &=
-            ValidateReference(
-                speedCharacter,
-                "Speed Character");
-
-        valid &=
-            ValidateReference(
-                flyCharacter,
-                "Fly Character");
-
-        valid &=
-            ValidateReference(
-                powerCharacter,
-                "Power Character");
-
-        if (railGrinding == null)
-        {
-            Debug.LogWarning(
-                "TeamActionController could not find RailGrinding.",
-                this);
-        }
-
-        if (leftFollower == null)
-        {
-            Debug.LogWarning(
-                "TeamActionController could not find the left follower.",
-                this);
-        }
-
-        if (rightFollower == null)
-        {
-            Debug.LogWarning(
-                "TeamActionController could not find the right follower.",
-                this);
-        }
-
-        if (cameraController == null)
-        {
-            Debug.LogWarning(
-                "TeamActionController could not find CameraController.",
-                this);
-        }
-
-        if (hud == null)
-        {
-            Debug.LogWarning(
-                "TeamActionController could not find HUD.",
-                this);
-        }
-
-        if (teamBlast == null)
-        {
-            Debug.LogWarning(
-                "TeamActionController could not find TeamBlast.",
-                this);
-        }
-
-        return valid;
-    }
-
-    private bool ValidateReference(
-        UnityEngine.Object reference,
-        string displayName)
-    {
-        if (reference != null)
-            return true;
-
-        Debug.LogError(
-            $"TeamActionController requires {displayName}.",
-            this);
-
-        return false;
-    }
-
-    private static bool IsValidFormation(
-        TeamFormation formation)
-    {
-        return Enum.IsDefined(
-            typeof(TeamFormation),
-            formation);
-    }
-
-    private static bool IsValidTeamAction(
-        TeamAction action)
-    {
-        return Enum.IsDefined(
-            typeof(TeamAction),
-            action);
-    }
-
-    #endregion
-
-    #region Cleanup
-
-    private void CleanupRuntimeState()
-    {
-        if (IsPerformingAction)
-        {
-            TeamAction endedAction =
-                currentAction;
-
-            currentAction =
-                TeamAction.None;
-
-            movement?.EnableMovement();
-
-            ActionEnded?.Invoke(
-                endedAction);
-        }
-
-        actionLocked = false;
-
-        RefreshTeamBlast();
-    }
-
-    private void CleanupDestroyedState()
-    {
-        CleanupRuntimeState();
-
-        isInitialized = false;
-        actionLocked = false;
-        currentAction = TeamAction.None;
-
-        FormationChanged = null;
-        ActionStarted = null;
-        ActionEnded = null;
-
-        leftFollower = null;
-        rightFollower = null;
-
-        speedCharacter = null;
-        flyCharacter = null;
-        powerCharacter = null;
-
-        movement = null;
-        railGrinding = null;
-        characterSwitch = null;
-
-        cameraController = null;
-        hud = null;
-        teamBlast = null;
-
-        cachedCharacterMovements = null;
-    }
-
-    #endregion
-
-    #region Debug
-
-    private void LogStateChange(
-        string message)
-    {
-        if (!logStateChanges)
-            return;
-
-        Debug.Log(
-            message,
-            this);
     }
 
     #endregion

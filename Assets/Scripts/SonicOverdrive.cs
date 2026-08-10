@@ -2,78 +2,136 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-public sealed class SonicOverdrive : MonoBehaviour
+public class SonicOverdrive : MonoBehaviour
 {
     #region Constants
 
-    private const int MaxTargetResults = 64;
-    private const float MinimumDirectionMagnitude = 0.001f;
-    private const float MinimumDuration = 0.05f;
-
-    #endregion
-
-    #region Animator Hashes
+    private const int MaximumHitResults = 64;
 
     private static readonly int SonicOverdriveHash =
-        Animator.StringToHash("Sonic Overdrive");
+        Animator.StringToHash(
+            "Sonic Overdrive");
 
     #endregion
 
-    #region Inspector
+    #region References
 
     [Header("References")]
-    [SerializeField] private TeamActionController actionController;
-    [SerializeField] private Animator animator;
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private Transform blastOrigin;
 
-    [Header("Overdrive")]
-    [SerializeField, Min(0.1f)] private float blastRadius = 18f;
-    [SerializeField, Min(0f)] private float damage = 125f;
-    [SerializeField, Min(0f)] private float knockbackForce = 25f;
-    [SerializeField, Min(MinimumDuration)] private float activeDuration = 0.75f;
-    [SerializeField, Min(1)] private int pulseCount = 3;
-    [SerializeField, Min(0f)] private float pulseInterval = 0.12f;
-    [SerializeField] private LayerMask enemyLayers = ~0;
+    [SerializeField]
+    private TeamActionController actionController;
+
+    [SerializeField]
+    private Transform blastOrigin;
+
+    [SerializeField]
+    private Animator animator;
+
+    [SerializeField]
+    private AudioSource audioSource;
+
+    #endregion
+
+    #region Team Blast
+
+    [Header("Sonic Overdrive")]
+
+    [SerializeField, Min(1)]
+    private int damage = 3;
+
+    [SerializeField, Min(0.1f)]
+    private float blastRadius = 18f;
+
+    [SerializeField, Min(1)]
+    private int pulseCount = 3;
+
+    [SerializeField, Min(0f)]
+    private float pulseInterval = 0.12f;
+
+    [SerializeField, Min(0.05f)]
+    private float totalDuration = 0.75f;
+
+    [SerializeField]
+    private LayerMask enemyLayers = ~0;
+
+    #endregion
+
+    #region Team Rush
 
     [Header("Team Rush")]
-    [SerializeField, Min(0f)] private float forwardRushDistance = 8f;
-    [SerializeField, Min(0f)] private float rushDuration = 0.2f;
-    [SerializeField] private bool moveTeamForward = true;
+
+    [SerializeField]
+    private bool moveTeamForward = true;
+
+    [SerializeField, Min(0f)]
+    private float rushDistance = 8f;
+
+    [SerializeField, Min(0.01f)]
+    private float rushDuration = 0.2f;
+
+    #endregion
+
+    #region Knockback
+
+    [Header("Knockback")]
+
+    [SerializeField, Min(0f)]
+    private float knockbackForce = 25f;
+
+    [SerializeField, Min(0f)]
+    private float upwardKnockback = 4f;
+
+    #endregion
+
+    #region Effects
 
     [Header("Effects")]
-    [SerializeField] private GameObject activationEffect;
-    [SerializeField] private GameObject pulseEffect;
-    [SerializeField, Min(0f)] private float effectLifetime = 3f;
+
+    [SerializeField]
+    private GameObject activationEffect;
+
+    [SerializeField]
+    private GameObject pulseEffect;
+
+    [SerializeField, Min(0f)]
+    private float effectLifetime = 3f;
+
+    #endregion
+
+    #region Audio
 
     [Header("Audio")]
-    [SerializeField] private AudioClip activationSound;
-    [SerializeField] private AudioClip pulseSound;
 
-    [Header("Debug")]
-    [SerializeField] private bool drawBlastRadius = true;
-    [SerializeField] private bool logStateChanges;
+    [SerializeField]
+    private AudioClip activationSound;
+
+    [SerializeField]
+    private AudioClip pulseSound;
+
+    [SerializeField]
+    private AudioClip completionSound;
 
     #endregion
 
     #region Runtime State
 
-    private readonly Collider[] targetResults =
-        new Collider[MaxTargetResults];
+    private readonly Collider[] hitResults =
+        new Collider[MaximumHitResults];
 
-    private readonly HashSet<GameObject> damagedTargets =
+    private readonly HashSet<AIController> damagedEnemies =
+        new();
+
+    private readonly HashSet<GameObject> brokenObjects =
         new();
 
     private Coroutine overdriveRoutine;
 
     private bool isActive;
     private bool isInitialized;
-    private bool isShuttingDown;
 
     #endregion
 
-    #region Public API
+    #region Properties
 
     public bool IsActive =>
         isActive;
@@ -81,126 +139,126 @@ public sealed class SonicOverdrive : MonoBehaviour
     public bool IsInitialized =>
         isInitialized;
 
-    public bool TryActivate()
-    {
-        if (!CanActivate())
-            return false;
-
-        BeginOverdrive();
-        return true;
-    }
-
-    public void Cancel()
-    {
-        if (!isActive)
-            return;
-
-        FinishOverdrive();
-    }
-
     #endregion
 
     #region Unity Lifecycle
 
     private void Awake()
     {
-        CacheComponents();
         ResolveReferences();
     }
 
     private void Start()
     {
-        if (!InitializeSonicOverdrive())
-        {
-            enabled = false;
-        }
-    }
-
-    private void OnEnable()
-    {
-        if (isShuttingDown)
-            return;
-
-        CacheComponents();
-        ResolveReferences();
+        Initialize();
     }
 
     private void OnDisable()
     {
-        CleanupRuntimeState();
-    }
-
-    private void OnDestroy()
-    {
-        isShuttingDown = true;
-        CleanupDestroyedState();
+        Cancel();
     }
 
     private void OnValidate()
     {
-        blastRadius = Mathf.Max(0.1f, blastRadius);
-        damage = Mathf.Max(0f, damage);
-        knockbackForce = Mathf.Max(0f, knockbackForce);
-        activeDuration = Mathf.Max(MinimumDuration, activeDuration);
-        pulseCount = Mathf.Max(1, pulseCount);
-        pulseInterval = Mathf.Max(0f, pulseInterval);
-        forwardRushDistance = Mathf.Max(0f, forwardRushDistance);
-        rushDuration = Mathf.Max(0f, rushDuration);
-        effectLifetime = Mathf.Max(0f, effectLifetime);
-    }
+        damage =
+            Mathf.Max(
+                1,
+                damage);
 
-    private void OnDrawGizmosSelected()
-    {
-        if (!drawBlastRadius)
-            return;
+        blastRadius =
+            Mathf.Max(
+                0.1f,
+                blastRadius);
 
-        Gizmos.DrawWireSphere(
-            GetBlastPosition(),
-            blastRadius);
+        pulseCount =
+            Mathf.Max(
+                1,
+                pulseCount);
+
+        pulseInterval =
+            Mathf.Max(
+                0f,
+                pulseInterval);
+
+        totalDuration =
+            Mathf.Max(
+                0.05f,
+                totalDuration);
+
+        rushDistance =
+            Mathf.Max(
+                0f,
+                rushDistance);
+
+        rushDuration =
+            Mathf.Max(
+                0.01f,
+                rushDuration);
+
+        knockbackForce =
+            Mathf.Max(
+                0f,
+                knockbackForce);
+
+        upwardKnockback =
+            Mathf.Max(
+                0f,
+                upwardKnockback);
+
+        effectLifetime =
+            Mathf.Max(
+                0f,
+                effectLifetime);
     }
 
     #endregion
 
     #region Initialization
 
-    public bool InitializeSonicOverdrive()
+    public bool Initialize()
     {
         if (isInitialized)
+        {
             return true;
+        }
 
-        CacheComponents();
         ResolveReferences();
 
-        if (!ValidateConfiguration())
+        if (actionController == null)
         {
-            Debug.LogError(
-                $"SonicOverdrive failed to initialize on '{name}'.",
-                this);
-
-            isInitialized = false;
             return false;
         }
 
-        ResetRuntimeState();
+        isActive =
+            false;
 
-        isInitialized = true;
+        overdriveRoutine =
+            null;
+
+        damagedEnemies.Clear();
+        brokenObjects.Clear();
+
+        isInitialized =
+            true;
+
         return true;
-    }
-
-    private void CacheComponents()
-    {
-        actionController ??=
-            GetComponentInParent<TeamActionController>();
-
-        audioSource ??=
-            GetComponentInParent<AudioSource>();
     }
 
     private void ResolveReferences()
     {
+        actionController ??=
+            GetComponentInParent<
+                TeamActionController>();
+
         animator ??=
             GetComponentInChildren<Animator>(
                 includeInactive: true);
+
+        audioSource ??=
+            GetComponent<AudioSource>();
+
+        audioSource ??=
+            GetComponentInParent<AudioSource>();
 
         blastOrigin ??=
             transform;
@@ -208,26 +266,64 @@ public sealed class SonicOverdrive : MonoBehaviour
 
     #endregion
 
-    #region Sonic Overdrive State
+    #region Public API
+
+    public bool TryActivate()
+    {
+        if (!CanActivate())
+        {
+            return false;
+        }
+
+        BeginOverdrive();
+
+        return true;
+    }
+
+    public void Cancel()
+    {
+        if (!isActive &&
+            overdriveRoutine == null)
+        {
+            return;
+        }
+
+        if (overdriveRoutine != null)
+        {
+            StopCoroutine(
+                overdriveRoutine);
+
+            overdriveRoutine =
+                null;
+        }
+
+        FinishOverdrive();
+    }
+
+    #endregion
+
+    #region Activation
 
     private bool CanActivate()
     {
         return
             isInitialized &&
             !isActive &&
-            TeamSetup.Instance != null &&
-            TeamSetup.Instance.PlayableTeam ==
-                PlayableTeam.TeamSonic &&
             actionController != null;
     }
 
     private void BeginOverdrive()
     {
-        isActive = true;
-        damagedTargets.Clear();
+        isActive =
+            true;
+
+        damagedEnemies.Clear();
+        brokenObjects.Clear();
 
         PlayAnimation();
-        PlaySound(activationSound);
+
+        PlaySound(
+            activationSound);
 
         SpawnEffect(
             activationEffect,
@@ -235,49 +331,47 @@ public sealed class SonicOverdrive : MonoBehaviour
 
         overdriveRoutine =
             StartCoroutine(
-                SonicOverdriveRoutine());
-
-        LogStateChange(
-            "Sonic Overdrive started.");
+                OverdriveRoutine());
     }
 
-    private IEnumerator SonicOverdriveRoutine()
+    private IEnumerator OverdriveRoutine()
     {
         if (moveTeamForward &&
-            forwardRushDistance > 0f &&
+            rushDistance > 0f &&
             rushDuration > 0f)
         {
             yield return
                 RushTeamForward();
         }
 
-        WaitForSeconds pulseWait =
-            pulseInterval > 0f
-                ? new WaitForSeconds(pulseInterval)
-                : null;
+        float attackStartTime =
+            Time.time;
 
-        for (int pulseIndex = 0;
-             pulseIndex < pulseCount;
-             pulseIndex++)
+        for (int pulse = 0;
+            pulse < pulseCount;
+            pulse++)
         {
-            ApplyOverdrivePulse();
+            ApplyPulse();
 
-            if (pulseIndex <
+            if (pulse <
                     pulseCount - 1 &&
-                pulseWait != null)
+                pulseInterval > 0f)
             {
-                yield return pulseWait;
+                yield return
+                    new WaitForSeconds(
+                        pulseInterval);
             }
         }
+
+        float elapsed =
+            Time.time -
+            attackStartTime;
 
         float remainingDuration =
             Mathf.Max(
                 0f,
-                activeDuration -
-                pulseInterval *
-                Mathf.Max(
-                    0,
-                    pulseCount - 1));
+                totalDuration -
+                    elapsed);
 
         if (remainingDuration > 0f)
         {
@@ -286,35 +380,27 @@ public sealed class SonicOverdrive : MonoBehaviour
                     remainingDuration);
         }
 
+        overdriveRoutine =
+            null;
+
         FinishOverdrive();
     }
 
     private void FinishOverdrive()
     {
         if (!isActive)
-            return;
-
-        isActive = false;
-
-        if (overdriveRoutine != null)
         {
-            StopCoroutine(
-                overdriveRoutine);
-
-            overdriveRoutine = null;
+            return;
         }
 
-        damagedTargets.Clear();
+        isActive =
+            false;
 
-        LogStateChange(
-            "Sonic Overdrive finished.");
-    }
+        damagedEnemies.Clear();
+        brokenObjects.Clear();
 
-    private void ResetRuntimeState()
-    {
-        isActive = false;
-        overdriveRoutine = null;
-        damagedTargets.Clear();
+        PlaySound(
+            completionSound);
     }
 
     #endregion
@@ -323,42 +409,60 @@ public sealed class SonicOverdrive : MonoBehaviour
 
     private IEnumerator RushTeamForward()
     {
-        Transform[] teamCharacters =
+        Transform speedCharacter =
+            actionController.SpeedCharacter;
+
+        Transform flyCharacter =
+            actionController.FlyCharacter;
+
+        Transform powerCharacter =
+            actionController.PowerCharacter;
+
+        Transform[] team =
         {
-            actionController.SpeedCharacter,
-            actionController.FlyCharacter,
-            actionController.PowerCharacter
+            speedCharacter,
+            flyCharacter,
+            powerCharacter
         };
 
-        Vector3 direction =
+        Vector3[] startingPositions =
+            new Vector3[team.Length];
+
+        Vector3 forward =
             transform.forward;
 
-        if (direction.sqrMagnitude <=
-            MinimumDirectionMagnitude)
+        forward.y =
+            0f;
+
+        if (!IsFiniteVector(
+                forward) ||
+            forward.sqrMagnitude <=
+                0.0001f)
         {
-            direction =
+            forward =
                 Vector3.forward;
         }
 
-        direction.Normalize();
-
-        Vector3[] startingPositions =
-            new Vector3[teamCharacters.Length];
+        forward.Normalize();
 
         for (int index = 0;
-             index < teamCharacters.Length;
-             index++)
+            index < team.Length;
+            index++)
         {
-            if (teamCharacters[index] != null)
+            if (team[index] == null)
             {
-                startingPositions[index] =
-                    teamCharacters[index].position;
+                continue;
             }
+
+            startingPositions[index] =
+                team[index].position;
         }
 
-        float elapsed = 0f;
+        float elapsed =
+            0f;
 
-        while (elapsed < rushDuration)
+        while (elapsed <
+            rushDuration)
         {
             elapsed +=
                 Time.deltaTime;
@@ -366,28 +470,43 @@ public sealed class SonicOverdrive : MonoBehaviour
             float progress =
                 Mathf.Clamp01(
                     elapsed /
-                    rushDuration);
+                        rushDuration);
+
+            progress =
+                Mathf.SmoothStep(
+                    0f,
+                    1f,
+                    progress);
 
             for (int index = 0;
-                 index < teamCharacters.Length;
-                 index++)
+                index < team.Length;
+                index++)
             {
                 Transform character =
-                    teamCharacters[index];
+                    team[index];
 
                 if (character == null)
+                {
                     continue;
+                }
 
                 Vector3 destination =
                     startingPositions[index] +
-                    direction *
-                    forwardRushDistance;
+                    forward *
+                        rushDistance;
 
-                character.position =
+                Vector3 position =
                     Vector3.Lerp(
                         startingPositions[index],
                         destination,
                         progress);
+
+                if (IsFiniteVector(
+                        position))
+                {
+                    character.position =
+                        position;
+                }
             }
 
             yield return null;
@@ -396,94 +515,196 @@ public sealed class SonicOverdrive : MonoBehaviour
 
     #endregion
 
-    #region Damage
+    #region Attack Pulse
 
-    private void ApplyOverdrivePulse()
+    private void ApplyPulse()
     {
+        Vector3 blastPosition =
+            GetBlastPosition();
+
+        if (!IsFiniteVector(
+                blastPosition))
+        {
+            return;
+        }
+
         SpawnEffect(
             pulseEffect,
-            GetBlastPosition());
+            blastPosition);
 
         PlaySound(
             pulseSound);
 
         int resultCount =
             Physics.OverlapSphereNonAlloc(
-                GetBlastPosition(),
+                blastPosition,
                 blastRadius,
-                targetResults,
+                hitResults,
                 enemyLayers,
                 QueryTriggerInteraction.Collide);
 
         for (int index = 0;
-             index < resultCount;
-             index++)
+            index < resultCount;
+            index++)
         {
-            Collider enemy =
-                targetResults[index];
+            Collider hit =
+                hitResults[index];
 
-            targetResults[index] = null;
+            hitResults[index] =
+                null;
 
-            if (enemy == null)
-                continue;
-
-            GameObject target =
-                enemy.attachedRigidbody != null
-                    ? enemy.attachedRigidbody.gameObject
-                    : enemy.gameObject;
-
-            if (IsTeamCharacter(target) ||
-                !damagedTargets.Add(target))
+            if (hit == null)
             {
                 continue;
             }
 
-            target.SendMessage(
-                "TakeDamage",
-                damage,
-                SendMessageOptions.DontRequireReceiver);
+            TryDamageEnemy(
+                hit,
+                blastPosition);
 
-            target.SendMessage(
-                "Break",
-                SendMessageOptions.DontRequireReceiver);
-
-            ApplyKnockback(
-                target,
-                enemy.attachedRigidbody);
+            TryBreakObject(
+                hit);
         }
     }
 
+    #endregion
+
+    #region Enemy Damage
+
+    private void TryDamageEnemy(
+        Collider hit,
+        Vector3 blastPosition)
+    {
+        AIController enemy =
+            hit.GetComponent<AIController>();
+
+        enemy ??=
+            hit.GetComponentInParent<
+                AIController>();
+
+        enemy ??=
+            hit.GetComponentInChildren<
+                AIController>();
+
+        if (enemy == null ||
+            enemy.IsDead ||
+            !enemy.isActiveAndEnabled ||
+            damagedEnemies.Contains(
+                enemy))
+        {
+            return;
+        }
+
+        if (!enemy.TakeDamage(
+                damage))
+        {
+            return;
+        }
+
+        damagedEnemies.Add(
+            enemy);
+
+        ApplyKnockback(
+            enemy.transform,
+            blastPosition);
+    }
+
     private void ApplyKnockback(
-        GameObject target,
-        Rigidbody targetRigidbody)
+        Transform target,
+        Vector3 blastPosition)
     {
         if (target == null ||
-            targetRigidbody == null ||
             knockbackForce <= 0f)
         {
             return;
         }
 
+        Rigidbody targetBody =
+            target.GetComponent<Rigidbody>();
+
+        targetBody ??=
+            target.GetComponentInParent<
+                Rigidbody>();
+
+        targetBody ??=
+            target.GetComponentInChildren<
+                Rigidbody>();
+
+        if (targetBody == null ||
+            targetBody.isKinematic)
+        {
+            return;
+        }
+
         Vector3 direction =
-            target.transform.position -
-            GetBlastPosition();
+            target.position -
+            blastPosition;
 
         direction.y =
-            Mathf.Max(
-                direction.y,
-                0.2f);
+            0f;
 
-        if (direction.sqrMagnitude <=
-            MinimumDirectionMagnitude)
+        if (!IsFiniteVector(
+                direction) ||
+            direction.sqrMagnitude <=
+                0.0001f)
         {
             direction =
                 transform.forward;
         }
 
-        targetRigidbody.AddForce(
-            direction.normalized *
-            knockbackForce,
+        direction.Normalize();
+
+        Vector3 force =
+            direction *
+                knockbackForce +
+            Vector3.up *
+                upwardKnockback;
+
+        if (!IsFiniteVector(
+                force))
+        {
+            return;
+        }
+
+        targetBody.AddForce(
+            force,
             ForceMode.VelocityChange);
+    }
+
+    #endregion
+
+    #region Breakables
+
+    private void TryBreakObject(
+        Collider hit)
+    {
+        if (hit == null)
+        {
+            return;
+        }
+
+        GameObject target =
+            hit.attachedRigidbody != null
+                ? hit.attachedRigidbody
+                    .gameObject
+                : hit.gameObject;
+
+        if (target == null ||
+            brokenObjects.Contains(
+                target) ||
+            IsTeamCharacter(
+                target.transform))
+        {
+            return;
+        }
+
+        brokenObjects.Add(
+            target);
+
+        target.SendMessage(
+            "Break",
+            SendMessageOptions
+                .DontRequireReceiver);
     }
 
     #endregion
@@ -491,9 +712,9 @@ public sealed class SonicOverdrive : MonoBehaviour
     #region Team Filtering
 
     private bool IsTeamCharacter(
-        GameObject target)
+        Transform candidate)
     {
-        if (target == null ||
+        if (candidate == null ||
             actionController == null)
         {
             return false;
@@ -501,49 +722,33 @@ public sealed class SonicOverdrive : MonoBehaviour
 
         return
             MatchesCharacter(
-                target,
+                candidate,
                 actionController.SpeedCharacter) ||
             MatchesCharacter(
-                target,
+                candidate,
                 actionController.FlyCharacter) ||
             MatchesCharacter(
-                target,
+                candidate,
                 actionController.PowerCharacter);
     }
 
     private static bool MatchesCharacter(
-        GameObject target,
+        Transform candidate,
         Transform character)
     {
-        return
-            character != null &&
-            (target == character.gameObject ||
-             target.transform.IsChildOf(character));
-    }
-
-    #endregion
-
-    #region Effects
-
-    private void SpawnEffect(
-        GameObject effectPrefab,
-        Vector3 position)
-    {
-        if (effectPrefab == null)
-            return;
-
-        GameObject spawnedEffect =
-            Instantiate(
-                effectPrefab,
-                position,
-                transform.rotation);
-
-        if (effectLifetime > 0f)
+        if (candidate == null ||
+            character == null)
         {
-            Destroy(
-                spawnedEffect,
-                effectLifetime);
+            return false;
         }
+
+        return
+            candidate ==
+                character ||
+            candidate.IsChildOf(
+                character) ||
+            character.IsChildOf(
+                candidate);
     }
 
     #endregion
@@ -552,8 +757,13 @@ public sealed class SonicOverdrive : MonoBehaviour
 
     private void PlayAnimation()
     {
-        if (animator == null)
+        if (animator == null ||
+            !animator.isActiveAndEnabled ||
+            animator.runtimeAnimatorController ==
+                null)
+        {
             return;
+        }
 
         animator.SetTrigger(
             SonicOverdriveHash);
@@ -578,6 +788,35 @@ public sealed class SonicOverdrive : MonoBehaviour
 
     #endregion
 
+    #region Effects
+
+    private void SpawnEffect(
+        GameObject effect,
+        Vector3 position)
+    {
+        if (effect == null ||
+            !IsFiniteVector(
+                position))
+        {
+            return;
+        }
+
+        GameObject instance =
+            Instantiate(
+                effect,
+                position,
+                transform.rotation);
+
+        if (effectLifetime > 0f)
+        {
+            Destroy(
+                instance,
+                effectLifetime);
+        }
+    }
+
+    #endregion
+
     #region Utility
 
     private Vector3 GetBlastPosition()
@@ -588,98 +827,38 @@ public sealed class SonicOverdrive : MonoBehaviour
                 : transform.position;
     }
 
-    #endregion
-
-    #region Validation
-
-    private bool ValidateConfiguration()
+    private static bool IsFiniteVector(
+        Vector3 value)
     {
-        bool valid = true;
-
-        valid &=
-            ValidateReference(
-                actionController,
-                nameof(TeamActionController));
-
-        if (animator == null)
-        {
-            Debug.LogWarning(
-                "SonicOverdrive could not find an Animator.",
-                this);
-        }
-
-        if (audioSource == null)
-        {
-            Debug.LogWarning(
-                "SonicOverdrive could not find an AudioSource.",
-                this);
-        }
-
-        if (activationEffect == null)
-        {
-            Debug.LogWarning(
-                "SonicOverdrive has no activation effect.",
-                this);
-        }
-
-        return valid;
-    }
-
-    private bool ValidateReference(
-        Object reference,
-        string displayName)
-    {
-        if (reference != null)
-            return true;
-
-        Debug.LogError(
-            $"SonicOverdrive requires {displayName}.",
-            this);
-
-        return false;
+        return
+            float.IsFinite(
+                value.x) &&
+            float.IsFinite(
+                value.y) &&
+            float.IsFinite(
+                value.z);
     }
 
     #endregion
 
-    #region Cleanup
+    #region Gizmos
 
-    private void CleanupRuntimeState()
+    private void OnDrawGizmosSelected()
     {
-        if (isActive)
+        Vector3 position =
+            blastOrigin != null
+                ? blastOrigin.position
+                : transform.position;
+
+        if (!IsFiniteVector(
+                position))
         {
-            FinishOverdrive();
-        }
-    }
-
-    private void CleanupDestroyedState()
-    {
-        CleanupRuntimeState();
-
-        isInitialized = false;
-
-        actionController = null;
-        animator = null;
-        audioSource = null;
-        blastOrigin = null;
-        activationEffect = null;
-        pulseEffect = null;
-
-        damagedTargets.Clear();
-    }
-
-    #endregion
-
-    #region Debug
-
-    private void LogStateChange(
-        string message)
-    {
-        if (!logStateChanges)
             return;
+        }
 
-        Debug.Log(
-            message,
-            this);
+        Gizmos.DrawWireSphere(
+            position,
+            blastRadius);
     }
 
     #endregion

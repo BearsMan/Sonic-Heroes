@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2bbeb479c1424f4dbec6ad5fbd80b87, type: 3}
   m_Name: Knuckles the Echidna
   m_EditorClassIdentifier: 
-  prefab: {fileID: 0}
+  prefab: {fileID: 8801897155344615322, guid: 7aef050c3a7de444fbea14b8f68d2fbc, type: 3}
   icon: {fileID: -4996682949324913312, guid: 79b62094f70e6df439f242adca055767, type: 3}
   face: {fileID: -8498019203058089258, guid: 79b62094f70e6df439f242adca055767, type: 3}

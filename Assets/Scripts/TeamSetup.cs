@@ -16,6 +16,26 @@ public class TeamSetup : MonoBehaviour
 
     public static TeamSetup pc;
 
+    public static TeamSetup instance => pc;
+
+    public PlayableTeam PlayableTeam
+    {
+        get
+        {
+            if (CurrentTeam == null)
+                return default;
+
+            return CurrentTeam.name switch
+            {
+                "Team Sonic" => PlayableTeam.TeamSonic,
+                "Team Dark" => PlayableTeam.TeamDark,
+                "Team Rose" => PlayableTeam.TeamRose,
+                "Team Chaotix" => PlayableTeam.TeamChaotix,
+                _ => default
+            };
+        }
+    }
+
     // Start is called before the first frame update
     void Start()
     {

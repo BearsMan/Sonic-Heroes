@@ -2,9 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-[DisallowMultipleComponent]
-[RequireComponent(typeof(Collider))]
-public sealed class TornadoPole : MonoBehaviour
+public class TornadoPole : MonoBehaviour
 {
     #region Types
 
@@ -17,7 +15,6 @@ public sealed class TornadoPole : MonoBehaviour
 
     public enum PoleState
     {
-        Uninitialized,
         Ready,
         Capturing,
         Spiraling,
@@ -30,134 +27,214 @@ public sealed class TornadoPole : MonoBehaviour
 
     #region Constants
 
-    private const string DefaultOrbitCenterName =
-        "Orbit Center";
-
-    private const string DefaultExitPointName =
-        "Exit Point";
-
-    private const string DefaultLaunchDirectionName =
-        "Launch Direction";
-
-    private const string DefaultSwingParameter =
-        "Team Swing";
-
-    private const float MinimumDirectionSqrMagnitude =
+    private const float MinimumDirectionMagnitude =
         0.0001f;
+
+    private static readonly int TeamSwingHash =
+        Animator.StringToHash(
+            "Team Swing");
 
     #endregion
 
-    #region Inspector
+    #region Pole
 
     [Header("Pole")]
+
     [SerializeField]
     private PoleDirection poleDirection =
         PoleDirection.Up;
 
     [SerializeField]
-    private PoleState currentState =
-        PoleState.Uninitialized;
+    private bool clockwise;
 
-    [SerializeField] private bool clockwise;
-
-    [Header("Path References")]
-    [SerializeField] private Transform orbitCenter;
-    [SerializeField] private Transform exitPoint;
-    [SerializeField] private Transform launchDirection;
-
-    [Header("Activation")]
-    [SerializeField] private bool requirePlayerTag = true;
-    [SerializeField] private string playerTag = "Player";
-    [SerializeField] private bool requireTornadoJump = true;
-    [SerializeField] private bool activateAutomatically = true;
-    [SerializeField, Min(0f)] private float reuseCooldown = 0.25f;
-
-    [Header("Entry")]
-    [SerializeField, Min(0f)] private float entryDuration = 0.12f;
-    [SerializeField] private bool alignToPoleOnEntry = true;
-
-    [Header("Spiral")]
-    [SerializeField, Min(0.1f)] private float orbitRadius = 1.5f;
-    [SerializeField, Min(0f)] private float orbitSpeed = 540f;
-    [SerializeField, Min(0.1f)] private float climbSpeed = 7f;
-    [SerializeField, Min(0.01f)] private float exitHeightTolerance = 0.05f;
-    [SerializeField] private bool faceTravelDirection = true;
-    [SerializeField, Min(0f)] private float rotationSharpness = 14f;
-
-    [Header("Launch")]
-    [SerializeField, Min(0f)] private float launchSpeed = 22f;
-    [SerializeField, Min(0f)] private float upwardBias = 0.25f;
-    [SerializeField, Min(0f)] private float controlReturnDelay = 0.15f;
-    [SerializeField] private bool restoreOriginalGravity = true;
-    [SerializeField] private bool restoreOriginalKinematicState;
-
-    [Header("Animation")]
-    [SerializeField] private Animator playerAnimator;
     [SerializeField]
-    private string swingBool =
-        DefaultSwingParameter;
+    private Transform orbitCenter;
 
-    [Header("Audio")]
-    [SerializeField] private AudioSource audioSource;
-    [SerializeField] private AudioClip captureSound;
-    [SerializeField] private AudioClip spiralSound;
-    [SerializeField] private AudioClip launchSound;
+    [SerializeField]
+    private Transform exitPoint;
 
-    [Header("Effects")]
-    [SerializeField] private ParticleSystem captureEffect;
-    [SerializeField] private ParticleSystem spiralEffect;
-    [SerializeField] private ParticleSystem launchEffect;
-
-    [Header("Runtime Safety")]
-    [SerializeField] private bool enableRuntimeSafety = true;
-    [SerializeField] private bool restoreDisabledComponents = true;
-    [SerializeField, Min(0.1f)] private float safetyCheckInterval = 0.5f;
-    [SerializeField, Min(0.01f)] private float minimumValidScale = 0.01f;
-    [SerializeField, Min(1f)] private float maximumSafeLaunchSpeed = 100f;
-    [SerializeField, Min(0.1f)] private float maximumRideDuration = 10f;
-
-    [Header("Debug")]
-    [SerializeField] private bool logStateChanges;
+    [SerializeField]
+    private Transform launchDirection;
 
     #endregion
 
-    #region Runtime State
+    #region Activation
+
+    [Header("Activation")]
+
+    [SerializeField]
+    private bool activateAutomatically = true;
+
+    [SerializeField]
+    private bool requirePlayerTag = true;
+
+    [SerializeField]
+    private string playerTag =
+        "Player";
+
+    [SerializeField, Min(0f)]
+    private float reuseCooldown =
+        0.25f;
+
+    #endregion
+
+    #region Entry
+
+    [Header("Entry")]
+
+    [SerializeField, Min(0f)]
+    private float entryDuration =
+        0.12f;
+
+    [SerializeField]
+    private bool alignToPoleOnEntry = true;
+
+    #endregion
+
+    #region Spiral
+
+    [Header("Spiral")]
+
+    [SerializeField, Min(0.1f)]
+    private float orbitRadius =
+        1.5f;
+
+    [SerializeField, Min(0f)]
+    private float orbitSpeed =
+        540f;
+
+    [SerializeField, Min(0.1f)]
+    private float climbSpeed =
+        7f;
+
+    [SerializeField, Min(0.01f)]
+    private float exitHeightTolerance =
+        0.05f;
+
+    [SerializeField]
+    private bool faceTravelDirection = true;
+
+    [SerializeField, Min(0f)]
+    private float rotationSharpness =
+        14f;
+
+    [SerializeField, Min(0.1f)]
+    private float maximumRideDuration =
+        10f;
+
+    #endregion
+
+    #region Launch
+
+    [Header("Launch")]
+
+    [SerializeField, Min(0f)]
+    private float launchSpeed =
+        22f;
+
+    [SerializeField, Min(0f)]
+    private float upwardBias =
+        0.25f;
+
+    [SerializeField, Min(0f)]
+    private float controlReturnDelay =
+        0.15f;
+
+    [SerializeField, Min(1f)]
+    private float maximumLaunchSpeed =
+        100f;
+
+    #endregion
+
+    #region Presentation
+
+    [Header("Animation")]
+
+    [SerializeField]
+    private Animator playerAnimator;
+
+    [Header("Audio")]
+
+    [SerializeField]
+    private AudioSource audioSource;
+
+    [SerializeField]
+    private AudioClip captureSound;
+
+    [SerializeField]
+    private AudioClip spiralSound;
+
+    [SerializeField]
+    private AudioClip launchSound;
+
+    [Header("Effects")]
+
+    [SerializeField]
+    private ParticleSystem captureEffect;
+
+    [SerializeField]
+    private ParticleSystem spiralEffect;
+
+    [SerializeField]
+    private ParticleSystem launchEffect;
+
+    #endregion
+
+    #region Runtime References
 
     private Collider triggerCollider;
-    private Coroutine rideRoutine;
 
     private UltimatePlayerMovement currentMovement;
     private TornadoJump currentTornadoJump;
     private Rigidbody currentRigidbody;
     private Transform currentPlayer;
 
-    private bool originalMovementEnabled;
-    private bool originalGravityEnabled;
-    private bool originalKinematicState;
+    private Coroutine rideRoutine;
 
-    private float cooldownTimer;
-    private float safetyTimer;
+    #endregion
 
-    private int swingBoolHash;
+    #region Runtime State
+
+    private PoleState currentState =
+        PoleState.Ready;
 
     private bool initialized;
     private bool occupied;
     private bool shuttingDown;
-    private bool applicationQuitting;
+
+    private bool originalGravity;
+    private bool originalKinematic;
+
+    private float cooldownTimer;
 
     #endregion
 
     #region Events
 
-    public event Action<TornadoPole, UltimatePlayerMovement> Captured;
-    public event Action<TornadoPole, UltimatePlayerMovement> SpiralStarted;
-    public event Action<TornadoPole, UltimatePlayerMovement> Launched;
-    public event Action<TornadoPole> ResetCompleted;
-    public event Action<TornadoPole, PoleState, PoleState> StateChanged;
+    public event Action<
+        TornadoPole,
+        UltimatePlayerMovement>
+        Captured;
+
+    public event Action<
+        TornadoPole,
+        UltimatePlayerMovement>
+        SpiralStarted;
+
+    public event Action<
+        TornadoPole,
+        UltimatePlayerMovement>
+        Launched;
+
+    public event Action<
+        TornadoPole,
+        PoleState,
+        PoleState>
+        StateChanged;
 
     #endregion
 
-    #region Public API
+    #region Properties
 
     public PoleDirection Direction =>
         poleDirection;
@@ -171,97 +248,14 @@ public sealed class TornadoPole : MonoBehaviour
     public bool IsOccupied =>
         occupied;
 
-    public bool TryActivate(
-        GameObject player,
-        TornadoJump tornadoJump)
-    {
-        if (player == null ||
-            tornadoJump == null)
-        {
-            return false;
-        }
-
-        UltimatePlayerMovement movement =
-            player.GetComponent<UltimatePlayerMovement>();
-
-        movement ??=
-            player.GetComponentInParent<UltimatePlayerMovement>();
-
-        return TryActivate(
-            movement,
-            tornadoJump);
-    }
-
-    public bool TryActivate(
-        UltimatePlayerMovement movement,
-        TornadoJump tornadoJump)
-    {
-        if (!CanActivate() ||
-            movement == null ||
-            tornadoJump == null)
-        {
-            return false;
-        }
-
-        if (!ResolvePlayerReferences(
-                movement,
-                tornadoJump))
-        {
-            return false;
-        }
-
-        rideRoutine =
-            StartCoroutine(
-                RidePoleRoutine());
-
-        return true;
-    }
-
-    public bool CancelRide()
-    {
-        if (!occupied &&
-            rideRoutine == null)
-        {
-            return false;
-        }
-
-        CancelRideRoutine();
-        RestorePlayerState(
-            restorePosition: false);
-
-        FinishCycle();
-
-        return true;
-    }
-
-    public bool ResetPole()
-    {
-        if (shuttingDown ||
-            applicationQuitting)
-        {
-            return false;
-        }
-
-        CancelRideRoutine();
-        RestorePlayerState(
-            restorePosition: false);
-
-        cooldownTimer =
-            0f;
-
-        occupied =
-            false;
-
-        RestoreRequiredComponents();
-
-        ChangeState(
-            PoleState.Ready);
-
-        ResetCompleted?.Invoke(
-            this);
-
-        return true;
-    }
+    public bool CanAcceptPlayer =>
+        initialized &&
+        !occupied &&
+        !shuttingDown &&
+        cooldownTimer <= 0f &&
+        currentState ==
+            PoleState.Ready &&
+        isActiveAndEnabled;
 
     #endregion
 
@@ -274,20 +268,15 @@ public sealed class TornadoPole : MonoBehaviour
 
     private void OnEnable()
     {
-        if (shuttingDown ||
-            applicationQuitting)
-        {
-            return;
-        }
-
-        if (!initialized)
+        if (!initialized &&
+            !shuttingDown)
         {
             Initialize();
         }
 
         if (initialized &&
             currentState ==
-            PoleState.Disabled)
+                PoleState.Disabled)
         {
             ChangeState(
                 PoleState.Ready);
@@ -297,38 +286,20 @@ public sealed class TornadoPole : MonoBehaviour
     private void Update()
     {
         if (!initialized ||
-            shuttingDown ||
-            applicationQuitting)
+            shuttingDown)
         {
             return;
         }
 
         UpdateCooldown();
-
-        if (!enableRuntimeSafety)
-            return;
-
-        safetyTimer -=
-            Time.deltaTime;
-
-        if (safetyTimer > 0f)
-            return;
-
-        safetyTimer =
-            safetyCheckInterval;
-
-        RunRuntimeSafetyChecks();
     }
 
     private void OnTriggerEnter(
         Collider other)
     {
         if (!activateAutomatically ||
-            !initialized ||
             other == null ||
-            occupied ||
-            shuttingDown ||
-            applicationQuitting)
+            !CanAcceptPlayer)
         {
             return;
         }
@@ -338,47 +309,35 @@ public sealed class TornadoPole : MonoBehaviour
                 other);
 
         if (movement == null)
+        {
             return;
+        }
 
         TornadoJump tornadoJump =
-            movement.GetComponent<TornadoJump>();
+            ResolveTornadoJump(
+                movement);
 
-        tornadoJump ??=
-            movement.GetComponentInChildren<TornadoJump>(
-                includeInactive: true);
-
-        if (requireTornadoJump &&
-            tornadoJump == null)
+        if (tornadoJump == null)
         {
             return;
         }
 
-        if (tornadoJump != null)
-        {
-            TryActivate(
-                movement,
-                tornadoJump);
-        }
+        TryActivate(
+            movement,
+            tornadoJump);
     }
 
     private void OnDisable()
     {
-        CancelRideRoutine();
-        RestorePlayerState(
-            restorePosition: false);
-
-        if (!shuttingDown &&
-            !applicationQuitting)
+        if (shuttingDown)
         {
-            ChangeState(
-                PoleState.Disabled);
+            return;
         }
-    }
 
-    private void OnApplicationQuit()
-    {
-        applicationQuitting =
-            true;
+        CancelRide();
+
+        ChangeState(
+            PoleState.Disabled);
     }
 
     private void OnDestroy()
@@ -386,33 +345,23 @@ public sealed class TornadoPole : MonoBehaviour
         shuttingDown =
             true;
 
+        CancelRideRoutine();
+        RestorePlayerState();
+
+        Captured =
+            null;
+
+        SpiralStarted =
+            null;
+
+        Launched =
+            null;
+
+        StateChanged =
+            null;
+
         initialized =
             false;
-
-        CancelRideRoutine();
-        RestorePlayerState(
-            restorePosition: false);
-
-        Captured = null;
-        SpiralStarted = null;
-        Launched = null;
-        ResetCompleted = null;
-        StateChanged = null;
-
-        triggerCollider = null;
-        orbitCenter = null;
-        exitPoint = null;
-        launchDirection = null;
-        playerAnimator = null;
-        audioSource = null;
-        captureEffect = null;
-        spiralEffect = null;
-        launchEffect = null;
-
-        ClearPlayerReferences();
-
-        currentState =
-            PoleState.Disabled;
     }
 
     private void OnValidate()
@@ -452,6 +401,11 @@ public sealed class TornadoPole : MonoBehaviour
                 0f,
                 rotationSharpness);
 
+        maximumRideDuration =
+            Mathf.Max(
+                0.1f,
+                maximumRideDuration);
+
         launchSpeed =
             Mathf.Max(
                 0f,
@@ -467,35 +421,10 @@ public sealed class TornadoPole : MonoBehaviour
                 0f,
                 controlReturnDelay);
 
-        safetyCheckInterval =
-            Mathf.Max(
-                0.1f,
-                safetyCheckInterval);
-
-        minimumValidScale =
-            Mathf.Max(
-                0.01f,
-                minimumValidScale);
-
-        maximumSafeLaunchSpeed =
+        maximumLaunchSpeed =
             Mathf.Max(
                 1f,
-                maximumSafeLaunchSpeed);
-
-        maximumRideDuration =
-            Mathf.Max(
-                0.1f,
-                maximumRideDuration);
-
-        CacheAnimatorHash();
-
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
-        {
-            ResolveReferences();
-            ConfigureComponents();
-        }
-#endif
+                maximumLaunchSpeed);
     }
 
     private void OnDrawGizmosSelected()
@@ -518,10 +447,7 @@ public sealed class TornadoPole : MonoBehaviour
             Gizmos.DrawWireSphere(
                 exitPoint.position,
                 exitHeightTolerance);
-        }
 
-        if (exitPoint != null)
-        {
             Gizmos.DrawRay(
                 exitPoint.position,
                 ResolveLaunchDirection() *
@@ -538,37 +464,45 @@ public sealed class TornadoPole : MonoBehaviour
     private bool Initialize()
     {
         if (initialized)
+        {
             return true;
+        }
+
+        if (shuttingDown)
+        {
+            return false;
+        }
 
         ResolveReferences();
-        ConfigureComponents();
-        CacheAnimatorHash();
-
-        cooldownTimer =
-            0f;
-
-        safetyTimer =
-            safetyCheckInterval;
 
         if (!ValidateConfiguration())
         {
             initialized =
                 false;
 
-            currentState =
-                PoleState.Uninitialized;
-
-            enabled =
-                false;
-
             return false;
         }
 
-        initialized =
+        triggerCollider.isTrigger =
             true;
 
-        ChangeState(
-            PoleState.Ready);
+        if (audioSource != null)
+        {
+            audioSource.playOnAwake =
+                false;
+        }
+
+        occupied =
+            false;
+
+        cooldownTimer =
+            0f;
+
+        currentState =
+            PoleState.Ready;
+
+        initialized =
+            true;
 
         return true;
     }
@@ -579,19 +513,7 @@ public sealed class TornadoPole : MonoBehaviour
             GetComponent<Collider>();
 
         orbitCenter ??=
-            FindDescendantByName(
-                DefaultOrbitCenterName);
-
-        orbitCenter ??=
             transform;
-
-        exitPoint ??=
-            FindDescendantByName(
-                DefaultExitPointName);
-
-        launchDirection ??=
-            FindDescendantByName(
-                DefaultLaunchDirectionName);
 
         audioSource ??=
             GetComponent<AudioSource>();
@@ -601,69 +523,144 @@ public sealed class TornadoPole : MonoBehaviour
                 includeInactive: true);
     }
 
-    private void ConfigureComponents()
+    private bool ValidateConfiguration()
     {
-        if (triggerCollider != null)
-        {
-            triggerCollider.isTrigger =
-                true;
-        }
-
-        if (audioSource != null)
-        {
-            audioSource.playOnAwake =
-                false;
-        }
-    }
-
-    private void CacheAnimatorHash()
-    {
-        swingBoolHash =
-            GetAnimatorHash(
-                swingBool);
+        return
+            triggerCollider != null &&
+            orbitCenter != null &&
+            exitPoint != null &&
+            ValidateTransform(
+                orbitCenter) &&
+            ValidateTransform(
+                exitPoint);
     }
 
     #endregion
 
-    #region State Machine
+    #region Public API
 
-    private void ChangeState(
-        PoleState newState)
+    public bool TryActivate(
+        GameObject player,
+        TornadoJump tornadoJump)
     {
-        if (currentState ==
-            newState)
+        if (player == null ||
+            tornadoJump == null)
         {
-            return;
+            return false;
         }
 
-        PoleState previousState =
-            currentState;
+        UltimatePlayerMovement movement =
+            player.GetComponent<
+                UltimatePlayerMovement>();
 
-        currentState =
-            newState;
+        movement ??=
+            player.GetComponentInParent<
+                UltimatePlayerMovement>();
 
-        StateChanged?.Invoke(
-            this,
-            previousState,
-            newState);
+        movement ??=
+            player.GetComponentInChildren<
+                UltimatePlayerMovement>(
+                    includeInactive: true);
 
-        LogStateChange(
-            $"State changed from {previousState} to {newState}.");
+        return
+            TryActivate(
+                movement,
+                tornadoJump);
+    }
+
+    public bool TryActivate(
+        UltimatePlayerMovement movement,
+        TornadoJump tornadoJump)
+    {
+        if (!CanAcceptPlayer ||
+            movement == null ||
+            tornadoJump == null)
+        {
+            return false;
+        }
+
+        if (!PrepareReferences(
+                movement,
+                tornadoJump))
+        {
+            return false;
+        }
+
+        if (!currentTornadoJump
+                .BeginPoleAction(
+                    this))
+        {
+            ClearPlayerReferences();
+
+            return false;
+        }
+
+        occupied =
+            true;
+
+        rideRoutine =
+            StartCoroutine(
+                RideRoutine());
+
+        return true;
+    }
+
+    public bool CancelRide()
+    {
+        if (!occupied &&
+            rideRoutine == null)
+        {
+            return false;
+        }
+
+        CancelRideRoutine();
+        RestorePlayerState();
+
+        occupied =
+            false;
+
+        BeginCooldown();
+
+        return true;
+    }
+
+    public bool ResetPole()
+    {
+        if (shuttingDown)
+        {
+            return false;
+        }
+
+        CancelRideRoutine();
+        RestorePlayerState();
+
+        cooldownTimer =
+            0f;
+
+        occupied =
+            false;
+
+        ChangeState(
+            PoleState.Ready);
+
+        return true;
     }
 
     #endregion
 
     #region Ride Flow
 
-    private IEnumerator RidePoleRoutine()
+    private IEnumerator RideRoutine()
     {
-        occupied =
-            true;
-
         ChangeState(
             PoleState.Capturing);
 
-        PreparePlayerForRide();
+        if (!PreparePlayerForRide())
+        {
+            FinishFailedRide();
+
+            yield break;
+        }
 
         Captured?.Invoke(
             this,
@@ -671,28 +668,32 @@ public sealed class TornadoPole : MonoBehaviour
 
         PlayCapturePresentation();
 
-        yield return EnterOrbit();
+        yield return
+            EnterOrbit();
 
-        if (!ValidatePlayerReferences())
+        if (!HasValidPlayer())
         {
-            CancelRide();
+            FinishFailedRide();
+
             yield break;
         }
 
         ChangeState(
             PoleState.Spiraling);
 
-        PlaySpiralPresentation();
-
         SpiralStarted?.Invoke(
             this,
             currentMovement);
 
-        yield return SpiralToExit();
+        PlaySpiralPresentation();
 
-        if (!ValidatePlayerReferences())
+        yield return
+            SpiralToExit();
+
+        if (!HasValidPlayer())
         {
-            CancelRide();
+            FinishFailedRide();
+
             yield break;
         }
 
@@ -701,53 +702,66 @@ public sealed class TornadoPole : MonoBehaviour
 
         LaunchPlayer();
 
-        if (controlReturnDelay > 0f)
-        {
-            yield return new WaitForSeconds(
-                controlReturnDelay);
-        }
-
-        RestorePlayerControl();
-
-        currentTornadoJump?.FinishPoleAction();
-
         Launched?.Invoke(
             this,
             currentMovement);
 
-        FinishCycle();
+        if (controlReturnDelay > 0f)
+        {
+            yield return
+                new WaitForSeconds(
+                    controlReturnDelay);
+        }
+
+        RestorePlayerControl();
+
+        currentTornadoJump?
+            .FinishPoleAction();
+
+        ClearPlayerReferences();
+
+        occupied =
+            false;
+
+        rideRoutine =
+            null;
+
+        BeginCooldown();
     }
 
     private IEnumerator EnterOrbit()
     {
-        if (!ValidatePlayerReferences())
+        if (!HasValidPlayer())
+        {
             yield break;
+        }
 
-        Vector3 entryStart =
+        Vector3 startingPosition =
             currentPlayer.position;
 
-        float startAngle =
-            GetCurrentOrbitAngle();
-
-        Vector3 entryTarget =
-            GetOrbitPosition(
-                startAngle,
-                currentPlayer.position.y);
-
-        Quaternion startRotation =
+        Quaternion startingRotation =
             currentPlayer.rotation;
 
-        Quaternion targetRotation =
+        float angle =
+            GetOrbitAngle();
+
+        Vector3 destination =
+            GetOrbitPosition(
+                angle,
+                currentPlayer.position.y);
+
+        Quaternion destinationRotation =
             alignToPoleOnEntry
-                ? GetOrbitFacingRotation(
-                    startAngle)
-                : startRotation;
+                ? GetTangentRotation(
+                    angle)
+                : startingRotation;
 
         if (entryDuration <= 0f)
         {
-            currentPlayer.SetPositionAndRotation(
-                entryTarget,
-                targetRotation);
+            currentPlayer
+                .SetPositionAndRotation(
+                    destination,
+                    destinationRotation);
 
             yield break;
         }
@@ -756,10 +770,12 @@ public sealed class TornadoPole : MonoBehaviour
             0f;
 
         while (elapsed <
-               entryDuration)
+            entryDuration)
         {
-            if (!ValidatePlayerReferences())
+            if (!HasValidPlayer())
+            {
                 yield break;
+            }
 
             elapsed +=
                 Time.deltaTime;
@@ -770,132 +786,147 @@ public sealed class TornadoPole : MonoBehaviour
                     entryDuration);
 
             progress =
-                SmoothStep(
+                Mathf.SmoothStep(
+                    0f,
+                    1f,
                     progress);
 
             currentPlayer.position =
                 Vector3.Lerp(
-                    entryStart,
-                    entryTarget,
+                    startingPosition,
+                    destination,
                     progress);
 
             currentPlayer.rotation =
                 Quaternion.Slerp(
-                    startRotation,
-                    targetRotation,
+                    startingRotation,
+                    destinationRotation,
                     progress);
 
             yield return null;
         }
 
-        currentPlayer.SetPositionAndRotation(
-            entryTarget,
-            targetRotation);
+        currentPlayer
+            .SetPositionAndRotation(
+                destination,
+                destinationRotation);
     }
 
     private IEnumerator SpiralToExit()
     {
-        if (!ValidatePlayerReferences() ||
+        if (!HasValidPlayer() ||
             exitPoint == null)
         {
             yield break;
         }
 
-        float currentAngle =
-            GetCurrentOrbitAngle();
+        float angle =
+            GetOrbitAngle();
 
-        float currentHeight =
+        float height =
             currentPlayer.position.y;
 
         float targetHeight =
             exitPoint.position.y;
 
-        float rotationDirection =
-            clockwise
-                ? -1f
-                : 1f;
+        float direction =
+            GetSpiralDirection(
+                height,
+                targetHeight);
 
-        float elapsedRideTime =
+        float elapsed =
             0f;
 
         while (Mathf.Abs(
-                   currentHeight -
-                   targetHeight) >
-               exitHeightTolerance)
+                height -
+                targetHeight) >
+            exitHeightTolerance)
         {
-            if (!ValidatePlayerReferences())
+            if (!HasValidPlayer())
+            {
                 yield break;
+            }
 
-            elapsedRideTime +=
+            elapsed +=
                 Time.deltaTime;
 
-            if (elapsedRideTime >
+            if (elapsed >=
                 maximumRideDuration)
             {
-                Debug.LogWarning(
-                    $"{nameof(TornadoPole)} on '{name}' reached its maximum ride duration.",
-                    this);
-
                 break;
             }
 
-            currentAngle +=
+            angle +=
                 orbitSpeed *
-                rotationDirection *
+                (clockwise
+                    ? -1f
+                    : 1f) *
                 Time.deltaTime;
 
-            currentHeight =
+            height =
                 Mathf.MoveTowards(
-                    currentHeight,
+                    height,
                     targetHeight,
                     climbSpeed *
                     Time.deltaTime);
 
             currentPlayer.position =
                 GetOrbitPosition(
-                    currentAngle,
-                    currentHeight);
+                    angle,
+                    height);
 
             if (faceTravelDirection)
             {
                 Quaternion targetRotation =
                     GetTangentRotation(
-                        currentAngle,
-                        rotationDirection);
+                        angle);
 
-                float rotationAmount =
-                    1f -
-                    Mathf.Exp(
-                        -rotationSharpness *
-                        Time.deltaTime);
+                float interpolation =
+                    rotationSharpness <= 0f
+                        ? 1f
+                        : 1f -
+                          Mathf.Exp(
+                            -rotationSharpness *
+                            Time.deltaTime);
 
                 currentPlayer.rotation =
                     Quaternion.Slerp(
                         currentPlayer.rotation,
                         targetRotation,
-                        rotationAmount);
+                        interpolation);
+            }
+
+            if (direction == 0f)
+            {
+                break;
             }
 
             yield return null;
         }
 
-        currentPlayer.position =
-            exitPoint.position;
+        if (currentPlayer != null &&
+            exitPoint != null)
+        {
+            currentPlayer.position =
+                exitPoint.position;
+        }
     }
 
     #endregion
 
     #region Player Control
 
-    private bool ResolvePlayerReferences(
+    private bool PrepareReferences(
         UltimatePlayerMovement movement,
         TornadoJump tornadoJump)
     {
         if (movement == null ||
             tornadoJump == null ||
             !movement.isActiveAndEnabled ||
-            !movement.IsInitialized ||
-            movement.IsSafetyShutdown)
+            !movement.gameObject
+                .activeInHierarchy ||
+            !tornadoJump.isActiveAndEnabled ||
+            !tornadoJump.CanUsePole)
         {
             return false;
         }
@@ -910,41 +941,48 @@ public sealed class TornadoPole : MonoBehaviour
             movement.transform;
 
         currentRigidbody =
-            movement.GetComponent<Rigidbody>();
+            ResolveRigidbody(
+                movement);
 
-        currentRigidbody ??=
-            movement.GetComponentInChildren<Rigidbody>(
-                includeInactive: true);
+        if (currentRigidbody == null)
+        {
+            ClearPlayerReferences();
+
+            return false;
+        }
 
         playerAnimator =
-            movement.GetComponent<Animator>();
+            movement.GetComponent<
+                Animator>();
 
         playerAnimator ??=
-            movement.GetComponentInChildren<Animator>(
-                includeInactive: true);
+            movement
+                .GetComponentInChildren<
+                    Animator>(
+                        includeInactive: true);
 
-        return ValidatePlayerReferences();
+        return
+            HasValidPlayer();
     }
 
-    private void PreparePlayerForRide()
+    private bool PreparePlayerForRide()
     {
-        if (!ValidatePlayerReferences())
-            return;
+        if (!HasValidPlayer() ||
+            currentTornadoJump == null ||
+            !currentTornadoJump
+                .TransferToPole())
+        {
+            return false;
+        }
 
-        originalMovementEnabled =
-            currentMovement.enabled;
-
-        originalGravityEnabled =
+        originalGravity =
             currentRigidbody.useGravity;
 
-        originalKinematicState =
+        originalKinematic =
             currentRigidbody.isKinematic;
 
-        currentTornadoJump.TransferToPole();
-
-        currentMovement.DisableMovement();
-        currentMovement.enabled =
-            false;
+        currentMovement
+            .DisableMovement();
 
         currentRigidbody.linearVelocity =
             Vector3.zero;
@@ -960,12 +998,16 @@ public sealed class TornadoPole : MonoBehaviour
 
         SetSwingAnimation(
             true);
+
+        return true;
     }
 
     private void LaunchPlayer()
     {
-        if (!ValidatePlayerReferences())
+        if (!HasValidPlayer())
+        {
             return;
+        }
 
         SetSwingAnimation(
             false);
@@ -974,15 +1016,26 @@ public sealed class TornadoPole : MonoBehaviour
             false;
 
         currentRigidbody.useGravity =
-            restoreOriginalGravity
-                ? originalGravityEnabled
-                : true;
+            true;
 
-        currentRigidbody.linearVelocity =
+        Vector3 launchVelocity =
             ResolveLaunchDirection() *
             Mathf.Min(
                 launchSpeed,
-                maximumSafeLaunchSpeed);
+                maximumLaunchSpeed);
+
+        if (!IsFiniteVector(
+                launchVelocity))
+        {
+            launchVelocity =
+                Vector3.up *
+                Mathf.Min(
+                    launchSpeed,
+                    maximumLaunchSpeed);
+        }
+
+        currentRigidbody.linearVelocity =
+            launchVelocity;
 
         currentRigidbody.angularVelocity =
             Vector3.zero;
@@ -994,57 +1047,46 @@ public sealed class TornadoPole : MonoBehaviour
 
     private void RestorePlayerControl()
     {
-        if (currentMovement == null)
-            return;
+        if (currentMovement != null)
+        {
+            currentMovement
+                .EnableMovement();
+        }
 
-        currentMovement.enabled =
-            originalMovementEnabled;
-
-        currentMovement.EnableMovement();
-
-        if (currentRigidbody != null &&
-            restoreOriginalKinematicState)
+        if (currentRigidbody != null)
         {
             currentRigidbody.isKinematic =
-                originalKinematicState;
+                false;
+
+            currentRigidbody.useGravity =
+                true;
         }
     }
 
-    private void RestorePlayerState(
-        bool restorePosition)
+    private void RestorePlayerState()
     {
-        if (currentPlayer != null &&
-            restorePosition &&
-            exitPoint != null)
-        {
-            currentPlayer.position =
-                exitPoint.position;
-        }
-
         SetSwingAnimation(
             false);
 
         if (currentRigidbody != null)
         {
             currentRigidbody.isKinematic =
-                restoreOriginalKinematicState
-                    ? originalKinematicState
-                    : false;
+                originalKinematic;
 
             currentRigidbody.useGravity =
-                restoreOriginalGravity
-                    ? originalGravityEnabled
-                    : true;
+                originalGravity;
 
             if (!IsFiniteVector(
-                    currentRigidbody.linearVelocity))
+                    currentRigidbody
+                        .linearVelocity))
             {
                 currentRigidbody.linearVelocity =
                     Vector3.zero;
             }
 
             if (!IsFiniteVector(
-                    currentRigidbody.angularVelocity))
+                    currentRigidbody
+                        .angularVelocity))
             {
                 currentRigidbody.angularVelocity =
                     Vector3.zero;
@@ -1053,13 +1095,12 @@ public sealed class TornadoPole : MonoBehaviour
 
         if (currentMovement != null)
         {
-            currentMovement.enabled =
-                originalMovementEnabled;
-
-            currentMovement.EnableMovement();
+            currentMovement
+                .EnableMovement();
         }
 
-        currentTornadoJump?.FinishPoleAction();
+        currentTornadoJump?
+            .CancelPoleAction();
 
         ClearPlayerReferences();
     }
@@ -1084,9 +1125,112 @@ public sealed class TornadoPole : MonoBehaviour
 
     #endregion
 
-    #region Orbit Math
+    #region Player Resolution
 
-    private float GetCurrentOrbitAngle()
+    private UltimatePlayerMovement ResolveMovement(
+        Collider other)
+    {
+        if (other == null)
+        {
+            return null;
+        }
+
+        if (requirePlayerTag &&
+            !HasTagInHierarchy(
+                other.transform,
+                playerTag))
+        {
+            return null;
+        }
+
+        UltimatePlayerMovement movement =
+            other.GetComponent<
+                UltimatePlayerMovement>();
+
+        movement ??=
+            other.GetComponentInParent<
+                UltimatePlayerMovement>();
+
+        movement ??=
+            other.GetComponentInChildren<
+                UltimatePlayerMovement>(
+                    includeInactive: true);
+
+        if (movement == null ||
+            !movement.isActiveAndEnabled ||
+            !movement.gameObject
+                .activeInHierarchy)
+        {
+            return null;
+        }
+
+        return movement;
+    }
+
+    private static TornadoJump
+        ResolveTornadoJump(
+            UltimatePlayerMovement movement)
+    {
+        if (movement == null)
+        {
+            return null;
+        }
+
+        TornadoJump tornadoJump =
+            movement.GetComponent<
+                TornadoJump>();
+
+        tornadoJump ??=
+            movement
+                .GetComponentInParent<
+                    TornadoJump>();
+
+        tornadoJump ??=
+            movement
+                .GetComponentInChildren<
+                    TornadoJump>(
+                        includeInactive: true);
+
+        return tornadoJump;
+    }
+
+    private static Rigidbody ResolveRigidbody(
+        UltimatePlayerMovement movement)
+    {
+        if (movement == null)
+        {
+            return null;
+        }
+
+        if (movement.body != null)
+        {
+            return
+                movement.body;
+        }
+
+        Rigidbody body =
+            movement.GetComponent<
+                Rigidbody>();
+
+        body ??=
+            movement
+                .GetComponentInParent<
+                    Rigidbody>();
+
+        body ??=
+            movement
+                .GetComponentInChildren<
+                    Rigidbody>(
+                        includeInactive: true);
+
+        return body;
+    }
+
+    #endregion
+
+    #region Orbit
+
+    private float GetOrbitAngle()
     {
         if (currentPlayer == null ||
             orbitCenter == null)
@@ -1101,20 +1245,23 @@ public sealed class TornadoPole : MonoBehaviour
         offset.y =
             0f;
 
-        if (offset.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
+        if (!IsFiniteVector(
+                offset) ||
+            offset.sqrMagnitude <=
+                MinimumDirectionMagnitude)
         {
             return 0f;
         }
 
-        return Mathf.Atan2(
-                   offset.z,
-                   offset.x) *
-               Mathf.Rad2Deg;
+        return
+            Mathf.Atan2(
+                offset.z,
+                offset.x) *
+            Mathf.Rad2Deg;
     }
 
     private Vector3 GetOrbitPosition(
-        float angleDegrees,
+        float angle,
         float height)
     {
         Transform center =
@@ -1123,7 +1270,7 @@ public sealed class TornadoPole : MonoBehaviour
                 : transform;
 
         float radians =
-            angleDegrees *
+            angle *
             Mathf.Deg2Rad;
 
         return new Vector3(
@@ -1140,26 +1287,17 @@ public sealed class TornadoPole : MonoBehaviour
             orbitRadius);
     }
 
-    private Quaternion GetOrbitFacingRotation(
-        float angleDegrees)
+    private Quaternion GetTangentRotation(
+        float angle)
     {
+        float radians =
+            angle *
+            Mathf.Deg2Rad;
+
         float direction =
             clockwise
                 ? -1f
                 : 1f;
-
-        return GetTangentRotation(
-            angleDegrees,
-            direction);
-    }
-
-    private Quaternion GetTangentRotation(
-        float angleDegrees,
-        float direction)
-    {
-        float radians =
-            angleDegrees *
-            Mathf.Deg2Rad;
 
         Vector3 tangent =
             new Vector3(
@@ -1171,16 +1309,44 @@ public sealed class TornadoPole : MonoBehaviour
                     radians) *
                 direction);
 
-        if (tangent.sqrMagnitude <=
-            MinimumDirectionSqrMagnitude)
+        if (!IsFiniteVector(
+                tangent) ||
+            tangent.sqrMagnitude <=
+                MinimumDirectionMagnitude)
         {
             tangent =
                 transform.forward;
         }
 
-        return Quaternion.LookRotation(
-            tangent.normalized,
-            Vector3.up);
+        return
+            Quaternion.LookRotation(
+                tangent.normalized,
+                Vector3.up);
+    }
+
+    private float GetSpiralDirection(
+        float currentHeight,
+        float targetHeight)
+    {
+        return poleDirection switch
+        {
+            PoleDirection.Up =>
+                targetHeight >=
+                currentHeight
+                    ? 1f
+                    : 0f,
+
+            PoleDirection.Down =>
+                targetHeight <=
+                currentHeight
+                    ? -1f
+                    : 0f,
+
+            _ =>
+                Mathf.Sign(
+                    targetHeight -
+                    currentHeight)
+        };
     }
 
     private Vector3 ResolveLaunchDirection()
@@ -1199,7 +1365,7 @@ public sealed class TornadoPole : MonoBehaviour
                 exit.position;
 
             if (direction.sqrMagnitude <=
-                MinimumDirectionSqrMagnitude)
+                MinimumDirectionMagnitude)
             {
                 direction =
                     launchDirection.forward;
@@ -1218,64 +1384,97 @@ public sealed class TornadoPole : MonoBehaviour
         if (!IsFiniteVector(
                 direction) ||
             direction.sqrMagnitude <=
-                MinimumDirectionSqrMagnitude)
+                MinimumDirectionMagnitude)
         {
             direction =
                 Vector3.up;
         }
 
-        return direction.normalized;
+        return
+            direction.normalized;
     }
 
     #endregion
 
-    #region Activation
+    #region State
 
-    private bool CanActivate()
+    private void ChangeState(
+        PoleState newState)
     {
-        return
-            initialized &&
-            !occupied &&
-            rideRoutine == null &&
-            !shuttingDown &&
-            !applicationQuitting &&
-            cooldownTimer <= 0f &&
-            currentState ==
-                PoleState.Ready &&
-            isActiveAndEnabled;
-    }
-
-    private UltimatePlayerMovement ResolveMovement(
-        Collider other)
-    {
-        if (other == null)
-            return null;
-
-        if (requirePlayerTag &&
-            !HasTagInHierarchy(
-                other.transform,
-                playerTag))
+        if (currentState ==
+            newState)
         {
-            return null;
+            return;
         }
 
-        UltimatePlayerMovement movement =
-            other.GetComponent<UltimatePlayerMovement>();
+        PoleState previousState =
+            currentState;
 
-        movement ??=
-            other.GetComponentInParent<UltimatePlayerMovement>();
+        currentState =
+            newState;
 
-        movement ??=
-            other.GetComponentInChildren<UltimatePlayerMovement>(
-                includeInactive: true);
+        StateChanged?.Invoke(
+            this,
+            previousState,
+            currentState);
+    }
 
-        return
-            movement != null &&
-            movement.isActiveAndEnabled &&
-            movement.IsInitialized &&
-            !movement.IsSafetyShutdown
-                ? movement
-                : null;
+    private void BeginCooldown()
+    {
+        cooldownTimer =
+            reuseCooldown;
+
+        ChangeState(
+            cooldownTimer > 0f
+                ? PoleState.Cooldown
+                : PoleState.Ready);
+    }
+
+    private void UpdateCooldown()
+    {
+        if (cooldownTimer <= 0f)
+        {
+            return;
+        }
+
+        cooldownTimer =
+            Mathf.Max(
+                0f,
+                cooldownTimer -
+                Time.deltaTime);
+
+        if (cooldownTimer <= 0f &&
+            currentState ==
+                PoleState.Cooldown)
+        {
+            ChangeState(
+                PoleState.Ready);
+        }
+    }
+
+    private void FinishFailedRide()
+    {
+        CancelRideRoutine();
+        RestorePlayerState();
+
+        occupied =
+            false;
+
+        BeginCooldown();
+    }
+
+    private void CancelRideRoutine()
+    {
+        if (rideRoutine == null)
+        {
+            return;
+        }
+
+        StopCoroutine(
+            rideRoutine);
+
+        rideRoutine =
+            null;
     }
 
     #endregion
@@ -1304,7 +1503,8 @@ public sealed class TornadoPole : MonoBehaviour
         {
             spiralEffect.Stop(
                 true,
-                ParticleSystemStopBehavior.StopEmitting);
+                ParticleSystemStopBehavior
+                    .StopEmitting);
         }
 
         launchEffect?.Play();
@@ -1317,13 +1517,26 @@ public sealed class TornadoPole : MonoBehaviour
         bool value)
     {
         if (playerAnimator == null ||
-            swingBoolHash == 0)
+            !playerAnimator
+                .isActiveAndEnabled ||
+            playerAnimator
+                .runtimeAnimatorController ==
+                null)
+        {
+            return;
+        }
+
+        if (!HasAnimatorParameter(
+                playerAnimator,
+                TeamSwingHash,
+                AnimatorControllerParameterType
+                    .Bool))
         {
             return;
         }
 
         playerAnimator.SetBool(
-            swingBoolHash,
+            TeamSwingHash,
             value);
     }
 
@@ -1340,188 +1553,63 @@ public sealed class TornadoPole : MonoBehaviour
             clip);
     }
 
-    #endregion
-
-    #region Timers
-
-    private void UpdateCooldown()
+    private static bool HasAnimatorParameter(
+        Animator animator,
+        int hash,
+        AnimatorControllerParameterType type)
     {
-        if (cooldownTimer <= 0f)
-            return;
-
-        cooldownTimer =
-            Mathf.Max(
-                0f,
-                cooldownTimer -
-                Time.deltaTime);
-
-        if (cooldownTimer <= 0f &&
-            currentState ==
-            PoleState.Cooldown)
+        if (animator == null)
         {
-            ChangeState(
-                PoleState.Ready);
+            return false;
         }
-    }
 
-    private void FinishCycle()
-    {
-        occupied =
-            false;
-
-        cooldownTimer =
-            reuseCooldown;
-
-        rideRoutine =
-            null;
-
-        ClearPlayerReferences();
-
-        ChangeState(
-            cooldownTimer > 0f
-                ? PoleState.Cooldown
-                : PoleState.Ready);
-    }
-
-    #endregion
-
-    #region Runtime Safety
-
-    private bool RunRuntimeSafetyChecks()
-    {
-        if (!ValidateCoreReferences())
+        foreach (
+            AnimatorControllerParameter parameter
+            in animator.parameters)
         {
-            ResolveReferences();
-            ConfigureComponents();
-
-            if (!ValidateCoreReferences())
+            if (parameter.nameHash ==
+                    hash &&
+                parameter.type ==
+                    type)
             {
-                EnterSafetyShutdown(
-                    "Required references could not be restored.");
-
-                return false;
+                return true;
             }
         }
 
-        if (!ValidateTransform(
-                transform))
-        {
-            EnterSafetyShutdown(
-                "Tornado Pole Transform contains invalid values.");
-
-            return false;
-        }
-
-        if (restoreDisabledComponents)
-        {
-            RestoreRequiredComponents();
-        }
-
-        if (occupied &&
-            !ValidatePlayerReferences())
-        {
-            CancelRide();
-            return false;
-        }
-
-        return true;
-    }
-
-    private void RestoreRequiredComponents()
-    {
-        if (triggerCollider != null &&
-            !triggerCollider.enabled)
-        {
-            triggerCollider.enabled =
-                true;
-        }
-
-        if (audioSource != null &&
-            !audioSource.enabled)
-        {
-            audioSource.enabled =
-                true;
-        }
-    }
-
-    private void EnterSafetyShutdown(
-        string reason)
-    {
-        CancelRideRoutine();
-        RestorePlayerState(
-            restorePosition: false);
-
-        initialized =
-            false;
-
-        occupied =
-            false;
-
-        ChangeState(
-            PoleState.Disabled);
-
-        if (triggerCollider != null)
-        {
-            triggerCollider.enabled =
-                false;
-        }
-
-        Debug.LogError(
-            $"{nameof(TornadoPole)} entered safety shutdown on '{name}': {reason}",
-            this);
-
-        enabled =
-            false;
+        return false;
     }
 
     #endregion
 
     #region Validation
 
-    private bool ValidateConfiguration()
-    {
-        bool valid =
-            ValidateCoreReferences();
-
-        if (!valid)
-        {
-            Debug.LogError(
-                $"{nameof(TornadoPole)} on '{name}' requires a Collider, Orbit Center, and Exit Point.",
-                this);
-        }
-
-        return valid;
-    }
-
-    private bool ValidateCoreReferences()
-    {
-        return
-            triggerCollider != null &&
-            orbitCenter != null &&
-            exitPoint != null;
-    }
-
-    private bool ValidatePlayerReferences()
+    private bool HasValidPlayer()
     {
         return
             currentMovement != null &&
             currentTornadoJump != null &&
             currentRigidbody != null &&
             currentPlayer != null &&
-            currentMovement.isActiveAndEnabled &&
+            currentMovement
+                .gameObject
+                .activeInHierarchy &&
             ValidateTransform(
                 currentPlayer) &&
             IsFiniteVector(
-                currentRigidbody.linearVelocity) &&
+                currentRigidbody
+                    .linearVelocity) &&
             IsFiniteVector(
-                currentRigidbody.angularVelocity);
+                currentRigidbody
+                    .angularVelocity);
     }
 
-    private bool ValidateTransform(
+    private static bool ValidateTransform(
         Transform target)
     {
         if (target == null)
+        {
             return false;
+        }
 
         Vector3 scale =
             target.lossyScale;
@@ -1533,114 +1621,12 @@ public sealed class TornadoPole : MonoBehaviour
                 target.rotation) &&
             IsFiniteVector(
                 scale) &&
-            Mathf.Abs(scale.x) >=
-                minimumValidScale &&
-            Mathf.Abs(scale.y) >=
-                minimumValidScale &&
-            Mathf.Abs(scale.z) >=
-                minimumValidScale;
-    }
-
-    #endregion
-
-    #region Cleanup
-
-    private void CancelRideRoutine()
-    {
-        if (rideRoutine == null)
-            return;
-
-        StopCoroutine(
-            rideRoutine);
-
-        rideRoutine =
-            null;
-    }
-
-    #endregion
-
-    #region Helpers
-
-    private Transform FindDescendantByName(
-        string targetName)
-    {
-        if (string.IsNullOrWhiteSpace(
-                targetName))
-        {
-            return null;
-        }
-
-        Transform[] descendants =
-            GetComponentsInChildren<Transform>(
-                includeInactive: true);
-
-        foreach (Transform descendant
-                 in descendants)
-        {
-            if (descendant != null &&
-                string.Equals(
-                    descendant.name,
-                    targetName,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return descendant;
-            }
-        }
-
-        return null;
-    }
-
-    private static bool HasTagInHierarchy(
-        Transform source,
-        string requiredTag)
-    {
-        if (source == null)
-            return false;
-
-        if (string.IsNullOrWhiteSpace(
-                requiredTag))
-        {
-            return true;
-        }
-
-        Transform current =
-            source;
-
-        while (current != null)
-        {
-            if (current.CompareTag(
-                    requiredTag))
-            {
-                return true;
-            }
-
-            current =
-                current.parent;
-        }
-
-        return false;
-    }
-
-    private static int GetAnimatorHash(
-        string parameterName)
-    {
-        return
-            string.IsNullOrWhiteSpace(
-                parameterName)
-                ? 0
-                : Animator.StringToHash(
-                    parameterName);
-    }
-
-    private static float SmoothStep(
-        float value)
-    {
-        return
-            value *
-            value *
-            (3f -
-             2f *
-             value);
+            Mathf.Abs(scale.x) >
+                0.0001f &&
+            Mathf.Abs(scale.y) >
+                0.0001f &&
+            Mathf.Abs(scale.z) >
+                0.0001f;
     }
 
     private static bool IsFiniteVector(
@@ -1664,17 +1650,39 @@ public sealed class TornadoPole : MonoBehaviour
 
     #endregion
 
-    #region Debug
+    #region Helpers
 
-    private void LogStateChange(
-        string message)
+    private static bool HasTagInHierarchy(
+        Transform source,
+        string requiredTag)
     {
-        if (!logStateChanges)
-            return;
+        if (source == null)
+        {
+            return false;
+        }
 
-        Debug.Log(
-            message,
-            this);
+        if (string.IsNullOrWhiteSpace(
+                requiredTag))
+        {
+            return true;
+        }
+
+        Transform current =
+            source;
+
+        while (current != null)
+        {
+            if (current.CompareTag(
+                    requiredTag))
+            {
+                return true;
+            }
+
+            current =
+                current.parent;
+        }
+
+        return false;
     }
 
     #endregion
