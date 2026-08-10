@@ -59,8 +59,11 @@ public class UltimatePlayerMovement : MonoBehaviour
     private void Awake()
     {
         var camCtrl = Object.FindAnyObjectByType<CameraController>();
+
         if (camCtrl != null)
+        {
             cam = camCtrl.transform;
+        }
     }
     private void Update()
     {
@@ -279,6 +282,18 @@ public class UltimatePlayerMovement : MonoBehaviour
     public void EnableMovement()
     {
         isSurrendered = false;
+    }
+
+    public void SetCurrentCharacter(GameObject character)
+    {
+        if (character == null)
+        {
+            return;
+        }
+
+        currentCharacter = character;
+
+        SetupAnimation();
     }
 
     public void SurrenderControl(Vector2 up, float newSurrenderTime)

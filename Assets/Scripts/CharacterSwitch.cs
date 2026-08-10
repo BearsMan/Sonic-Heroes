@@ -123,19 +123,60 @@ public class CharacterSwitch : MonoBehaviour
 
     public void ResetCharacters()
     {
-        speedCharacter.localPosition = Vector3.zero;
-        speedCharacter.localRotation = Quaternion.Euler(0, 180, 0);
-        player.GetComponent<UltimatePlayerMovement>().SetupAnimation();
+        if (speedCharacter != null)
+        {
+            speedCharacter.localPosition = Vector3.zero;
 
-        flyingCharacter.localPosition = Vector3.zero;
-        flyingCharacter.localRotation = Quaternion.Euler(0, 180, 0);
-        leftSlot.GetComponent<FollowerNavigation>().Setup();
+            speedCharacter.localRotation = Quaternion.Euler(0f, 180f, 0f);
+        }
 
-        powerCharacter.localPosition = Vector3.zero;
-        powerCharacter.localRotation = Quaternion.Euler(0, 180, 0);
-        rightSlot.GetComponent<FollowerNavigation>().Setup();
+        if (flyingCharacter != null)
+        {
+            flyingCharacter.localPosition = Vector3.zero;
 
+            flyingCharacter.localRotation =Quaternion.Euler(0f, 180f, 0f);
+        }
 
+        if (powerCharacter != null)
+        {
+            powerCharacter.localPosition = Vector3.zero;
+
+            powerCharacter.localRotation = Quaternion.Euler(0f, 180f, 0f);
+        }
+
+        if (player != null && player.TryGetComponent<UltimatePlayerMovement>(out var movement))
+        {
+            Transform leader =
+                currentCharacterType switch
+                {
+                    CHARACTERTYPES.Speed =>
+                        speedCharacter,
+
+                    CHARACTERTYPES.Fly =>
+                        flyingCharacter,
+
+                    CHARACTERTYPES.Power =>
+                        powerCharacter,
+
+                    _ =>
+                        null
+                };
+
+            if (leader != null)
+            {
+                movement.SetCurrentCharacter(leader.gameObject);
+            }
+        }
+
+        if (leftSlot != null && leftSlot.TryGetComponent<FollowerNavigation>(out var leftNavigation))
+        {
+            leftNavigation.Setup();
+        }
+
+        if (rightSlot != null && rightSlot.TryGetComponent<FollowerNavigation>(out var rightNavigation))
+        {
+            rightNavigation.Setup();
+        }
     }
 
 

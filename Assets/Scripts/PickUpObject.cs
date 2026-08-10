@@ -76,9 +76,15 @@ public class PickUpObject : MonoBehaviour
     protected virtual void AddEffect(CHARACTERTYPES characterTypes)
     {
         HUD hud = FindAnyObjectByType<HUD>();
+
         if (hud != null)
         {
             hud.AddPower(powerValue);
+
+            if (itemSprite != null)
+            {
+                hud.ShowPickUp(itemSprite);
+            }
         }
 
         if (ringValue > 0)

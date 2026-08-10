@@ -40,18 +40,21 @@ public class TeamSetup : MonoBehaviour
     void Start()
     {
         pc = this;
-        //Setup Player
+        // Setup Player
         Transform body = Instantiate(CurrentTeam.SpeedCharacter, player).transform;
         var cs = GetComponent<CharacterSwitch>();
         if (cs != null) cs.speedCharacter = body;
         body.localPosition = Vector3.zero;
         body.rotation = Quaternion.Euler(0, 180, 0);
         CharacterSwitch switcher = GetComponent<CharacterSwitch>();
-        if (player != null && player.TryGetComponent<UltimatePlayerMovement>(out var up)) up.SetupAnimation();
+        if (player != null && player.TryGetComponent<UltimatePlayerMovement>(out var up))
+        {
+            up.SetCurrentCharacter(body.gameObject);
+        }
 
         switcher.TeamMembers.Add(body.gameObject);
 
-        //Setup Left Team Member
+        // Setup Left Team Member
         GameObject ai = Instantiate(CurrentTeam.FlyingCharacter, leftTeamMember);
         if (GetComponent<CharacterSwitch>() is CharacterSwitch cs2)
             cs2.flyingCharacter = ai.transform;
@@ -60,7 +63,7 @@ public class TeamSetup : MonoBehaviour
         switcher.TeamMembers.Add(ai);
         if (leftTeamMember != null && leftTeamMember.TryGetComponent<FollowerNavigation>(out var lnav)) lnav.Setup();
 
-        //Setup Right Team Member
+        // Setup Right Team Member
         ai = Instantiate(CurrentTeam.PowerCharacter, rightTeamMember);
         if (GetComponent<CharacterSwitch>() is CharacterSwitch cs3)
             cs3.powerCharacter = ai.transform;
