@@ -46,6 +46,11 @@ public class UltimatePlayerMovement : MonoBehaviour
         }
     }
 
+    public bool IsGrounded => 
+        IsGrounded;
+
+    public bool IsSafetyShutDown => isSurrendered;
+
     public static bool Controllable { get; internal set; }
     public bool TrickZone { get; internal set; }
     public object LeftTeamMember { get; internal set; }

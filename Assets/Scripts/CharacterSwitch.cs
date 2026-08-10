@@ -4,6 +4,7 @@ using UnityEngine;
 public class CharacterSwitch : MonoBehaviour
 {
     public CHARACTERTYPES currentCharacterType = CHARACTERTYPES.Speed;
+    public CHARACTERTYPES CurrentLeaderType => currentCharacterType;
     public GameObject sonic;
     public GameObject superSonic;
     public List<GameObject> TeamMembers = new List<GameObject>();
