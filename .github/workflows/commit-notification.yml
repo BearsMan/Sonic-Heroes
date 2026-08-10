@@ -6,7 +6,7 @@ on:
   push:
     branches:
       - dev
-      - main
+      - Master
 
 jobs:
   commit-notification:
@@ -14,8 +14,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Show commit details
+      - name: Confirm push
         run: |
+          echo "Commit notification succeeded."
           echo "Repository: ${{ github.repository }}"
           echo "Branch: ${{ github.ref_name }}"
           echo "Pushed by: ${{ github.actor }}"
