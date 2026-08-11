@@ -63,9 +63,9 @@ public class BigShipController : MonoBehaviour
     private void MoveForward()
     {
         Vector3 forward =
-            useLocalUpAsForward
-                ? startingRotation * Vector3.up
-                : startingRotation * Vector3.forward;
+    useLocalUpAsForward
+        ? startingRotation * Vector3.down
+        : startingRotation * Vector3.forward;
 
         if (!IsFinite(forward) ||
             forward.sqrMagnitude <= Mathf.Epsilon)
