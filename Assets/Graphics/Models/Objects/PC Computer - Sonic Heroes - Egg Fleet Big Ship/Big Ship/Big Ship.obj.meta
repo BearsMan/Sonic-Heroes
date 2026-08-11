@@ -1,22 +1,237 @@
 fileFormatVersion: 2
 guid: 4c45af70459c5604cb78e9e516c8afb5
 ModelImporter:
-  serializedVersion: 21100
+  serializedVersion: 24501
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: belt
+    second: {fileID: 2100000, guid: e496c88316754b04784d5625a07caffd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: beltside
+    second: {fileID: 2100000, guid: 3ff5b4ce4635a25489ad566a1221e97e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: beltstripe
+    second: {fileID: 2100000, guid: ad0442677eda6334fab3ba7705725cbb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bigbridge
+    second: {fileID: 2100000, guid: da7373160669a2543b7e994039d73c04, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bigbridgebars
+    second: {fileID: 2100000, guid: dcdb8a904af66d6439d6e3156acd6ee1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bigbridgefront
+    second: {fileID: 2100000, guid: d8cfce07532abf747afe7dce9547af31, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bigbridgeside
+    second: {fileID: 2100000, guid: 40b112d3daab5bd4bb4ba79ea7d6603f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bigwindow
+    second: {fileID: 2100000, guid: 09c56a3f63b2db84bb772c18266ef0e8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: black
+    second: {fileID: 2100000, guid: c7546e95a4b7b8745bb3148d7c0ac3b3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bluedec
+    second: {fileID: 2100000, guid: c114fad3e692fb54b973d3b5e53bfc3a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bluemetal
+    second: {fileID: 2100000, guid: 78894e6b2e2ac41418ae0787ce9cd2de, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bluepit
+    second: {fileID: 2100000, guid: e3feadc21e47c7c40bf80eda36b6c1ea, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bluerim
+    second: {fileID: 2100000, guid: ae6489870ea0f464e894b296df3c3655, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bridge
+    second: {fileID: 2100000, guid: c3bf0875219b62b4f94919dbf6e1d68f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: bridgedec
+    second: {fileID: 2100000, guid: a26e46fdb62c18f4daf93df2b95cc210, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cabinwall
+    second: {fileID: 2100000, guid: 1b5feedf57dc429428b5f1ead95de762, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: cannonspot
+    second: {fileID: 2100000, guid: 55d97301e896ccd40af95e05e0691b07, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: checktile
+    second: {fileID: 2100000, guid: fa359895a83751645ba591c5935dd18e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: darkside
+    second: {fileID: 2100000, guid: c647ec1481df9ee4a9e4108d207e77a9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: deckwall
+    second: {fileID: 2100000, guid: 5c803285a966ea946bf82348a809fefa, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: discemblem
+    second: {fileID: 2100000, guid: 51bd70228b0da0f47aeae471df89520e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: emblem
+    second: {fileID: 2100000, guid: 9b1aecc90dd3a19428559972a534bf3c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: eye
+    second: {fileID: 2100000, guid: 07dcad8d3c25ccf44a7d466e2ea46de2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: fin
+    second: {fileID: 2100000, guid: 39d108516ff2037449cc1be99e257169, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: glass
+    second: {fileID: 2100000, guid: 269c1f07464064043baaa5c7d7c424e8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: graymetal
+    second: {fileID: 2100000, guid: d08a6b65e7e77084a8437c37b0923660, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: innermech
+    second: {fileID: 2100000, guid: e0008303843d424468bc579b6c67f7f0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: light
+    second: {fileID: 2100000, guid: 06b631aa888edeb45bfbff95f411d6d5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: orangerim
+    second: {fileID: 2100000, guid: 5ec637a00ae3d6d40a107c1dc9421c76, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: path
+    second: {fileID: 2100000, guid: 23f805cf771955e4f99b3b4d6e6f7bd7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: plate
+    second: {fileID: 2100000, guid: ed59cd457a1b31748be3042e3c95c971, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: redbridge
+    second: {fileID: 2100000, guid: af46331a6592cd949bf39c2131377f6a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: redgunstand
+    second: {fileID: 2100000, guid: 3bdbdcb9b43bdb44bb06899d3a409b3f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: redmetal
+    second: {fileID: 2100000, guid: 8f9d4917f4017e64092d89d0013b1874, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: redrim
+    second: {fileID: 2100000, guid: 18a5605ab1bf35f4b95f5302239c6f5e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: redstripe
+    second: {fileID: 2100000, guid: 773fe8c409afa4143b96e005aaeeb311, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: shutter1
+    second: {fileID: 2100000, guid: 78bb016931a844b4fa16cfc52dd3128d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: steeltube
+    second: {fileID: 2100000, guid: 894d127088eba184e86f294918ef2aac, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: stripebar
+    second: {fileID: 2100000, guid: 37ea131f6cb2ecb48b0f7721be3b2982, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: thruster
+    second: {fileID: 2100000, guid: b8ee2fb6b368f044a921d6ec1315d867, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: tubered
+    second: {fileID: 2100000, guid: 45f1888c8325d85449cb8b6afc4e4af6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: yellow
+    second: {fileID: 2100000, guid: 0ae01d6ea61e098469628f62f4a747e0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: yellowstripe
+    second: {fileID: 2100000, guid: 0c6e3e1db41f52d4fbb901c2c670de45, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
     materialSearch: 1
     materialLocation: 1
+    searchTexturesGlobally: 1
   animations:
     legacyGenerateAnimations: 4
     bakeSimulation: 0
     resampleCurves: 1
     optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
     motionNodeName: 
-    rigImportErrors: 
-    rigImportWarnings: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
@@ -39,10 +254,12 @@ ModelImporter:
     addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
+    importPhysicalCameras: 1
     importVisibility: 1
     importBlendShapes: 1
     importCameras: 1
     importLights: 1
+    nodeNameCollisionStrategy: 0
     fileIdsGeneration: 2
     swapUVChannels: 0
     generateSecondaryUV: 0
@@ -54,6 +271,12 @@ ModelImporter:
     skinWeightsMode: 0
     maxBonesPerVertex: 4
     minBoneWeight: 0.001
+    optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
+    importUVs: -1
+    importVertexColors: 1
     meshOptimizationFlags: -1
     indexFormat: 0
     secondaryUVAngleDistortion: 8
@@ -64,6 +287,7 @@ ModelImporter:
     secondaryUVMinObjectScale: 1
     secondaryUVPackMargin: 4
     useFileScale: 1
+    strictVertexDataChecks: 0
   tangentSpace:
     normalSmoothAngle: 60
     normalImportMode: 0
@@ -72,6 +296,7 @@ ModelImporter:
     legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
     blendShapeNormalImportMode: 1
     normalSmoothingSource: 0
+    calculateBlendshapeNormalsDeltaFromImportedNormals: 1
   referencedClips: []
   importAnimation: 1
   humanDescription:
@@ -94,8 +319,10 @@ ModelImporter:
   autoGenerateAvatarMappingIfUnspecified: 1
   animationType: 2
   humanoidOversampling: 1
-  avatarSetup: 0
+  avatarSetup: 1
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 0
+  remapMaterialsIfMaterialImportModeIsNone: 1
   additionalBone: 0
   userData: 
   assetBundleName: 

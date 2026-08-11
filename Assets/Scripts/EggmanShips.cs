@@ -1,416 +1,977 @@
-using System.Collections;
 using UnityEngine;
 
-/// <summary>
-/// EggmanShips — Sonic Heroes, Stages 13 (Egg Fleet) & 14 (Final Fortress).
-///
-/// Covers three ship archetypes that appear in those stages:
-///   • SmallShip      — fast patrol craft, flies a looping waypoint path
-///   • SmallShipLow   — same hull but flies low over the deck, acts as a moving platform
-///   • MantaRayShip   — large flagship-style carrier, slow, fires homing missiles
-///
-/// Ships are scene-disabled by default and activated only when the active
-/// stage index matches Egg Fleet (13) or Final Fortress (14).
-/// </summary>
 public class EggmanShips : MonoBehaviour
 {
-    // ─────────────────────────────────────────────
-    // Ship Type
-    // ─────────────────────────────────────────────
-    public enum ShipType { SmallShip, SmallShipLow, MantaRayShip }
+    public enum ShipType
+    {
+        SmallShip,
+        LowFlyingShip,
+        BigShip,
+        MantaRayShip
+    }
+
+    public enum ShipMode
+    {
+        Disabled,
+        Gameplay,
+        Cinematic,
+        Background
+    }
+
+    public enum CinematicEndMode
+    {
+        Hold,
+        Loop,
+        Disable
+    }
+
+    #region Identity
 
     [Header("Identity")]
-    public ShipType shipType = ShipType.SmallShip;
+    [SerializeField]
+    private ShipType shipType =
+        ShipType.SmallShip;
 
-    // ─────────────────────────────────────────────
-    // Stage Gating  (stages 13 & 14 only)
-    // ─────────────────────────────────────────────
-    [Header("Stage Gating")]
-    [Tooltip("Stage indices this ship is allowed to appear in.")]
-    public int[] allowedStageIndices = new int[] { 13, 14 };
+    [SerializeField]
+    private ShipMode currentMode =
+        ShipMode.Gameplay;
 
-    // ─────────────────────────────────────────────
-    // Movement
-    // ─────────────────────────────────────────────
-    [Header("Movement")]
-    public float cruiseSpeed = 8f;          // base patrol speed
-    public float hoverHeight = 12f;         // target altitude above the deck
-    public float hoverDamping = 4f;         // spring strength for altitude correction
-    public float bankAngle = 20f;           // roll into turns (cosmetic tilt)
-    public float bankSpeed = 3f;
+    #endregion
 
-    [Header("Waypoints")]
-    [Tooltip("World-space waypoints the ship patrols. Loops endlessly.")]
-    public Transform[] waypoints;
-    public float waypointReachRadius = 3f;
+    #region Gameplay Stages
 
-    // ─────────────────────────────────────────────
-    // Combat (MantaRayShip only)
-    // ─────────────────────────────────────────────
-    [Header("Combat — MantaRay only")]
-    public GameObject missilePrefab;
-    public Transform[] missileFirePoints;
-    public float missileFireRate = 3f;      // seconds between salvos
-    public float missileDetectRange = 30f;
-    public LayerMask playerLayer;
+    [Header("Gameplay Stages")]
+    [SerializeField]
+    private int eggFleetStageIndex = 13;
 
-    // ─────────────────────────────────────────────
-    // Platform (SmallShipLow only)
-    // ─────────────────────────────────────────────
-    [Header("Platform — SmallShipLow only")]
-    [Tooltip("Collider on top of the ship that the player can stand on.")]
-    public Collider deckCollider;
+    [SerializeField]
+    private int finalFortressStageIndex = 14;
 
-    // ─────────────────────────────────────────────
-    // Cutscene
-    // ─────────────────────────────────────────────
-    [Header("Cutscene")]
-    [Tooltip("Assign a path for the ship to follow during cutscenes.")]
-    public Transform[] cutsceneWaypoints;
-    public float cutsceneSpeed = 5f;
-    private bool inCutscene = false;
+    #endregion
 
-    // ─────────────────────────────────────────────
-    // Internal
-    // ─────────────────────────────────────────────
+    #region Flying Ships
+
+    [Header("Flying Ships")]
+    [SerializeField, Min(0f)]
+    private float smallShipCruiseSpeed = 20f;
+
+    [SerializeField, Min(0f)]
+    private float lowFlyingShipCruiseSpeed = 12f;
+
+    [SerializeField, Min(0f)]
+    private float mantaRayCruiseSpeed = 8f;
+
+    [SerializeField, Min(0f)]
+    private float smallShipHoverHeight = 14f;
+
+    [SerializeField, Min(0f)]
+    private float lowFlyingShipHoverHeight = 3f;
+
+    [SerializeField, Min(0f)]
+    private float mantaRayHoverHeight = 20f;
+
+    [SerializeField, Min(0f)]
+    private float turnSpeed = 3f;
+
+    [SerializeField, Min(0f)]
+    private float hoverCorrectionSpeed = 8f;
+
+    [SerializeField, Min(0f)]
+    private float bankAngle = 20f;
+
+    [SerializeField, Min(0f)]
+    private float bankSpeed = 3f;
+
+    [SerializeField]
+    private LayerMask flightSurfaceMask = ~0;
+
+    [SerializeField]
+    private bool maintainHoverHeight = true;
+
+    [SerializeField]
+    private bool enableBanking = true;
+
+    #endregion
+
+    #region Gameplay Path
+
+    [Header("Gameplay Path")]
+    [SerializeField]
+    private Transform[] gameplayWaypoints;
+
+    [SerializeField, Min(0.01f)]
+    private float gameplayWaypointRadius = 3f;
+
+    [SerializeField]
+    private bool loopGameplayPath = true;
+
+    [SerializeField]
+    private bool flyForwardWithoutWaypoints = true;
+
+    #endregion
+
+    #region Big Ship
+
+    [Header("Big Ship")]
+    [SerializeField]
+    private BigShipController bigShipController;
+
+    [SerializeField]
+    private ShipTurret[] turrets;
+
+    [SerializeField]
+    private ShipCannon[] cannons;
+
+    #endregion
+
+    #region Low Flying Ship
+
+    [Header("Low Flying Ship")]
+    [SerializeField]
+    private Collider platformCollider;
+
+    [SerializeField]
+    private bool enablePlatformCollider = true;
+
+    #endregion
+
+    #region Cinematic
+
+    [Header("Cinematic")]
+    [SerializeField]
+    private Transform[] cinematicWaypoints;
+
+    [SerializeField, Min(0f)]
+    private float cinematicSpeed = 10f;
+
+    [SerializeField, Min(0f)]
+    private float cinematicTurnSpeed = 2f;
+
+    [SerializeField, Min(0.01f)]
+    private float cinematicWaypointRadius = 1f;
+
+    [SerializeField]
+    private CinematicEndMode cinematicEndMode =
+        CinematicEndMode.Hold;
+
+    [SerializeField]
+    private bool weaponsEnabledDuringCinematic;
+
+    #endregion
+
+    #region Background
+
+    [Header("Background")]
+    [SerializeField]
+    private Vector3 backgroundDirection =
+        Vector3.forward;
+
+    [SerializeField, Min(0f)]
+    private float backgroundSpeed = 5f;
+
+    #endregion
+
+    #region Physics
+
+    [Header("Collision")]
+    [SerializeField]
+    private bool gameplayCollisions = true;
+
+    [SerializeField]
+    private bool cinematicCollisions;
+
+    [SerializeField]
+    private bool backgroundCollisions;
+
     private Rigidbody body;
-    private int currentWaypoint = 0;
-    private float fireCooldown = 0f;
-    private bool isActive = false;          // true only when correct stage loaded
-    private float currentBankAngle = 0f;
-    private Transform playerTarget;
+    private Collider[] shipColliders;
 
-    // ─────────────────────────────────────────────
-    // Lifecycle
-    // ─────────────────────────────────────────────
-    void Awake()
+    #endregion
+
+    #region Runtime
+
+    private int gameplayWaypointIndex;
+    private int cinematicWaypointIndex;
+
+    private float startingAltitude;
+    private float currentBankAngle;
+
+    private bool cinematicComplete;
+    private bool initialized;
+
+    #endregion
+
+    #region Properties
+
+    public ShipType Type =>
+        shipType;
+
+    public ShipMode Mode =>
+        currentMode;
+
+    public bool IsCinematicComplete =>
+        cinematicComplete;
+
+    #endregion
+
+    #region Unity Lifecycle
+
+    private void Awake()
     {
-        body = GetComponent<Rigidbody>();
+        CacheComponents();
+        ConfigurePhysics();
 
-        // Ships float — disable built-in gravity; we apply hover correction manually
-        body.useGravity = false;
-        body.interpolation = RigidbodyInterpolation.Interpolate;
-        body.freezeRotation = true;
+        startingAltitude =
+            transform.position.y;
 
-        // Start hidden; StageManager (or your equivalent) calls ActivateForStage()
-        gameObject.SetActive(false);
+        gameplayWaypointIndex = 0;
+        cinematicWaypointIndex = 0;
+
+        currentBankAngle = 0f;
+        cinematicComplete = false;
+        initialized = true;
+
+        ApplyMode(currentMode);
     }
 
-    void Start()
+    private void OnEnable()
     {
-        // Scale speed per ship type to match in-game feel
-        switch (shipType)
+        if (!initialized)
         {
-            case ShipType.SmallShip:
-                cruiseSpeed *= 1.4f;    // fast patrol craft
-                hoverHeight = 14f;
-                break;
-
-            case ShipType.SmallShipLow:
-                cruiseSpeed *= 1.0f;    // medium, acts as moving platform
-                hoverHeight = 3f;       // skims just above the deck
-                if (deckCollider != null)
-                    deckCollider.enabled = true;
-                break;
-
-            case ShipType.MantaRayShip:
-                cruiseSpeed *= 0.5f;    // large, slow flagship
-                hoverHeight = 20f;
-                break;
-        }
-    }
-
-    void Update()
-    {
-        if (!isActive) return;
-
-        if (inCutscene)
-        {
-            FollowCutscenePath();
             return;
         }
 
-        fireCooldown -= Time.deltaTime;
+        ConfigurePhysics();
+        ApplyMode(currentMode);
+    }
 
-        // MantaRay: scan for player and fire missiles
-        if (shipType == ShipType.MantaRayShip)
+    private void FixedUpdate()
+    {
+        if (!initialized ||
+            currentMode != ShipMode.Gameplay)
         {
-            ScanForPlayer();
-            if (playerTarget != null && fireCooldown <= 0f)
-            {
-                StartCoroutine(FireMissileSalvo());
-                fireCooldown = missileFireRate;
-            }
-        }
-    }
-
-    void FixedUpdate()
-    {
-        if (!isActive || inCutscene) return;
-
-        PatrolToWaypoint();
-        MaintainHoverHeight();
-        ApplyBanking();
-    }
-
-    // ─────────────────────────────────────────────
-    // Stage Activation
-    // ─────────────────────────────────────────────
-
-    /// <summary>
-    /// Call this from your StageManager when a stage loads.
-    /// Ships silently stay inactive for any other stage index.
-    /// </summary>
-    public void ActivateForStage(int stageIndex)
-    {
-        bool allowed = System.Array.IndexOf(allowedStageIndices, stageIndex) >= 0;
-        gameObject.SetActive(allowed);
-        isActive = allowed;
-
-        if (allowed)
-            Debug.Log($"[EggmanShips] {shipType} activated for Stage {stageIndex}.");
-    }
-
-    // ─────────────────────────────────────────────
-    // Patrol Movement
-    // ─────────────────────────────────────────────
-    private void PatrolToWaypoint()
-    {
-        if (waypoints == null || waypoints.Length == 0) return;
-
-        Transform target = waypoints[currentWaypoint];
-        Vector3 toTarget = target.position - transform.position;
-        toTarget.y = 0f; // horizontal steering only; vertical handled by hover
-
-        float distance = toTarget.magnitude;
-
-        if (distance < waypointReachRadius)
-        {
-            // Advance to next waypoint, looping
-            currentWaypoint = (currentWaypoint + 1) % waypoints.Length;
             return;
         }
 
-        // Rotate smoothly toward the next waypoint
-        Quaternion targetRot = Quaternion.LookRotation(toTarget.normalized);
-        Quaternion smoothRot = Quaternion.Slerp(
-            Quaternion.Euler(0f, transform.eulerAngles.y, 0f),
-            targetRot,
-            Time.fixedDeltaTime * 3f
-        );
-        body.MoveRotation(Quaternion.Euler(0f, smoothRot.eulerAngles.y, 0f));
+        if (shipType == ShipType.BigShip)
+        {
+            return;
+        }
 
-        // Move forward at cruise speed
-        Vector3 velocity = transform.forward * cruiseSpeed;
-        velocity.y = body.linearVelocity.y; // preserve hover correction
-        body.linearVelocity = velocity;
+        UpdateFlyingShip();
     }
 
-    // ─────────────────────────────────────────────
-    // Hover Height Correction
-    // ─────────────────────────────────────────────
-    private void MaintainHoverHeight()
+    private void Update()
     {
-        RaycastHit hit;
-        float currentHeight = 0f;
-        bool overSurface = Physics.Raycast(transform.position, Vector3.down, out hit, hoverHeight + 10f);
+        if (!initialized)
+        {
+            return;
+        }
 
-        if (overSurface)
-            currentHeight = hit.distance;
+        switch (currentMode)
+        {
+            case ShipMode.Cinematic:
+                UpdateCinematic();
+                break;
+
+            case ShipMode.Background:
+                UpdateBackground();
+                break;
+        }
+    }
+
+    #endregion
+
+    #region Public Activation
+
+    public bool ActivateForGameplay(
+        int stageIndex)
+    {
+        if (!IsGameplayStage(stageIndex))
+        {
+            DisableShip();
+            return false;
+        }
+
+        gameplayWaypointIndex = 0;
+        cinematicComplete = false;
+
+        SetMode(ShipMode.Gameplay);
+
+        return true;
+    }
+
+    public void ActivateForCinematic()
+    {
+        cinematicWaypointIndex = 0;
+        cinematicComplete = false;
+
+        SetMode(ShipMode.Cinematic);
+    }
+
+    public void ActivateForBackground()
+    {
+        SetMode(ShipMode.Background);
+    }
+
+    public void DisableShip()
+    {
+        SetMode(ShipMode.Disabled);
+    }
+
+    public void SetMode(
+        ShipMode mode)
+    {
+        currentMode = mode;
+
+        ApplyMode(mode);
+    }
+
+    public bool IsGameplayStage(
+        int stageIndex)
+    {
+        return
+            stageIndex == eggFleetStageIndex ||
+            stageIndex == finalFortressStageIndex;
+    }
+
+    #endregion
+
+    #region Mode Configuration
+
+    private void ApplyMode(
+        ShipMode mode)
+    {
+        ConfigurePhysics();
+
+        switch (mode)
+        {
+            case ShipMode.Disabled:
+                ConfigureDisabled();
+                break;
+
+            case ShipMode.Gameplay:
+                ConfigureGameplay();
+                break;
+
+            case ShipMode.Cinematic:
+                ConfigureCinematic();
+                break;
+
+            case ShipMode.Background:
+                ConfigureBackground();
+                break;
+        }
+    }
+
+    private void ConfigureDisabled()
+    {
+        SetBigShipEnabled(false);
+        SetWeaponsEnabled(false);
+        ConfigurePlatform(false);
+        SetCollidersEnabled(false);
+    }
+
+    private void ConfigureGameplay()
+    {
+        SetCollidersEnabled(
+            gameplayCollisions);
+
+        bool bigShip =
+            shipType == ShipType.BigShip;
+
+        SetBigShipEnabled(bigShip);
+        SetWeaponsEnabled(bigShip);
+
+        ConfigurePlatform(
+            shipType ==
+                ShipType.LowFlyingShip &&
+            enablePlatformCollider);
+    }
+
+    private void ConfigureCinematic()
+    {
+        SetBigShipEnabled(false);
+
+        SetWeaponsEnabled(
+            weaponsEnabledDuringCinematic);
+
+        ConfigurePlatform(false);
+
+        SetCollidersEnabled(
+            cinematicCollisions);
+    }
+
+    private void ConfigureBackground()
+    {
+        SetBigShipEnabled(false);
+        SetWeaponsEnabled(false);
+        ConfigurePlatform(false);
+
+        SetCollidersEnabled(
+            backgroundCollisions);
+    }
+
+    #endregion
+
+    #region Flying Ship Movement
+
+    private void UpdateFlyingShip()
+    {
+        if (!CanMove())
+        {
+            return;
+        }
+
+        Vector3 direction =
+            GetGameplayDirection();
+
+        if (!IsFinite(direction) ||
+            direction.sqrMagnitude <= Mathf.Epsilon)
+        {
+            return;
+        }
+
+        Quaternion rotation =
+            CalculateFlyingRotation(
+                direction);
+
+        Vector3 position =
+            CalculateFlyingPosition(
+                rotation);
+
+        if (maintainHoverHeight)
+        {
+            position =
+                ApplyHover(position);
+        }
+
+        if (enableBanking)
+        {
+            rotation =
+                ApplyBanking(
+                    rotation,
+                    direction);
+        }
+
+        body.MovePosition(position);
+        body.MoveRotation(rotation);
+    }
+
+    private Vector3 GetGameplayDirection()
+    {
+        if (gameplayWaypoints == null ||
+            gameplayWaypoints.Length == 0)
+        {
+            return
+                flyForwardWithoutWaypoints
+                    ? transform.forward
+                    : Vector3.zero;
+        }
+
+        if (gameplayWaypointIndex < 0 ||
+            gameplayWaypointIndex >=
+            gameplayWaypoints.Length)
+        {
+            gameplayWaypointIndex = 0;
+        }
+
+        Transform waypoint =
+            gameplayWaypoints[
+                gameplayWaypointIndex];
+
+        if (waypoint == null)
+        {
+            AdvanceGameplayWaypoint();
+
+            return transform.forward;
+        }
+
+        Vector3 direction =
+            waypoint.position -
+            body.position;
+
+        if (!IsFinite(direction))
+        {
+            return Vector3.zero;
+        }
+
+        if (direction.magnitude <=
+            gameplayWaypointRadius)
+        {
+            AdvanceGameplayWaypoint();
+
+            return transform.forward;
+        }
+
+        return direction.normalized;
+    }
+
+    private void AdvanceGameplayWaypoint()
+    {
+        gameplayWaypointIndex++;
+
+        if (gameplayWaypointIndex <
+            gameplayWaypoints.Length)
+        {
+            return;
+        }
+
+        gameplayWaypointIndex =
+            loopGameplayPath
+                ? 0
+                : gameplayWaypoints.Length - 1;
+    }
+
+    private Quaternion CalculateFlyingRotation(
+        Vector3 direction)
+    {
+        Vector3 horizontal =
+            Vector3.ProjectOnPlane(
+                direction,
+                Vector3.up);
+
+        if (horizontal.sqrMagnitude <=
+            Mathf.Epsilon)
+        {
+            return body.rotation;
+        }
+
+        Quaternion desired =
+            Quaternion.LookRotation(
+                horizontal.normalized,
+                Vector3.up);
+
+        return Quaternion.RotateTowards(
+            body.rotation,
+            desired,
+            turnSpeed *
+            Time.fixedDeltaTime);
+    }
+
+    private Vector3 CalculateFlyingPosition(
+        Quaternion rotation)
+    {
+        float speed =
+            GetCruiseSpeed();
+
+        Vector3 forward =
+            rotation * Vector3.forward;
+
+        Vector3 position =
+            body.position +
+            forward.normalized *
+            speed *
+            Time.fixedDeltaTime;
+
+        return
+            IsFinite(position)
+                ? position
+                : body.position;
+    }
+
+    #endregion
+
+    #region Hover
+
+    private Vector3 ApplyHover(
+        Vector3 position)
+    {
+        float hoverHeight =
+            GetHoverHeight();
+
+        if (hoverHeight <= 0f)
+        {
+            return position;
+        }
+
+        float rayDistance =
+            hoverHeight + 25f;
+
+        if (Physics.Raycast(
+            body.position,
+            Vector3.down,
+            out RaycastHit hit,
+            rayDistance,
+            flightSurfaceMask,
+            QueryTriggerInteraction.Ignore))
+        {
+            float desiredY =
+                hit.point.y +
+                hoverHeight;
+
+            position.y =
+                Mathf.MoveTowards(
+                    body.position.y,
+                    desiredY,
+                    hoverCorrectionSpeed *
+                    Time.fixedDeltaTime);
+        }
         else
-            currentHeight = hoverHeight; // assume already at correct height over open sky
-
-        float heightError = hoverHeight - currentHeight;
-        float correctionForce = heightError * hoverDamping;
-
-        Vector3 vel = body.linearVelocity;
-        vel.y = Mathf.Lerp(vel.y, correctionForce, Time.fixedDeltaTime * hoverDamping);
-        body.linearVelocity = vel;
-    }
-
-    // ─────────────────────────────────────────────
-    // Banking (cosmetic roll into turns)
-    // ─────────────────────────────────────────────
-    private void ApplyBanking()
-    {
-        float turnRate = body.angularVelocity.y;
-        float targetBank = -turnRate * bankAngle;
-        currentBankAngle = Mathf.Lerp(currentBankAngle, targetBank, Time.fixedDeltaTime * bankSpeed);
-
-        Vector3 euler = transform.eulerAngles;
-        euler.z = currentBankAngle;
-        transform.eulerAngles = euler;
-    }
-
-    // ─────────────────────────────────────────────
-    // Combat — MantaRay missile system
-    // ─────────────────────────────────────────────
-    private void ScanForPlayer()
-    {
-        // Simple sphere overlap — replace with your game's player reference system as needed
-        Collider[] hits = Physics.OverlapSphere(transform.position, missileDetectRange, playerLayer);
-        playerTarget = hits.Length > 0 ? hits[0].transform : null;
-    }
-
-    private IEnumerator FireMissileSalvo()
-    {
-        if (missilePrefab == null || missileFirePoints == null) yield break;
-
-        foreach (Transform firePoint in missileFirePoints)
         {
-            if (firePoint == null) continue;
-
-            GameObject missile = Instantiate(missilePrefab, firePoint.position, firePoint.rotation);
-
-            // Pass the target to the missile if it has a homing component
-            HomingMissile homing = missile.GetComponent<HomingMissile>();
-            if (homing != null && playerTarget != null)
-                homing.SetTarget(playerTarget);
-
-            yield return new WaitForSeconds(0.25f); // slight stagger between fire points
-        }
-    }
-
-    // ─────────────────────────────────────────────
-    // Cutscene Playback
-    // ─────────────────────────────────────────────
-
-    /// <summary>
-    /// Call from your cutscene director to start cutscene movement.
-    /// </summary>
-    public void StartCutscene()
-    {
-        inCutscene = true;
-        currentWaypoint = 0;
-        body.linearVelocity = Vector3.zero;
-    }
-
-    public void EndCutscene()
-    {
-        inCutscene = false;
-        currentWaypoint = 0;
-    }
-
-    private void FollowCutscenePath()
-    {
-        if (cutsceneWaypoints == null || cutsceneWaypoints.Length == 0) return;
-
-        Transform target = cutsceneWaypoints[currentWaypoint];
-        Vector3 toTarget = target.position - transform.position;
-        float distance = toTarget.magnitude;
-
-        if (distance < 0.5f)
-        {
-            currentWaypoint++;
-            if (currentWaypoint >= cutsceneWaypoints.Length)
-            {
-                EndCutscene();
-                return;
-            }
+            position.y =
+                startingAltitude;
         }
 
-        transform.position = Vector3.MoveTowards(
-            transform.position,
-            target.position,
-            cutsceneSpeed * Time.deltaTime
-        );
-
-        if (toTarget != Vector3.zero)
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                Quaternion.LookRotation(toTarget.normalized),
-                Time.deltaTime * 5f
-            );
+        return position;
     }
 
-    // ─────────────────────────────────────────────
-    // Collision — player lands on SmallShipLow deck
-    // ─────────────────────────────────────────────
-    private void OnCollisionStay(Collision collision)
+    #endregion
+
+    #region Banking
+
+    private Quaternion ApplyBanking(
+        Quaternion rotation,
+        Vector3 direction)
     {
-        if (shipType != ShipType.SmallShipLow) return;
+        Vector3 localDirection =
+            transform.InverseTransformDirection(
+                direction.normalized);
 
-        // Carry the player with the ship while they stand on it
-        UltimatePlayerMovement player = collision.gameObject.GetComponentInParent<UltimatePlayerMovement>();
-        if (player == null) return;
+        float targetBank =
+            Mathf.Clamp(
+                -localDirection.x *
+                bankAngle,
+                -bankAngle,
+                bankAngle);
 
-        // Push the player along with the ship's velocity so they don't slide off
-        Rigidbody playerBody = collision.rigidbody;
-        if (playerBody != null)
+        currentBankAngle =
+            Mathf.Lerp(
+                currentBankAngle,
+                targetBank,
+                bankSpeed *
+                Time.fixedDeltaTime);
+
+        Vector3 euler =
+            rotation.eulerAngles;
+
+        euler.z =
+            currentBankAngle;
+
+        return Quaternion.Euler(euler);
+    }
+
+    #endregion
+
+    #region Cinematic
+
+    private void UpdateCinematic()
+    {
+        if (cinematicComplete)
         {
-            Vector3 shipHorizontalVel = new Vector3(body.linearVelocity.x, 0f, body.linearVelocity.z);
-            playerBody.linearVelocity = new Vector3(
-                shipHorizontalVel.x,
-                playerBody.linearVelocity.y,
-                shipHorizontalVel.z
-            );
-        }
-    }
-
-    // ─────────────────────────────────────────────
-    // Debug Gizmos
-    // ─────────────────────────────────────────────
-    private void OnDrawGizmosSelected()
-    {
-        // Patrol path
-        if (waypoints != null && waypoints.Length > 1)
-        {
-            Gizmos.color = Color.cyan;
-            for (int i = 0; i < waypoints.Length; i++)
-            {
-                if (waypoints[i] == null) continue;
-                int next = (i + 1) % waypoints.Length;
-                if (waypoints[next] != null)
-                    Gizmos.DrawLine(waypoints[i].position, waypoints[next].position);
-                Gizmos.DrawWireSphere(waypoints[i].position, waypointReachRadius);
-            }
-        }
-
-        // Missile detect range (MantaRay)
-        if (shipType == ShipType.MantaRayShip)
-        {
-            Gizmos.color = new Color(1f, 0.3f, 0f, 0.25f);
-            Gizmos.DrawWireSphere(transform.position, missileDetectRange);
-        }
-
-        // Hover height ray
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * hoverHeight);
-    }
-}
-
-// Minimal HomingMissile component to satisfy references from EggmanShips.
-// If your project already has a richer HomingMissile implementation, remove this stub and keep yours.
-public class HomingMissile : MonoBehaviour
-{
-    public Transform Target { get; private set; }
-    public float speed = 20f;
-    public float rotateSpeed = 5f;
-    public float lifetime = 10f;
-
-    public void SetTarget(Transform target)
-    {
-        Target = target;
-    }
-
-    void Start()
-    {
-        Destroy(gameObject, lifetime);
-    }
-
-    void Update()
-    {
-        if (Target == null)
-        {
-            transform.position += transform.forward * speed * Time.deltaTime;
             return;
         }
 
-        Vector3 dir = (Target.position - transform.position).normalized;
-        if (dir == Vector3.zero) return;
+        if (cinematicWaypoints == null ||
+            cinematicWaypoints.Length == 0)
+        {
+            cinematicComplete = true;
+            return;
+        }
 
-        Quaternion look = Quaternion.LookRotation(dir);
-        transform.rotation = Quaternion.Slerp(transform.rotation, look, rotateSpeed * Time.deltaTime);
-        transform.position += transform.forward * speed * Time.deltaTime;
+        if (cinematicWaypointIndex < 0 ||
+            cinematicWaypointIndex >=
+            cinematicWaypoints.Length)
+        {
+            cinematicWaypointIndex = 0;
+        }
+
+        Transform waypoint =
+            cinematicWaypoints[
+                cinematicWaypointIndex];
+
+        if (waypoint == null)
+        {
+            AdvanceCinematicWaypoint();
+            return;
+        }
+
+        Vector3 direction =
+            waypoint.position -
+            transform.position;
+
+        if (!IsFinite(direction))
+        {
+            return;
+        }
+
+        if (direction.magnitude <=
+            cinematicWaypointRadius)
+        {
+            AdvanceCinematicWaypoint();
+            return;
+        }
+
+        transform.position =
+            Vector3.MoveTowards(
+                transform.position,
+                waypoint.position,
+                cinematicSpeed *
+                Time.deltaTime);
+
+        if (direction.sqrMagnitude >
+            Mathf.Epsilon)
+        {
+            Quaternion desired =
+                Quaternion.LookRotation(
+                    direction.normalized,
+                    Vector3.up);
+
+            transform.rotation =
+                Quaternion.RotateTowards(
+                    transform.rotation,
+                    desired,
+                    cinematicTurnSpeed *
+                    Time.deltaTime);
+        }
     }
+
+    private void AdvanceCinematicWaypoint()
+    {
+        cinematicWaypointIndex++;
+
+        if (cinematicWaypointIndex <
+            cinematicWaypoints.Length)
+        {
+            return;
+        }
+
+        switch (cinematicEndMode)
+        {
+            case CinematicEndMode.Hold:
+                cinematicWaypointIndex =
+                    cinematicWaypoints.Length - 1;
+
+                cinematicComplete = true;
+                break;
+
+            case CinematicEndMode.Loop:
+                cinematicWaypointIndex = 0;
+                break;
+
+            case CinematicEndMode.Disable:
+                cinematicComplete = true;
+                DisableShip();
+                break;
+        }
+    }
+
+    #endregion
+
+    #region Background
+
+    private void UpdateBackground()
+    {
+        if (!IsFinite(backgroundDirection) ||
+            backgroundDirection.sqrMagnitude <=
+            Mathf.Epsilon)
+        {
+            return;
+        }
+
+        transform.position +=
+            backgroundDirection.normalized *
+            backgroundSpeed *
+            Time.deltaTime;
+    }
+
+    #endregion
+
+    #region Type Settings
+
+    private float GetCruiseSpeed()
+    {
+        return shipType switch
+        {
+            ShipType.SmallShip =>
+                smallShipCruiseSpeed,
+
+            ShipType.LowFlyingShip =>
+                lowFlyingShipCruiseSpeed,
+
+            ShipType.MantaRayShip =>
+                mantaRayCruiseSpeed,
+
+            _ =>
+                0f
+        };
+    }
+
+    private float GetHoverHeight()
+    {
+        return shipType switch
+        {
+            ShipType.SmallShip =>
+                smallShipHoverHeight,
+
+            ShipType.LowFlyingShip =>
+                lowFlyingShipHoverHeight,
+
+            ShipType.MantaRayShip =>
+                mantaRayHoverHeight,
+
+            _ =>
+                0f
+        };
+    }
+
+    #endregion
+
+    #region Components
+
+    private void CacheComponents()
+    {
+        body =
+            GetComponent<Rigidbody>();
+
+        if (bigShipController == null)
+        {
+            bigShipController =
+                GetComponent<BigShipController>();
+        }
+
+        if (turrets == null ||
+            turrets.Length == 0)
+        {
+            turrets =
+                GetComponentsInChildren<ShipTurret>(
+                    true);
+        }
+
+        if (cannons == null ||
+            cannons.Length == 0)
+        {
+            cannons =
+                GetComponentsInChildren<ShipCannon>(
+                    true);
+        }
+
+        shipColliders =
+            GetComponentsInChildren<Collider>(
+                true);
+    }
+
+    private void ConfigurePhysics()
+    {
+        if (body == null)
+        {
+            return;
+        }
+
+        body.useGravity = false;
+        body.isKinematic = true;
+
+        body.linearVelocity =
+            Vector3.zero;
+
+        body.angularVelocity =
+            Vector3.zero;
+
+        body.interpolation =
+            RigidbodyInterpolation.Interpolate;
+
+        body.collisionDetectionMode =
+            CollisionDetectionMode.ContinuousSpeculative;
+    }
+
+    private bool CanMove()
+    {
+        return
+            body != null &&
+            gameObject.activeInHierarchy &&
+            IsFinite(body.position) &&
+            IsFinite(body.rotation);
+    }
+
+    private void SetBigShipEnabled(
+        bool enabled)
+    {
+        if (bigShipController != null)
+        {
+            bigShipController.enabled =
+                enabled;
+        }
+    }
+
+    private void SetWeaponsEnabled(
+        bool enabled)
+    {
+        if (turrets != null)
+        {
+            foreach (ShipTurret turret in turrets)
+            {
+                if (turret != null)
+                {
+                    turret.enabled =
+                        enabled;
+                }
+            }
+        }
+
+        if (cannons != null)
+        {
+            foreach (ShipCannon cannon in cannons)
+            {
+                if (cannon != null)
+                {
+                    cannon.enabled =
+                        enabled;
+                }
+            }
+        }
+    }
+
+    private void ConfigurePlatform(
+        bool enabled)
+    {
+        if (platformCollider != null)
+        {
+            platformCollider.enabled =
+                enabled;
+        }
+    }
+
+    private void SetCollidersEnabled(
+        bool enabled)
+    {
+        if (shipColliders == null)
+        {
+            return;
+        }
+
+        foreach (Collider collider
+            in shipColliders)
+        {
+            if (collider != null)
+            {
+                collider.enabled =
+                    enabled;
+            }
+        }
+    }
+
+    #endregion
+
+    #region Safety
+
+    private static bool IsFinite(
+        Vector3 value)
+    {
+        return
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z);
+    }
+
+    private static bool IsFinite(
+        Quaternion value)
+    {
+        return
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z) &&
+            float.IsFinite(value.w);
+    }
+
+    #endregion
 }
