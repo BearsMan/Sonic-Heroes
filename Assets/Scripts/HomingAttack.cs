@@ -2,41 +2,38 @@ using UnityEngine;
 
 public class HomingAttack : MonoBehaviour
 {
-    #region Homing Attack State
-
-    public bool homingAttackAvailable = false;
-    public bool homingAttackUsed = false;
-
-    #endregion
-
     #region References
 
     [Header("References")]
+    [SerializeField]
+    private UltimatePlayerMovement movement;
 
-    public UltimatePlayerMovement movement;
+    [SerializeField]
+    private TeamActionController actionController;
 
     [SerializeField]
     private Rigidbody body;
 
     [SerializeField]
-    private Animator anim;
+    private Animator animator;
 
     #endregion
 
     #region Input
 
     [Header("Input")]
-
     [SerializeField]
     private KeyCode homingAttackKey =
         KeyCode.Space;
+
+    [SerializeField]
+    private bool readPlayerInput = true;
 
     #endregion
 
     #region Target Detection
 
     [Header("Target Detection")]
-
     [SerializeField]
     private LayerMask targetLayers = ~0;
 
@@ -49,12 +46,18 @@ public class HomingAttack : MonoBehaviour
     [SerializeField, Min(1)]
     private int maximumTargets = 32;
 
+    [SerializeField]
+    private Vector3 detectionOffset =
+        new Vector3(
+            0f,
+            1f,
+            0f);
+
     #endregion
 
     #region Homing Movement
 
     [Header("Homing Movement")]
-
     [SerializeField, Min(1)]
     private int homingAttackDamage = 1;
 
@@ -75,17 +78,24 @@ public class HomingAttack : MonoBehaviour
 
     #endregion
 
+    #region Rotation
+
+    [Header("Rotation")]
+    [SerializeField, Min(0f)]
+    private float rotationSharpness = 20f;
+
+    #endregion
+
     #region Animation
 
     [Header("Animation")]
-
     [SerializeField]
     private string spinParameter =
         "Spin";
 
     #endregion
 
-    #region Runtime State
+    #region Runtime
 
     private readonly Collider[] targetResults =
         new Collider[32];
@@ -94,11 +104,21 @@ public class HomingAttack : MonoBehaviour
 
     private float homingTimer;
 
+    private bool homingAttackAvailable = true;
+    private bool homingAttackUsed;
     private bool isHoming;
+    private bool initialized;
+    private bool shuttingDown;
 
     #endregion
 
     #region Properties
+
+    public bool HomingAttackAvailable =>
+        homingAttackAvailable;
+
+    public bool HomingAttackUsed =>
+        homingAttackUsed;
 
     public bool IsHoming =>
         isHoming;
@@ -113,17 +133,32 @@ public class HomingAttack : MonoBehaviour
     private void Awake()
     {
         CacheReferences();
+
+        initialized =
+            ValidateReferences();
+
+        ResetRuntimeState();
     }
 
-    private void Start()
+    private void OnEnable()
     {
+        if (shuttingDown)
+        {
+            return;
+        }
+
         CacheReferences();
+
+        if (!initialized)
+        {
+            initialized =
+                ValidateReferences();
+        }
     }
 
     private void Update()
     {
-        if (movement == null ||
-            body == null)
+        if (!initialized)
         {
             return;
         }
@@ -137,23 +172,47 @@ public class HomingAttack : MonoBehaviour
 
         if (isHoming)
         {
-            UpdateHomingAttack();
+            return;
+        }
 
+        if (!readPlayerInput)
+        {
             return;
         }
 
         if (Input.GetKeyDown(
-                homingAttackKey) &&
-            homingAttackAvailable &&
-            !homingAttackUsed)
+            homingAttackKey))
         {
             TryStartHomingAttack();
         }
     }
 
+    private void FixedUpdate()
+    {
+        if (!initialized ||
+            !isHoming)
+        {
+            return;
+        }
+
+        UpdateHomingAttack();
+    }
+
     private void OnDisable()
     {
+        if (shuttingDown)
+        {
+            return;
+        }
+
         CancelHomingAttack();
+    }
+
+    private void OnDestroy()
+    {
+        shuttingDown = true;
+
+        CleanupDestroyedState();
     }
 
     private void OnValidate()
@@ -170,9 +229,15 @@ public class HomingAttack : MonoBehaviour
                 180f);
 
         maximumTargets =
+            Mathf.Clamp(
+                maximumTargets,
+                1,
+                targetResults.Length);
+
+        homingAttackDamage =
             Mathf.Max(
                 1,
-                maximumTargets);
+                homingAttackDamage);
 
         homingSpeed =
             Mathf.Max(
@@ -193,48 +258,54 @@ public class HomingAttack : MonoBehaviour
             Mathf.Max(
                 0f,
                 upwardBounceForce);
+
+        rotationSharpness =
+            Mathf.Max(
+                0f,
+                rotationSharpness);
     }
 
     #endregion
 
-    #region References
+    #region Public API
 
-    private void CacheReferences()
+    public bool TryStartHomingAttack()
     {
-        movement ??=
-            GetComponentInParent<
-                UltimatePlayerMovement>();
-
-        body ??=
-            GetComponentInParent<
-                Rigidbody>();
-
-        anim ??=
-            GetComponentInChildren<
-                Animator>();
-    }
-
-    #endregion
-
-    #region Homing Attack
-
-    private bool TryStartHomingAttack()
-    {
-        if (movement == null ||
-            body == null ||
-            movement.IsGrounded ||
-            homingAttackUsed)
+        if (!CanStartHomingAttack())
         {
             return false;
+        }
+
+        Transform target =
+            FindBestTarget();
+
+        if (target == null)
+        {
+            return false;
+        }
+
+        bool continuingChain =
+            actionController.CurrentAction ==
+            TeamActionController.TeamAction.HomingAttack;
+
+        if (!continuingChain)
+        {
+            bool accepted =
+                actionController.TryBeginAction(
+                    TeamActionController.TeamAction.HomingAttack,
+                    TeamActionController.TeamFormation.Speed,
+                    mustBeGrounded: false,
+                    mustBeAirborne: true,
+                    surrenderMovementControl: true);
+
+            if (!accepted)
+            {
+                return false;
+            }
         }
 
         currentTarget =
-            FindBestTarget();
-
-        if (currentTarget == null)
-        {
-            return false;
-        }
+            target;
 
         homingAttackUsed =
             true;
@@ -248,6 +319,102 @@ public class HomingAttack : MonoBehaviour
         homingTimer =
             maximumHomingTime;
 
+        PrepareHomingPhysics();
+
+        SetSpinAnimation(
+            true);
+
+        return true;
+    }
+
+    public void ResetHomingAttack()
+    {
+        FinishHomingAttack(
+            restoreAvailability: true,
+            endTeamAction: true,
+            restoreMovementControl: true);
+    }
+
+    public void CancelHomingAttack()
+    {
+        FinishHomingAttack(
+            restoreAvailability: false,
+            endTeamAction: true,
+            restoreMovementControl: true);
+    }
+
+    public void SetInputEnabled(
+        bool enabled)
+    {
+        readPlayerInput =
+            enabled;
+    }
+
+    #endregion
+
+    #region Start Validation
+
+    private bool CanStartHomingAttack()
+    {
+        if (!initialized ||
+            movement == null ||
+            actionController == null ||
+            body == null)
+        {
+            return false;
+        }
+
+        if (movement.IsGrounded)
+        {
+            return false;
+        }
+
+        if (isHoming ||
+            !homingAttackAvailable ||
+            homingAttackUsed)
+        {
+            return false;
+        }
+
+        if (actionController.CurrentFormation !=
+            TeamActionController.TeamFormation.Speed)
+        {
+            return false;
+        }
+
+        TeamActionController.TeamAction action =
+            actionController.CurrentAction;
+
+        if (action !=
+                TeamActionController.TeamAction.None &&
+            action !=
+                TeamActionController.TeamAction.HomingAttack)
+        {
+            return false;
+        }
+
+        if (!IsFinite(
+            body.position) ||
+            !IsFinite(
+                body.rotation))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    #endregion
+
+    #region Homing Movement
+
+    private void PrepareHomingPhysics()
+    {
+        if (body == null)
+        {
+            return;
+        }
+
         body.useGravity =
             false;
 
@@ -256,17 +423,14 @@ public class HomingAttack : MonoBehaviour
 
         body.angularVelocity =
             Vector3.zero;
-
-        SetSpinAnimation(
-            true);
-
-        return true;
     }
 
     private void UpdateHomingAttack()
     {
-        if (!isHoming)
+        if (body == null)
         {
+            CancelHomingAttack();
+
             return;
         }
 
@@ -274,18 +438,24 @@ public class HomingAttack : MonoBehaviour
             !currentTarget.gameObject.activeInHierarchy)
         {
             FinishHomingAttack(
-                false);
+                restoreAvailability: false,
+                endTeamAction: true,
+                restoreMovementControl: true);
 
             return;
         }
 
         homingTimer -=
-            Time.deltaTime;
+            Time.fixedDeltaTime;
 
-        if (homingTimer <= 0f)
+        if (!float.IsFinite(
+                homingTimer) ||
+            homingTimer <= 0f)
         {
             FinishHomingAttack(
-                false);
+                restoreAvailability: false,
+                endTeamAction: true,
+                restoreMovementControl: true);
 
             return;
         }
@@ -298,11 +468,10 @@ public class HomingAttack : MonoBehaviour
             targetPosition -
             body.position;
 
-        if (!IsFiniteVector(
+        if (!IsFinite(
                 direction))
         {
-            FinishHomingAttack(
-                false);
+            CancelHomingAttack();
 
             return;
         }
@@ -313,8 +482,7 @@ public class HomingAttack : MonoBehaviour
         if (!float.IsFinite(
                 distance))
         {
-            FinishHomingAttack(
-                false);
+            CancelHomingAttack();
 
             return;
         }
@@ -328,7 +496,7 @@ public class HomingAttack : MonoBehaviour
         }
 
         if (direction.sqrMagnitude <=
-            0.0001f)
+            Mathf.Epsilon)
         {
             HandleTargetHit();
 
@@ -337,12 +505,70 @@ public class HomingAttack : MonoBehaviour
 
         direction.Normalize();
 
-        body.linearVelocity =
+        Vector3 velocity =
             direction *
             homingSpeed;
 
-        FaceDirection(
+        if (!IsFinite(
+                velocity))
+        {
+            CancelHomingAttack();
+
+            return;
+        }
+
+        body.linearVelocity =
+            velocity;
+
+        RotateTowardDirection(
             direction);
+    }
+
+    #endregion
+
+    #region Rotation
+
+    private void RotateTowardDirection(
+        Vector3 direction)
+    {
+        Vector3 horizontal =
+            Vector3.ProjectOnPlane(
+                direction,
+                Vector3.up);
+
+        if (!IsFinite(
+                horizontal) ||
+            horizontal.sqrMagnitude <=
+            Mathf.Epsilon)
+        {
+            return;
+        }
+
+        Quaternion targetRotation =
+            Quaternion.LookRotation(
+                horizontal.normalized,
+                Vector3.up);
+
+        float amount =
+            1f -
+            Mathf.Exp(
+                -rotationSharpness *
+                Time.fixedDeltaTime);
+
+        Quaternion rotation =
+            Quaternion.Slerp(
+                body.rotation,
+                targetRotation,
+                amount);
+
+        if (!IsFinite(
+                rotation))
+        {
+            return;
+        }
+
+        body.MoveRotation(
+            rotation);
     }
 
     #endregion
@@ -351,13 +577,34 @@ public class HomingAttack : MonoBehaviour
 
     private Transform FindBestTarget()
     {
+        Vector3 origin =
+            transform.position +
+            transform.TransformDirection(
+                detectionOffset);
+
+        if (!IsFinite(
+                origin))
+        {
+            return null;
+        }
+
+        int requestedCount =
+            Mathf.Min(
+                maximumTargets,
+                targetResults.Length);
+
         int resultCount =
             Physics.OverlapSphereNonAlloc(
-                transform.position,
+                origin,
                 targetRange,
                 targetResults,
                 targetLayers,
                 QueryTriggerInteraction.Collide);
+
+        resultCount =
+            Mathf.Min(
+                resultCount,
+                requestedCount);
 
         Transform bestTarget =
             null;
@@ -369,8 +616,8 @@ public class HomingAttack : MonoBehaviour
             transform.forward;
 
         for (int index = 0;
-            index < resultCount;
-            index++)
+             index < resultCount;
+             index++)
         {
             Collider candidate =
                 targetResults[index];
@@ -378,48 +625,15 @@ public class HomingAttack : MonoBehaviour
             targetResults[index] =
                 null;
 
-            if (!IsValidTarget(
-                    candidate))
+            if (!TryEvaluateTarget(
+                candidate,
+                origin,
+                forward,
+                out Transform target,
+                out float score))
             {
                 continue;
             }
-
-            Vector3 targetPosition =
-                candidate.bounds.center;
-
-            Vector3 direction =
-                targetPosition -
-                transform.position;
-
-            float distance =
-                direction.magnitude;
-
-            if (!float.IsFinite(
-                    distance) ||
-                distance <= 0f ||
-                distance >
-                    targetRange)
-            {
-                continue;
-            }
-
-            float angle =
-                Vector3.Angle(
-                    forward,
-                    direction);
-
-            if (!float.IsFinite(
-                    angle) ||
-                angle >
-                    targetAngle)
-            {
-                continue;
-            }
-
-            float score =
-                distance +
-                angle *
-                0.05f;
 
             if (score >=
                 bestScore)
@@ -431,16 +645,82 @@ public class HomingAttack : MonoBehaviour
                 score;
 
             bestTarget =
-                candidate.attachedRigidbody != null
-                    ? candidate.attachedRigidbody.transform
-                    : candidate.transform;
+                target;
         }
 
         return bestTarget;
     }
 
+    private bool TryEvaluateTarget(
+        Collider candidate,
+        Vector3 origin,
+        Vector3 forward,
+        out Transform target,
+        out float score)
+    {
+        target =
+            null;
+
+        score =
+            float.PositiveInfinity;
+
+        if (!IsValidTarget(
+            candidate))
+        {
+            return false;
+        }
+
+        Vector3 targetPosition =
+            candidate.bounds.center;
+
+        Vector3 direction =
+            targetPosition -
+            origin;
+
+        if (!IsFinite(
+                direction))
+        {
+            return false;
+        }
+
+        float distance =
+            direction.magnitude;
+
+        if (!float.IsFinite(
+                distance) ||
+            distance <= Mathf.Epsilon ||
+            distance > targetRange)
+        {
+            return false;
+        }
+
+        float angle =
+            Vector3.Angle(
+                forward,
+                direction);
+
+        if (!float.IsFinite(
+                angle) ||
+            angle > targetAngle)
+        {
+            return false;
+        }
+
+        score =
+            distance +
+            angle *
+            0.05f;
+
+        target =
+            candidate.attachedRigidbody != null
+                ? candidate.attachedRigidbody.transform
+                : candidate.transform;
+
+        return target != null;
+    }
+
     private bool IsValidTarget(
-    Collider candidate)
+        Collider candidate)
     {
         if (candidate == null)
         {
@@ -454,14 +734,34 @@ public class HomingAttack : MonoBehaviour
             return false;
         }
 
+        Transform candidateTransform =
+            candidate.transform;
+
+        if (candidateTransform == transform ||
+            candidateTransform.IsChildOf(
+                transform) ||
+            transform.IsChildOf(
+                candidateTransform))
+        {
+            return false;
+        }
+
         AIController enemy =
             candidate.GetComponent<AIController>();
 
-        enemy ??=
-            candidate.GetComponentInParent<AIController>();
+        if (enemy == null)
+        {
+            enemy =
+                candidate.GetComponentInParent<
+                    AIController>();
+        }
 
-        enemy ??=
-            candidate.GetComponentInChildren<AIController>();
+        if (enemy == null)
+        {
+            enemy =
+                candidate.GetComponentInChildren<
+                    AIController>();
+        }
 
         if (enemy == null ||
             enemy.IsDead ||
@@ -478,8 +778,7 @@ public class HomingAttack : MonoBehaviour
     {
         if (target == null)
         {
-            return
-                Vector3.zero;
+            return Vector3.zero;
         }
 
         Collider targetCollider =
@@ -498,27 +797,7 @@ public class HomingAttack : MonoBehaviour
 
     private void HandleTargetHit()
     {
-        Transform hitTarget =
-            currentTarget;
-
-        if (hitTarget != null)
-        {
-            AIController enemy =
-                hitTarget.GetComponent<AIController>();
-
-            enemy ??=
-                hitTarget.GetComponentInParent<AIController>();
-
-            enemy ??=
-                hitTarget.GetComponentInChildren<AIController>();
-
-            if (enemy != null &&
-                !enemy.IsDead)
-            {
-                enemy.TakeDamage(
-                    homingAttackDamage);
-            }
-        }
+        DamageCurrentTarget();
 
         if (body != null)
         {
@@ -528,6 +807,9 @@ public class HomingAttack : MonoBehaviour
             body.linearVelocity =
                 Vector3.up *
                 upwardBounceForce;
+
+            body.angularVelocity =
+                Vector3.zero;
         }
 
         isHoming =
@@ -535,22 +817,85 @@ public class HomingAttack : MonoBehaviour
 
         currentTarget =
             null;
+
+        homingTimer =
+            0f;
 
         SetSpinAnimation(
             false);
 
         if (allowChainAttack)
         {
+            /*
+             * Keep TeamAction.HomingAttack active
+             * between chained targets.
+             *
+             * A Triangle Jump surface may call
+             * CancelHomingAttack(), which releases
+             * this action before taking ownership.
+             */
             homingAttackUsed =
                 false;
 
             homingAttackAvailable =
                 true;
+
+            return;
         }
+
+        homingAttackUsed =
+            true;
+
+        homingAttackAvailable =
+            false;
+
+        EndTeamAction(
+            restoreMovementControl: true);
     }
 
+    private void DamageCurrentTarget()
+    {
+        if (currentTarget == null)
+        {
+            return;
+        }
+
+        AIController enemy =
+            currentTarget.GetComponent<
+                AIController>();
+
+        if (enemy == null)
+        {
+            enemy =
+                currentTarget.GetComponentInParent<
+                    AIController>();
+        }
+
+        if (enemy == null)
+        {
+            enemy =
+                currentTarget.GetComponentInChildren<
+                    AIController>();
+        }
+
+        if (enemy == null ||
+            enemy.IsDead)
+        {
+            return;
+        }
+
+        enemy.TakeDamage(
+            homingAttackDamage);
+    }
+
+    #endregion
+
+    #region Finish / Reset
+
     private void FinishHomingAttack(
-        bool resetAttack)
+        bool restoreAvailability,
+        bool endTeamAction,
+        bool restoreMovementControl)
     {
         isHoming =
             false;
@@ -558,16 +903,22 @@ public class HomingAttack : MonoBehaviour
         currentTarget =
             null;
 
+        homingTimer =
+            0f;
+
         if (body != null)
         {
             body.useGravity =
                 true;
+
+            body.angularVelocity =
+                Vector3.zero;
         }
 
         SetSpinAnimation(
             false);
 
-        if (resetAttack)
+        if (restoreAvailability)
         {
             homingAttackUsed =
                 false;
@@ -575,112 +926,90 @@ public class HomingAttack : MonoBehaviour
             homingAttackAvailable =
                 true;
         }
-    }
 
-    #endregion
-
-    #region Rotation
-
-    private void FaceDirection(
-        Vector3 direction)
-    {
-        if (!IsFiniteVector(
-                direction) ||
-            direction.sqrMagnitude <=
-                0.0001f)
+        if (endTeamAction)
         {
-            return;
+            EndTeamAction(
+                restoreMovementControl);
         }
-
-        Vector3 forward =
-            direction;
-
-        forward.y =
-            0f;
-
-        if (forward.sqrMagnitude <=
-            0.0001f)
-        {
-            return;
-        }
-
-        transform.rotation =
-            Quaternion.LookRotation(
-                forward.normalized,
-                Vector3.up);
     }
-
-    #endregion
-
-    #region Reset
 
     private void ResetOnGround()
     {
-        if (isHoming)
+        if (isHoming ||
+            actionController.CurrentAction ==
+                TeamActionController.TeamAction.HomingAttack)
         {
-            isHoming =
-                false;
+            FinishHomingAttack(
+                restoreAvailability: true,
+                endTeamAction: true,
+                restoreMovementControl: true);
 
-            currentTarget =
-                null;
+            return;
+        }
 
-            if (body != null)
+        homingAttackUsed =
+            false;
+
+        homingAttackAvailable =
+            true;
+
+        currentTarget =
+            null;
+
+        homingTimer =
+            0f;
+
+        SetSpinAnimation(
+            false);
+    }
+
+    private void ResetRuntimeState()
+    {
+        currentTarget =
+            null;
+
+        homingTimer =
+            0f;
+
+        isHoming =
+            false;
+
+        homingAttackAvailable =
+            true;
+
+        homingAttackUsed =
+            false;
+
+        SetSpinAnimation(
+            false);
+    }
+
+    #endregion
+
+    #region Team Action
+
+    private void EndTeamAction(
+        bool restoreMovementControl)
+    {
+        if (actionController == null)
+        {
+            if (restoreMovementControl)
             {
-                body.useGravity =
-                    true;
+                movement?.EnableMovement();
             }
+
+            return;
         }
 
-        homingAttackUsed =
-            false;
-
-        homingAttackAvailable =
-            true;
-
-        SetSpinAnimation(
-            false);
-    }
-
-    public void ResetHomingAttack()
-    {
-        isHoming =
-            false;
-
-        currentTarget =
-            null;
-
-        homingAttackUsed =
-            false;
-
-        homingAttackAvailable =
-            true;
-
-        if (body != null)
+        if (actionController.CurrentAction !=
+            TeamActionController.TeamAction.HomingAttack)
         {
-            body.useGravity =
-                true;
+            return;
         }
 
-        SetSpinAnimation(
-            false);
-    }
-
-    private void CancelHomingAttack()
-    {
-        isHoming =
-            false;
-
-        currentTarget =
-            null;
-
-        if (body != null)
-        {
-            body.useGravity =
-                true;
-        }
-
-        SetSpinAnimation(
-            false);
+        actionController.EndAction(
+            restoreMovementControl);
     }
 
     #endregion
@@ -690,33 +1019,120 @@ public class HomingAttack : MonoBehaviour
     private void SetSpinAnimation(
         bool value)
     {
-        if (anim == null ||
-            !anim.isActiveAndEnabled ||
+        if (animator == null ||
+            !animator.isActiveAndEnabled ||
             string.IsNullOrWhiteSpace(
                 spinParameter))
         {
             return;
         }
 
-        anim.SetBool(
+        animator.SetBool(
             spinParameter,
             value);
     }
 
     #endregion
 
-    #region Validation
+    #region References
 
-    private static bool IsFiniteVector(
+    private void CacheReferences()
+    {
+        if (movement == null)
+        {
+            movement =
+                GetComponentInParent<
+                    UltimatePlayerMovement>();
+        }
+
+        if (actionController == null)
+        {
+            actionController =
+                GetComponentInParent<
+                    TeamActionController>();
+        }
+
+        if (body == null)
+        {
+            body =
+                GetComponentInParent<
+                    Rigidbody>();
+        }
+
+        if (animator == null)
+        {
+            animator =
+                GetComponentInChildren<
+                    Animator>();
+        }
+    }
+
+    private bool ValidateReferences()
+    {
+        return
+            movement != null &&
+            actionController != null &&
+            body != null;
+    }
+
+    #endregion
+
+    #region Cleanup
+
+    private void CleanupDestroyedState()
+    {
+        isHoming =
+            false;
+
+        homingAttackAvailable =
+            false;
+
+        homingAttackUsed =
+            false;
+
+        currentTarget =
+            null;
+
+        homingTimer =
+            0f;
+
+        movement =
+            null;
+
+        actionController =
+            null;
+
+        body =
+            null;
+
+        animator =
+            null;
+
+        initialized =
+            false;
+    }
+
+    #endregion
+
+    #region Safety
+
+    private static bool IsFinite(
         Vector3 value)
     {
         return
-            float.IsFinite(
-                value.x) &&
-            float.IsFinite(
-                value.y) &&
-            float.IsFinite(
-                value.z);
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z);
+    }
+
+    private static bool IsFinite(
+        Quaternion value)
+    {
+        return
+            float.IsFinite(value.x) &&
+            float.IsFinite(value.y) &&
+            float.IsFinite(value.z) &&
+            float.IsFinite(value.w);
     }
 
     #endregion
@@ -725,14 +1141,19 @@ public class HomingAttack : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
+        Vector3 origin =
+            transform.position +
+            transform.TransformDirection(
+                detectionOffset);
+
         Gizmos.DrawWireSphere(
-            transform.position,
+            origin,
             targetRange);
 
         if (currentTarget != null)
         {
             Gizmos.DrawLine(
-                transform.position,
+                origin,
                 GetTargetPosition(
                     currentTarget));
         }
