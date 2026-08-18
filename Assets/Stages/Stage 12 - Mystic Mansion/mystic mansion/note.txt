@@ -1,0 +1,11 @@
+makes heavy use of vertex coloring.
+multiply said vertex color with the texture to render properly.
+
+material types:
+-DN: diffuse map multiplied by vertex color
+-ON[S]: diffuse map multiplied by vertex color
+-PN[S]: diffuse map multiplied by vertex color - alpha based transparency
+-PNW: diffuse map multiplied by vertex color - alpha based transparency - no cull
+-K: diffuse map multiplied by vertex color - additive transparency
+-O: diffuse map multiplied by vertex color - reflective mapping (texture coordinate: reflection)
+-AFN[S]: diffuse map multiplied by vertex color - transparent

@@ -28,11 +28,31 @@ namespace SonicHeroes
             Completed
         }
 
+        private readonly struct RouteNode
+        {
+            public RouteNode(
+                OrcaRoutePoint point,
+                Vector3 worldPosition,
+                Quaternion worldRotation)
+            {
+                Point = point;
+                WorldPosition = worldPosition;
+                WorldRotation = worldRotation;
+            }
+
+            public OrcaRoutePoint Point { get; }
+
+            public Vector3 WorldPosition { get; }
+
+            public Quaternion WorldRotation { get; }
+        }
+
         #endregion
 
         #region Constants
 
         private const string DefaultRouteRootName = "Route";
+        private const string DefaultVisualRootName = "Visual";
         private const string DefaultSwimStateName = "Swim";
 
         #endregion
@@ -80,6 +100,53 @@ namespace SonicHeroes
 
         #endregion
 
+        #region Procedural Animation
+
+        [Header("Procedural Animation")]
+        [SerializeField]
+        private Transform visualRoot;
+
+        [SerializeField]
+        private string visualRootName = DefaultVisualRootName;
+
+        [SerializeField]
+        private bool enableProceduralSwim = true;
+
+        [SerializeField, Min(0f)]
+        private float bobAmplitude = 0.12f;
+
+        [SerializeField, Min(0f)]
+        private float bobFrequency = 1.2f;
+
+        [SerializeField, Min(0f)]
+        private float swayAngle = 4f;
+
+        [SerializeField, Min(0f)]
+        private float swayFrequency = 1.5f;
+
+        [SerializeField, Min(0f)]
+        private float bankAngle = 12f;
+
+        [SerializeField, Min(0f)]
+        private float bankResponsiveness = 6f;
+
+        [SerializeField, Min(0f)]
+        private float pitchAngle = 10f;
+
+        [SerializeField, Min(0f)]
+        private float pitchResponsiveness = 6f;
+
+        [SerializeField, Min(0f)]
+        private float breachPitch = 18f;
+
+        [SerializeField, Min(0f)]
+        private float divePitch = 20f;
+
+        [SerializeField]
+        private bool randomizeAnimationPhase = true;
+
+        #endregion
+
         #region Presentation
 
         [Header("Presentation")]
@@ -111,8 +178,8 @@ namespace SonicHeroes
 
         #region Runtime
 
-        private readonly List<OrcaRoutePoint> routePoints =
-            new List<OrcaRoutePoint>();
+        private readonly List<RouteNode> routeNodes =
+            new List<RouteNode>();
 
         private Rigidbody body;
 
@@ -126,6 +193,17 @@ namespace SonicHeroes
 
         private Vector3 safePosition;
         private Quaternion safeRotation;
+
+        private Vector3 previousBodyPosition;
+        private Vector3 currentVelocity;
+        private Vector3 previousForward;
+
+        private Vector3 visualBaseLocalPosition;
+        private Quaternion visualBaseLocalRotation;
+
+        private float animationPhase;
+        private float currentBank;
+        private float currentPitch;
 
         #endregion
 
@@ -168,11 +246,25 @@ namespace SonicHeroes
                     UpdateMovement();
                     break;
             }
+
+            UpdateMotionData();
+        }
+
+        private void LateUpdate()
+        {
+            if (!initialized ||
+                !enableProceduralSwim)
+            {
+                return;
+            }
+
+            UpdateProceduralAnimation();
         }
 
         private void OnDisable()
         {
             StopSwimLoop();
+            RestoreVisualTransform();
         }
 
         private void OnDestroy()
@@ -203,6 +295,56 @@ namespace SonicHeroes
                 Mathf.Max(
                     0f,
                     startDelay);
+
+            bobAmplitude =
+                Mathf.Max(
+                    0f,
+                    bobAmplitude);
+
+            bobFrequency =
+                Mathf.Max(
+                    0f,
+                    bobFrequency);
+
+            swayAngle =
+                Mathf.Max(
+                    0f,
+                    swayAngle);
+
+            swayFrequency =
+                Mathf.Max(
+                    0f,
+                    swayFrequency);
+
+            bankAngle =
+                Mathf.Max(
+                    0f,
+                    bankAngle);
+
+            bankResponsiveness =
+                Mathf.Max(
+                    0f,
+                    bankResponsiveness);
+
+            pitchAngle =
+                Mathf.Max(
+                    0f,
+                    pitchAngle);
+
+            pitchResponsiveness =
+                Mathf.Max(
+                    0f,
+                    pitchResponsiveness);
+
+            breachPitch =
+                Mathf.Max(
+                    0f,
+                    breachPitch);
+
+            divePitch =
+                Mathf.Max(
+                    0f,
+                    divePitch);
         }
 
         #endregion
@@ -212,6 +354,7 @@ namespace SonicHeroes
         private void Initialize()
         {
             CacheComponents();
+            CacheVisualRoot();
             ConfigurePhysics();
             BuildRoute();
 
@@ -222,24 +365,40 @@ namespace SonicHeroes
             }
 
             CaptureSafeTransform();
+            CaptureVisualTransform();
 
             if (snapToRouteStart)
             {
                 SnapToStart();
             }
 
+            previousBodyPosition =
+                body.position;
+
+            previousForward =
+                transform.forward;
+
+            animationPhase =
+                randomizeAnimationPhase
+                    ? UnityEngine.Random.Range(
+                        0f,
+                        Mathf.PI * 2f)
+                    : 0f;
+
             PlayDefaultAnimation();
             StartSwimLoop();
 
             initialized = true;
 
-            if (activationMode == ActivationMode.Automatic)
+            if (activationMode ==
+                ActivationMode.Automatic)
             {
                 BeginSequence();
             }
             else
             {
-                state = OrcaState.Idle;
+                state =
+                    OrcaState.Idle;
             }
         }
 
@@ -262,6 +421,42 @@ namespace SonicHeroes
             }
         }
 
+        private void CacheVisualRoot()
+        {
+            if (visualRoot != null)
+            {
+                return;
+            }
+
+            visualRoot =
+                FindChildRecursive(
+                    transform,
+                    visualRootName);
+
+            if (visualRoot != null)
+            {
+                return;
+            }
+
+            Renderer[] renderers =
+                GetComponentsInChildren<Renderer>(
+                    true);
+
+            foreach (Renderer renderer in renderers)
+            {
+                if (renderer == null ||
+                    renderer.transform == transform)
+                {
+                    continue;
+                }
+
+                visualRoot =
+                    renderer.transform;
+
+                return;
+            }
+        }
+
         private void ConfigurePhysics()
         {
             if (body == null)
@@ -271,22 +466,14 @@ namespace SonicHeroes
 
             body.useGravity = false;
             body.isKinematic = true;
-            body.interpolation =
-                RigidbodyInterpolation.Interpolate;
-
+            body.interpolation = RigidbodyInterpolation.Interpolate;
             body.collisionDetectionMode =
                 CollisionDetectionMode.ContinuousSpeculative;
-
-            body.linearVelocity =
-                Vector3.zero;
-
-            body.angularVelocity =
-                Vector3.zero;
         }
 
         private void BuildRoute()
         {
-            routePoints.Clear();
+            routeNodes.Clear();
 
             if (routeRoot == null)
             {
@@ -323,8 +510,23 @@ namespace SonicHeroes
                         child.gameObject.AddComponent<OrcaRoutePoint>();
                 }
 
-                routePoints.Add(
-                    point);
+                Vector3 worldPosition =
+                    child.position;
+
+                Quaternion worldRotation =
+                    child.rotation;
+
+                if (!IsFinite(worldPosition) ||
+                    !IsFinite(worldRotation))
+                {
+                    continue;
+                }
+
+                routeNodes.Add(
+                    new RouteNode(
+                        point,
+                        worldPosition,
+                        worldRotation));
             }
         }
 
@@ -348,16 +550,46 @@ namespace SonicHeroes
                 return false;
             }
 
-            if (routePoints.Count < 2)
+            if (routeNodes.Count < 2)
             {
                 Debug.LogError(
-                    $"{nameof(Orca)} requires at least two route points under '{routeRoot.name}'.",
+                    $"{nameof(Orca)} requires at least two valid route points under '{routeRoot.name}'.",
                     this);
 
                 return false;
             }
 
             return true;
+        }
+
+        #endregion
+
+        #region Route Rebuild
+
+        public void RebuildRoute()
+        {
+            if (!initialized)
+            {
+                return;
+            }
+
+            BuildRoute();
+
+            if (routeNodes.Count < 2)
+            {
+                Debug.LogError(
+                    $"{nameof(Orca)} could not rebuild a valid route.",
+                    this);
+
+                StopSequence();
+                return;
+            }
+
+            currentPointIndex =
+                Mathf.Clamp(
+                    currentPointIndex,
+                    0,
+                    routeNodes.Count - 1);
         }
 
         #endregion
@@ -435,6 +667,7 @@ namespace SonicHeroes
 
             StopMotion();
             SnapToStart();
+            RestoreVisualTransform();
         }
 
         #endregion
@@ -446,13 +679,11 @@ namespace SonicHeroes
             waitTimer -=
                 Time.fixedDeltaTime;
 
-            if (waitTimer > 0f)
+            if (waitTimer <= 0f)
             {
-                return;
+                state =
+                    OrcaState.Moving;
             }
-
-            state =
-                OrcaState.Moving;
         }
 
         #endregion
@@ -468,14 +699,17 @@ namespace SonicHeroes
             }
 
             if (currentPointIndex >=
-                routePoints.Count)
+                routeNodes.Count)
             {
                 CompleteSequence();
                 return;
             }
 
+            RouteNode node =
+                routeNodes[currentPointIndex];
+
             OrcaRoutePoint point =
-                routePoints[currentPointIndex];
+                node.Point;
 
             if (point == null)
             {
@@ -484,14 +718,7 @@ namespace SonicHeroes
             }
 
             Vector3 targetPosition =
-                point.transform.position;
-
-            if (!IsFinite(
-                targetPosition))
-            {
-                AdvancePoint();
-                return;
-            }
+                node.WorldPosition;
 
             Vector3 currentPosition =
                 body.position;
@@ -505,15 +732,12 @@ namespace SonicHeroes
                     ? point.ReachDistanceOverride
                     : waypointReachDistance;
 
-            float reachDistanceSquared =
-                reachDistance *
-                reachDistance;
-
             if (toTarget.sqrMagnitude <=
-                reachDistanceSquared)
+                reachDistance *
+                reachDistance)
             {
                 HandlePointReached(
-                    point);
+                    node);
 
                 AdvancePoint();
                 return;
@@ -543,8 +767,7 @@ namespace SonicHeroes
                     moveSpeed *
                     Time.fixedDeltaTime);
 
-            if (!IsFinite(
-                nextPosition))
+            if (!IsFinite(nextPosition))
             {
                 RecoverTransform();
                 return;
@@ -566,30 +789,27 @@ namespace SonicHeroes
         {
             if (!IsFinite(direction) ||
                 direction.sqrMagnitude <=
-                Mathf.Epsilon)
+                    Mathf.Epsilon)
             {
                 return;
             }
 
-            Vector3 normalizedDirection =
-                direction.normalized;
-
             Quaternion targetRotation =
                 Quaternion.LookRotation(
-                    normalizedDirection,
+                    direction.normalized,
                     Vector3.up);
 
             if (preserveRoll)
             {
-                Vector3 targetEuler =
+                Vector3 euler =
                     targetRotation.eulerAngles;
 
-                targetEuler.z =
+                euler.z =
                     body.rotation.eulerAngles.z;
 
                 targetRotation =
                     Quaternion.Euler(
-                        targetEuler);
+                        euler);
             }
 
             Quaternion nextRotation =
@@ -599,14 +819,42 @@ namespace SonicHeroes
                     turnSpeed *
                     Time.fixedDeltaTime);
 
-            if (!IsFinite(
-                nextRotation))
+            if (IsFinite(nextRotation))
+            {
+                body.MoveRotation(
+                    nextRotation);
+            }
+        }
+
+        private void UpdateMotionData()
+        {
+            if (body == null)
             {
                 return;
             }
 
-            body.MoveRotation(
-                nextRotation);
+            float deltaTime =
+                Time.fixedDeltaTime;
+
+            if (deltaTime <=
+                Mathf.Epsilon)
+            {
+                return;
+            }
+
+            Vector3 position =
+                body.position;
+
+            currentVelocity =
+                IsFinite(position) &&
+                IsFinite(previousBodyPosition)
+                    ? (position -
+                        previousBodyPosition) /
+                        deltaTime
+                    : Vector3.zero;
+
+            previousBodyPosition =
+                position;
         }
 
         private void AdvancePoint()
@@ -614,7 +862,7 @@ namespace SonicHeroes
             currentPointIndex++;
 
             if (currentPointIndex >=
-                routePoints.Count)
+                routeNodes.Count)
             {
                 CompleteSequence();
             }
@@ -639,16 +887,204 @@ namespace SonicHeroes
 
         private void StopMotion()
         {
-            if (body == null)
+            currentVelocity = Vector3.zero;
+        }
+
+        #endregion
+
+        #region Procedural Animation
+
+        private void CaptureVisualTransform()
+        {
+            if (visualRoot == null)
             {
                 return;
             }
 
-            body.linearVelocity =
-                Vector3.zero;
+            visualBaseLocalPosition =
+                visualRoot.localPosition;
 
-            body.angularVelocity =
-                Vector3.zero;
+            visualBaseLocalRotation =
+                visualRoot.localRotation;
+        }
+
+        private void RestoreVisualTransform()
+        {
+            if (visualRoot == null)
+            {
+                return;
+            }
+
+            visualRoot.localPosition =
+                visualBaseLocalPosition;
+
+            visualRoot.localRotation =
+                visualBaseLocalRotation;
+
+            currentBank =
+                0f;
+
+            currentPitch =
+                0f;
+        }
+
+        private void UpdateProceduralAnimation()
+        {
+            if (visualRoot == null)
+            {
+                return;
+            }
+
+            float time =
+                Time.time +
+                animationPhase;
+
+            float speedFactor =
+                Mathf.Clamp01(
+                    currentVelocity.magnitude /
+                    Mathf.Max(
+                        defaultMoveSpeed,
+                        0.01f));
+
+            float bob =
+                Mathf.Sin(
+                    time *
+                    bobFrequency *
+                    Mathf.PI *
+                    2f) *
+                bobAmplitude *
+                Mathf.Lerp(
+                    0.35f,
+                    1f,
+                    speedFactor);
+
+            float sway =
+                Mathf.Sin(
+                    time *
+                    swayFrequency *
+                    Mathf.PI *
+                    2f) *
+                swayAngle *
+                Mathf.Lerp(
+                    0.35f,
+                    1f,
+                    speedFactor);
+
+            Vector3 forward =
+                transform.forward;
+
+            Vector3 previousFlat =
+                Vector3.ProjectOnPlane(
+                    previousForward,
+                    Vector3.up)
+                .normalized;
+
+            Vector3 currentFlat =
+                Vector3.ProjectOnPlane(
+                    forward,
+                    Vector3.up)
+                .normalized;
+
+            float turnAmount =
+                0f;
+
+            if (previousFlat.sqrMagnitude >
+                    Mathf.Epsilon &&
+                currentFlat.sqrMagnitude >
+                    Mathf.Epsilon)
+            {
+                turnAmount =
+                    Vector3.SignedAngle(
+                        previousFlat,
+                        currentFlat,
+                        Vector3.up);
+            }
+
+            float targetBank =
+                Mathf.Clamp(
+                    -turnAmount *
+                        4f,
+                    -bankAngle,
+                    bankAngle);
+
+            float targetPitch =
+                Mathf.Clamp(
+                    currentVelocity.y,
+                    -pitchAngle,
+                    pitchAngle);
+
+            OrcaRoutePoint.RoutePointType pointType =
+                GetCurrentPointType();
+
+            if (pointType ==
+                    OrcaRoutePoint.RoutePointType.Breach ||
+                pointType ==
+                    OrcaRoutePoint.RoutePointType.Air)
+            {
+                targetPitch =
+                    Mathf.Max(
+                        targetPitch,
+                        breachPitch);
+            }
+            else if (pointType ==
+                OrcaRoutePoint.RoutePointType.Dive)
+            {
+                targetPitch =
+                    -Mathf.Max(
+                        Mathf.Abs(
+                            targetPitch),
+                        divePitch);
+            }
+
+            currentBank =
+                Mathf.Lerp(
+                    currentBank,
+                    targetBank,
+                    1f -
+                    Mathf.Exp(
+                        -bankResponsiveness *
+                        Time.deltaTime));
+
+            currentPitch =
+                Mathf.Lerp(
+                    currentPitch,
+                    targetPitch,
+                    1f -
+                    Mathf.Exp(
+                        -pitchResponsiveness *
+                        Time.deltaTime));
+
+            visualRoot.localPosition =
+                visualBaseLocalPosition +
+                Vector3.up *
+                bob;
+
+            visualRoot.localRotation =
+                visualBaseLocalRotation *
+                Quaternion.Euler(
+                    currentPitch,
+                    sway,
+                    currentBank);
+
+            previousForward =
+                forward;
+        }
+
+        private OrcaRoutePoint.RoutePointType GetCurrentPointType()
+        {
+            if (currentPointIndex < 0 ||
+                currentPointIndex >=
+                    routeNodes.Count)
+            {
+                return OrcaRoutePoint.RoutePointType.Swim;
+            }
+
+            OrcaRoutePoint point =
+                routeNodes[currentPointIndex].Point;
+
+            return point != null
+                ? point.Type
+                : OrcaRoutePoint.RoutePointType.Swim;
         }
 
         #endregion
@@ -656,8 +1092,11 @@ namespace SonicHeroes
         #region Route Events
 
         private void HandlePointReached(
-            OrcaRoutePoint point)
+            RouteNode node)
         {
+            OrcaRoutePoint point =
+                node.Point;
+
             if (point == null)
             {
                 return;
@@ -668,15 +1107,13 @@ namespace SonicHeroes
 
             switch (point.Type)
             {
-                case OrcaRoutePoint.RoutePointType.Swim:
-                    break;
-
                 case OrcaRoutePoint.RoutePointType.Surface:
                     SpawnEffect(
                         point.EffectOverride != null
                             ? point.EffectOverride
                             : defaultBreachSplash,
-                        point.transform);
+                        node.WorldPosition,
+                        node.WorldRotation);
 
                     break;
 
@@ -691,11 +1128,9 @@ namespace SonicHeroes
                         point.EffectOverride != null
                             ? point.EffectOverride
                             : defaultBreachSplash,
-                        point.transform);
+                        node.WorldPosition,
+                        node.WorldRotation);
 
-                    break;
-
-                case OrcaRoutePoint.RoutePointType.Air:
                     break;
 
                 case OrcaRoutePoint.RoutePointType.Dive:
@@ -709,11 +1144,9 @@ namespace SonicHeroes
                         point.EffectOverride != null
                             ? point.EffectOverride
                             : defaultDiveSplash,
-                        point.transform);
+                        node.WorldPosition,
+                        node.WorldRotation);
 
-                    break;
-
-                case OrcaRoutePoint.RoutePointType.Exit:
                     break;
             }
 
@@ -798,13 +1231,9 @@ namespace SonicHeroes
 
         private void StopSwimLoop()
         {
-            if (audioSource == null)
-            {
-                return;
-            }
-
-            if (audioSource.clip ==
-                swimLoop)
+            if (audioSource != null &&
+                audioSource.clip ==
+                    swimLoop)
             {
                 audioSource.Stop();
             }
@@ -822,23 +1251,26 @@ namespace SonicHeroes
 
             audioSource.PlayOneShot(
                 clip,
-                Mathf.Clamp01(volume));
+                Mathf.Clamp01(
+                    volume));
         }
 
         private static void SpawnEffect(
             GameObject effect,
-            Transform source)
+            Vector3 position,
+            Quaternion rotation)
         {
             if (effect == null ||
-                source == null)
+                !IsFinite(position) ||
+                !IsFinite(rotation))
             {
                 return;
             }
 
             Instantiate(
                 effect,
-                source.position,
-                source.rotation);
+                position,
+                rotation);
         }
 
         #endregion
@@ -849,7 +1281,8 @@ namespace SonicHeroes
         {
             SpawnEffect(
                 defaultBreachSplash,
-                transform);
+                transform.position,
+                transform.rotation);
         }
 
         public void Play_Breach_Sound()
@@ -863,7 +1296,8 @@ namespace SonicHeroes
         {
             SpawnEffect(
                 defaultDiveSplash,
-                transform);
+                transform.position,
+                transform.rotation);
         }
 
         public void Play_Impact_Sound()
@@ -897,18 +1331,10 @@ namespace SonicHeroes
                 return false;
             }
 
-            if (!IsFinite(
-                body.position) ||
-                !IsFinite(
-                    body.rotation))
-            {
-                return false;
-            }
-
-            if (!IsFinite(
-                body.linearVelocity) ||
-                !IsFinite(
-                    body.angularVelocity))
+            if (!IsFinite(body.position) ||
+                !IsFinite(body.rotation) ||
+                !IsFinite(body.linearVelocity) ||
+                !IsFinite(body.angularVelocity))
             {
                 return false;
             }
@@ -916,21 +1342,17 @@ namespace SonicHeroes
             Vector3 scale =
                 transform.lossyScale;
 
-            if (!IsFinite(scale) ||
-                Mathf.Approximately(
+            return
+                IsFinite(scale) &&
+                !Mathf.Approximately(
                     scale.x,
-                    0f) ||
-                Mathf.Approximately(
+                    0f) &&
+                !Mathf.Approximately(
                     scale.y,
-                    0f) ||
-                Mathf.Approximately(
+                    0f) &&
+                !Mathf.Approximately(
                     scale.z,
-                    0f))
-            {
-                return false;
-            }
-
-            return true;
+                    0f);
         }
 
         private void RecoverTransform()
@@ -967,22 +1389,17 @@ namespace SonicHeroes
 
         private void SnapToStart()
         {
-            if (routePoints.Count == 0 ||
+            if (routeNodes.Count == 0 ||
                 body == null)
             {
                 return;
             }
 
-            OrcaRoutePoint first =
-                routePoints[0];
-
-            if (first == null)
-            {
-                return;
-            }
+            RouteNode first =
+                routeNodes[0];
 
             Vector3 position =
-                first.transform.position;
+                first.WorldPosition;
 
             if (!IsFinite(position))
             {
@@ -995,11 +1412,10 @@ namespace SonicHeroes
             transform.position =
                 position;
 
-            if (routePoints.Count > 1 &&
-                routePoints[1] != null)
+            if (routeNodes.Count > 1)
             {
                 Vector3 direction =
-                    routePoints[1].transform.position -
+                    routeNodes[1].WorldPosition -
                     position;
 
                 if (direction.sqrMagnitude >
@@ -1020,6 +1436,12 @@ namespace SonicHeroes
                     }
                 }
             }
+
+            previousBodyPosition =
+                position;
+
+            previousForward =
+                transform.forward;
 
             CaptureSafeTransform();
         }
@@ -1077,19 +1499,67 @@ namespace SonicHeroes
             Vector3 value)
         {
             return
-                float.IsFinite(value.x) &&
-                float.IsFinite(value.y) &&
-                float.IsFinite(value.z);
+                float.IsFinite(
+                    value.x) &&
+                float.IsFinite(
+                    value.y) &&
+                float.IsFinite(
+                    value.z);
         }
 
         private static bool IsFinite(
             Quaternion value)
         {
             return
-                float.IsFinite(value.x) &&
-                float.IsFinite(value.y) &&
-                float.IsFinite(value.z) &&
-                float.IsFinite(value.w);
+                float.IsFinite(
+                    value.x) &&
+                float.IsFinite(
+                    value.y) &&
+                float.IsFinite(
+                    value.z) &&
+                float.IsFinite(
+                    value.w);
+        }
+
+        private void OnDrawGizmos()
+        {
+            Transform root = routeRoot;
+
+            if (root == null)
+            {
+                root = FindChildRecursive(transform, routeRootName);
+            }
+
+            if (root == null || root.childCount == 0)
+            {
+                return;
+            }
+
+            for (int index = 0; index < root.childCount; index++)
+            {
+                Transform point = root.GetChild(index);
+
+                if (point == null)
+                {
+                    continue;
+                }
+
+                Gizmos.DrawWireSphere(point.position, 0.25f);
+
+                if (index >= root.childCount - 1)
+                {
+                    continue;
+                }
+
+                Transform next = root.GetChild(index + 1);
+
+                if (next != null)
+                {
+                    Gizmos.DrawLine(
+                        point.position,
+                        next.position);
+                }
+            }
         }
 
         #endregion

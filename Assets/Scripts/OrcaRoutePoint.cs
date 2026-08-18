@@ -3,138 +3,58 @@ using UnityEngine.Events;
 
 namespace SonicHeroes
 {
-	public class OrcaRoutePoint : MonoBehaviour
-	{
-		public enum RoutePointType
-		{
-			Swim,
-			Surface,
-			Breach,
-			Air,
-			Dive,
-			Exit
-		}
+    public class OrcaRoutePoint : MonoBehaviour
+    {
+        public enum RoutePointType
+        {
+            Swim,
+            Surface,
+            Breach,
+            Air,
+            Dive,
+            Exit
+        }
 
-		#region Route
+        [Header("Route")]
+        [SerializeField] private RoutePointType type = RoutePointType.Swim;
+        [SerializeField, Min(0f)] private float moveSpeedOverride;
+        [SerializeField, Min(0f)] private float turnSpeedOverride;
+        [SerializeField, Min(0f)] private float reachDistanceOverride;
+        [SerializeField, Min(0f)] private float pauseDuration;
 
-		[Header("Route")]
-		[SerializeField]
-		private RoutePointType type = RoutePointType.Swim;
+        [Header("Presentation")]
+        [SerializeField] private string animationState;
+        [SerializeField] private string animationTrigger;
+        [SerializeField] private AudioClip audioOverride;
+        [SerializeField, Range(0f, 1f)] private float volume = 1f;
+        [SerializeField] private GameObject effectOverride;
 
-		[SerializeField, Min(0f)]
-		private float moveSpeedOverride;
+        [Header("Events")]
+        [SerializeField] private UnityEvent onReached;
 
-		[SerializeField, Min(0f)]
-		private float turnSpeedOverride;
+        public RoutePointType Type => type;
+        public float MoveSpeedOverride => moveSpeedOverride;
+        public float TurnSpeedOverride => turnSpeedOverride;
+        public float ReachDistanceOverride => reachDistanceOverride;
+        public float PauseDuration => pauseDuration;
+        public string AnimationState => animationState;
+        public string AnimationTrigger => animationTrigger;
+        public AudioClip AudioOverride => audioOverride;
+        public float Volume => volume;
+        public GameObject EffectOverride => effectOverride;
 
-		[SerializeField, Min(0f)]
-		private float reachDistanceOverride;
+        private void OnValidate()
+        {
+            moveSpeedOverride = Mathf.Max(0f, moveSpeedOverride);
+            turnSpeedOverride = Mathf.Max(0f, turnSpeedOverride);
+            reachDistanceOverride = Mathf.Max(0f, reachDistanceOverride);
+            pauseDuration = Mathf.Max(0f, pauseDuration);
+            volume = Mathf.Clamp01(volume);
+        }
 
-		[SerializeField, Min(0f)]
-		private float pauseDuration;
-
-		#endregion
-
-		#region Presentation
-
-		[Header("Presentation")]
-		[SerializeField]
-		private string animationState;
-
-		[SerializeField]
-		private string animationTrigger;
-
-		[SerializeField]
-		private AudioClip audioOverride;
-
-		[SerializeField, Range(0f, 1f)]
-		private float volume = 1f;
-
-		[SerializeField]
-		private GameObject effectOverride;
-
-		#endregion
-
-		#region Events
-
-		[Header("Events")]
-		[SerializeField]
-		private UnityEvent onReached;
-
-		#endregion
-
-		#region Properties
-
-		public RoutePointType Type =>
-			type;
-
-		public float MoveSpeedOverride =>
-			moveSpeedOverride;
-
-		public float TurnSpeedOverride =>
-			turnSpeedOverride;
-
-		public float ReachDistanceOverride =>
-			reachDistanceOverride;
-
-		public float PauseDuration =>
-			pauseDuration;
-
-		public string AnimationState =>
-			animationState;
-
-		public string AnimationTrigger =>
-			animationTrigger;
-
-		public AudioClip AudioOverride =>
-			audioOverride;
-
-		public float Volume =>
-			volume;
-
-		public GameObject EffectOverride =>
-			effectOverride;
-
-		#endregion
-
-		#region Unity Lifecycle
-
-		private void OnValidate()
-		{
-			moveSpeedOverride =
-				Mathf.Max(
-					0f,
-					moveSpeedOverride);
-
-			turnSpeedOverride =
-				Mathf.Max(
-					0f,
-					turnSpeedOverride);
-
-			reachDistanceOverride =
-				Mathf.Max(
-					0f,
-					reachDistanceOverride);
-
-			pauseDuration =
-				Mathf.Max(
-					0f,
-					pauseDuration);
-
-			volume =
-				Mathf.Clamp01(
-					volume);
-		}
-
-		#endregion
-
-		#region Runtime
-
-		internal void InvokeReached()
-		{
-			onReached?.Invoke();
-		}
-
-		#endregion
-	}
+        internal void InvokeReached()
+        {
+            onReached?.Invoke();
+        }
+    }
 }
