@@ -80,9 +80,14 @@ public class UltimatePlayerMovement : MonoBehaviour
         if (isGrounded == true)
         {
             if (leftFollower != null && leftFollower.TryGetComponent<FollowerNavigation>(out var lfNav) && lfNav.agent != null)
+            {
                 lfNav.agent.enabled = true;
+            }
+            
             if (rightFollower != null && rightFollower.TryGetComponent<FollowerNavigation>(out var rfNav) && rfNav.agent != null)
+            {
                 rfNav.agent.enabled = true;
+            }
         }
         // RotateToGround();
     }
